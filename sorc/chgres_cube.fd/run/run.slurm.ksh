@@ -24,7 +24,7 @@ module purge
 module load intel/18.1.163
 module load impi/5.1.1.109 
 module load netcdf/4.3.0
-module load slurm/default
+module load slurm
 
 # Threads useful when ingesting spectral gfs sigio files.
 # Otherwise set to 1.
@@ -36,8 +36,8 @@ rm -fr $WORKDIR
 mkdir -p $WORKDIR
 cd $WORKDIR
 
-ln -fs ${SLURM_SUBMIT_DIR}/test.nml ./fort.41
-#ln -fs ${SLURM_SUBMIT_DIR}/config.C48.theia.nml ./fort.41
+#ln -fs ${SLURM_SUBMIT_DIR}/test.nml ./fort.41
+ln -fs ${SLURM_SUBMIT_DIR}/config.C48.theia.nml ./fort.41
 #ln -fs ${SLURM_SUBMIT_DIR}/config.C48.gaussian.theia.nml ./fort.41
 #ln -fs ${SLURM_SUBMIT_DIR}/config.C48.gfs.gaussian.theia.nml ./fort.41
 #ln -fs ${SLURM_SUBMIT_DIR}/config.C48.gfs.spectral.theia.nml ./fort.41

@@ -14,7 +14,7 @@
  cycle_mon=2
  cycle_day=22
  cycle_hour=0
- convert_atm=.true.
+ convert_atm=.false.
  convert_sfc=.true.
  convert_nst=.false.
  atm_weight_file="/scratch4/NCEPDEV/da/noscrub/George.Gayno/chgres_cube/fix/weights/C96_to_C48.bilinear.nc"
