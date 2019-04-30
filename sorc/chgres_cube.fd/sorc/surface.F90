@@ -90,6 +90,43 @@
  type(esmf_field), public           :: z_c_target_grid
  type(esmf_field), public           :: zm_target_grid
 
+! noahmp fields
+ type(esmf_field), public           :: alboldxy_target_grid
+ type(esmf_field), public           :: canicexy_target_grid
+ type(esmf_field), public           :: canliqxy_target_grid
+ type(esmf_field), public           :: chxy_target_grid
+ type(esmf_field), public           :: cmxy_target_grid
+ type(esmf_field), public           :: deeprechxy_target_grid
+ type(esmf_field), public           :: eahxy_target_grid
+ type(esmf_field), public           :: fastcpxy_target_grid
+ type(esmf_field), public           :: fwetxy_target_grid
+ type(esmf_field), public           :: lfmassxy_target_grid
+ type(esmf_field), public           :: qsnowxy_target_grid
+ type(esmf_field), public           :: rechxy_target_grid
+ type(esmf_field), public           :: rtmassxy_target_grid
+ type(esmf_field), public           :: slcxy_target_grid
+ type(esmf_field), public           :: smcxy_target_grid
+ type(esmf_field), public           :: smcwtdxy_target_grid
+ type(esmf_field), public           :: sneqvoxy_target_grid
+ type(esmf_field), public           :: snicexy_target_grid
+ type(esmf_field), public           :: snliqxy_target_grid
+ type(esmf_field), public           :: snowxy_target_grid
+ type(esmf_field), public           :: stblcpxy_target_grid
+ type(esmf_field), public           :: stcxy_target_grid
+ type(esmf_field), public           :: stmassxy_target_grid
+ type(esmf_field), public           :: tahxy_target_grid
+ type(esmf_field), public           :: taussxy_target_grid
+ type(esmf_field), public           :: tgxy_target_grid
+ type(esmf_field), public           :: tsnoxy_target_grid
+ type(esmf_field), public           :: tvxy_target_grid
+ type(esmf_field), public           :: waxy_target_grid
+ type(esmf_field), public           :: woodxy_target_grid
+ type(esmf_field), public           :: wslakexy_target_grid
+ type(esmf_field), public           :: wtxy_target_grid
+ type(esmf_field), public           :: xlaixy_target_grid
+ type(esmf_field), public           :: xsaixy_target_grid
+ type(esmf_field), public           :: zwtxy_target_grid
+
  type(esmf_field)                   :: soil_type_from_input_grid
                                        ! soil type interpolated from
                                        ! input grid
@@ -117,7 +154,8 @@
  use input_data, only                : cleanup_input_sfc_data, &
                                        cleanup_input_nst_data, &
                                        read_input_sfc_data, &
-                                       read_input_nst_data
+                                       read_input_nst_data, &
+                                       read_input_noahmp_data
 
  use program_setup, only             : calc_soil_params_driver, &
                                        convert_nst
@@ -147,6 +185,8 @@
 
  call read_input_sfc_data(localpet)
 
+ call read_input_noahmp_data(localpet)
+
 !-----------------------------------------------------------------------
 ! Read nst data on input grid.
 !-----------------------------------------------------------------------
@@ -170,6 +210,8 @@
 !-----------------------------------------------------------------------
 
  call interp(localpet)
+
+ call interp_noahmp(localpet)
 
 !---------------------------------------------------------------------------------------------
 ! Adjust soil/landice column temperatures for any change in elevation between the
@@ -235,6 +277,634 @@
  return
 
  end subroutine surface_driver
+
+!-----------------
+!-----------------
+
+ subroutine interp_noahmp(localpet)
+
+ use esmf
+
+ use input_data, only                : fwetxy_input_grid, &
+                                       lfmassxy_input_grid, rtmassxy_input_grid, &
+                                       stmassxy_input_grid, woodxy_input_grid, &
+                                       stblcpxy_input_grid, fastcpxy_input_grid, &
+                                       xlaixy_input_grid, xsaixy_input_grid, &
+                                       waxy_input_grid, wtxy_input_grid, &
+                                       wslakexy_input_grid, zwtxy_input_grid, &
+                                       canliqxy_input_grid, canicexy_input_grid, &
+                                       deeprechxy_input_grid, rechxy_input_grid, &
+                                       eahxy_input_grid, tahxy_input_grid, &
+                                       tvxy_input_grid, tgxy_input_grid, &
+                                       snowxy_input_grid, tsnoxy_input_grid, &
+                                       snicexy_input_grid, snliqxy_input_grid, &
+                                       sneqvoxy_input_grid, alboldxy_input_grid, &
+                                       smcwtdxy_input_grid, qsnowxy_input_grid, &
+                                       taussxy_input_grid, slcxy_input_grid, &
+                                       smcxy_input_grid, stcxy_input_grid, &
+                                       chxy_input_grid, cmxy_input_grid, &
+                                       landsea_mask_input_noahmp_grid
+
+ use model_grid, only                : input_noahmp_grid, target_grid, &
+                                       landmask_target_grid, &
+                                       num_tiles_target_grid, &
+                                       i_target, j_target
+
+ use search_util
+
+ implicit none
+
+ integer, intent(in)                 :: localpet
+
+ integer                             :: isrctermprocessing, rc
+ integer                            :: l(1), u(1), i, j, ij, tile
+ 
+ integer(esmf_kind_i4), pointer      :: unmapped_ptr(:)
+ integer(esmf_kind_i4), pointer      :: mask_input_ptr(:,:)
+ integer(esmf_kind_i4), pointer      :: mask_target_ptr(:,:)
+ real(esmf_kind_r8), pointer     :: landmask_input_ptr(:,:)
+ integer(esmf_kind_i8), pointer     :: landmask_target_ptr(:,:)
+
+ real(esmf_kind_r8), pointer         :: chxy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: cmxy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: eahxy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: tahxy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: tgxy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: tvxy_target_ptr(:,:)
+
+ integer(esmf_kind_i8), allocatable  :: mask_target_one_tile(:,:)
+ real(esmf_kind_r8), allocatable    :: data_one_tile(:,:)
+
+ type(esmf_regridmethod_flag)        :: method
+ type(esmf_routehandle)              :: regrid_land, regrid_neighbor
+
+ print*,"- INTERPOLATE NOAHMP FIELDS"
+
+ call create_surface_noahmp_esmf_fields
+
+ print*,"- CALL FieldGet FOR INPUT NOAHMP GRID LANDMASK."
+ call ESMF_FieldGet(landsea_mask_input_noahmp_grid, &
+                    farrayPtr=landmask_input_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ print*,"- CALL GridAddItem FOR INPUT NOAHMP GRID."
+ call ESMF_GridAddItem(input_noahmp_grid, &
+                       itemflag=ESMF_GRIDITEM_MASK, &
+                       staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN GridAddItem", rc)
+
+ print*,"- CALL GridGetItem FOR INPUT NOAHMP GRID LANDMASK."
+ nullify(mask_input_ptr)
+ call ESMF_GridGetItem(input_noahmp_grid, &
+                       itemflag=ESMF_GRIDITEM_MASK, &
+                       farrayPtr=mask_input_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN GridGetItem", rc)
+
+ mask_input_ptr = 0
+ where (nint(landmask_input_ptr) == 1) mask_input_ptr = 1
+
+ print*,"- CALL GridGetItem FOR TARGET GRID LANDMASK."
+ nullify(mask_target_ptr)
+ call ESMF_GridGetItem(target_grid, &
+                       itemflag=ESMF_GRIDITEM_MASK, &
+                       farrayPtr=mask_target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN GridGetItem", rc)
+
+ print*,"- CALL FieldGet FOR TARGET land sea mask."
+ call ESMF_FieldGet(landmask_target_grid, &
+                    farrayPtr=landmask_target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ mask_target_ptr = 0 
+ where(landmask_target_ptr == 1) mask_target_ptr=1
+
+ method=ESMF_REGRIDMETHOD_CONSERVE
+ isrctermprocessing = 1
+
+ print*,"- CALL FieldRegridStore for conservative land."
+ call ESMF_FieldRegridStore(fwetxy_input_grid, &
+                            fwetxy_target_grid, &
+                            srcmaskvalues=(/0/), &
+                            dstmaskvalues=(/0/), &
+                            polemethod=ESMF_POLEMETHOD_NONE, &
+                            srctermprocessing=isrctermprocessing, &
+                            unmappedaction=ESMF_UNMAPPEDACTION_IGNORE, &
+                            normtype=ESMF_NORMTYPE_FRACAREA, &
+                            routehandle=regrid_land, &
+                            regridmethod=method, &
+                            unmappedDstList=unmapped_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegridStore", rc)
+
+ print*,"- CALL Field_Regrid for fwetxy."
+ call ESMF_FieldRegrid(fwetxy_input_grid, &
+                       fwetxy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for stblcpxy."
+ call ESMF_FieldRegrid(stblcpxy_input_grid, &
+                       stblcpxy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for fastcpxy."
+ call ESMF_FieldRegrid(fastcpxy_input_grid, &
+                       fastcpxy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for xlaixy."
+ call ESMF_FieldRegrid(xlaixy_input_grid, &
+                       xlaixy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for xsaixy."
+ call ESMF_FieldRegrid(xsaixy_input_grid, &
+                       xsaixy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for stmassxy."
+ call ESMF_FieldRegrid(stmassxy_input_grid, &
+                       stmassxy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for woodxy."
+ call ESMF_FieldRegrid(woodxy_input_grid, &
+                       woodxy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for lfmassxy."
+ call ESMF_FieldRegrid(lfmassxy_input_grid, &
+                       lfmassxy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for rtmassxy."
+ call ESMF_FieldRegrid(rtmassxy_input_grid, &
+                       rtmassxy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for waxy."
+ call ESMF_FieldRegrid(waxy_input_grid, &
+                       waxy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for wtxy."
+ call ESMF_FieldRegrid(wtxy_input_grid, &
+                       wtxy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for wslakexy."
+ call ESMF_FieldRegrid(wslakexy_input_grid, &
+                       wslakexy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for zwtxy."
+ call ESMF_FieldRegrid(zwtxy_input_grid, &
+                       zwtxy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for deeprechxy."
+ call ESMF_FieldRegrid(deeprechxy_input_grid, &
+                       deeprechxy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for rechxy."
+ call ESMF_FieldRegrid(rechxy_input_grid, &
+                       rechxy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for canicexy."
+ call ESMF_FieldRegrid(canicexy_input_grid, &
+                       canicexy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for canliqxy."
+ call ESMF_FieldRegrid(canliqxy_input_grid, &
+                       canliqxy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ l = lbound(unmapped_ptr)
+ u = ubound(unmapped_ptr)
+
+ print*,'unmapped bounds ',1,u
+
+ do ij = l(1), u(1)
+   call ij_to_i_j(unmapped_ptr(ij), i_target, j_target, i, j)
+   print*,'unmapped at ',i,j
+   stop
+ enddo
+
+ print*,"- CALL FieldRegridRelease."
+ call ESMF_FieldRegridRelease(routehandle=regrid_land, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegridRelease", rc)
+
+ method=ESMF_REGRIDMETHOD_BILINEAR
+ isrctermprocessing = 1
+
+ print*,"- CALL FieldRegridStore for bilinear land."
+ call ESMF_FieldRegridStore(tahxy_input_grid, &
+                            tahxy_target_grid, &
+                            srcmaskvalues=(/0/), &
+                            dstmaskvalues=(/0/), &
+                            polemethod=ESMF_POLEMETHOD_NONE, &
+                            srctermprocessing=isrctermprocessing, &
+                            unmappedaction=ESMF_UNMAPPEDACTION_IGNORE, &
+                            routehandle=regrid_land, &
+                            regridmethod=method, &
+                            unmappedDstList=unmapped_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegridStore", rc)
+
+ print*,"- CALL Field_Regrid for tahxy."
+ call ESMF_FieldRegrid(tahxy_input_grid, &
+                       tahxy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for eahxy."
+ call ESMF_FieldRegrid(eahxy_input_grid, &
+                       eahxy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for tgxy."
+ call ESMF_FieldRegrid(tgxy_input_grid, &
+                       tgxy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for tvxy."
+ call ESMF_FieldRegrid(tvxy_input_grid, &
+                       tvxy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for chxy."
+ call ESMF_FieldRegrid(chxy_input_grid, &
+                       chxy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for cmxy."
+ call ESMF_FieldRegrid(cmxy_input_grid, &
+                       cmxy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ l = lbound(unmapped_ptr)
+ u = ubound(unmapped_ptr)
+
+ print*,'unmapped bounds bilinear ',1,u
+
+! what should default value be?  what is value at points with no vegetation?
+
+ print*,"- CALL FieldGet FOR TARGET tahxy."
+ call ESMF_FieldGet(tahxy_target_grid, &
+                    farrayPtr=tahxy_target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGet", rc)
+
+ print*,"- CALL FieldGet FOR TARGET eahxy."
+ call ESMF_FieldGet(eahxy_target_grid, &
+                    farrayPtr=eahxy_target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGet", rc)
+
+ print*,"- CALL FieldGet FOR TARGET tgxy."
+ call ESMF_FieldGet(tgxy_target_grid, &
+                    farrayPtr=tgxy_target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGet", rc)
+
+ print*,"- CALL FieldGet FOR TARGET tvxy."
+ call ESMF_FieldGet(tvxy_target_grid, &
+                    farrayPtr=tvxy_target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGet", rc)
+
+ print*,"- CALL FieldGet FOR TARGET chxy."
+ call ESMF_FieldGet(chxy_target_grid, &
+                    farrayPtr=chxy_target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGet", rc)
+
+ print*,"- CALL FieldGet FOR TARGET cmxy."
+ call ESMF_FieldGet(cmxy_target_grid, &
+                    farrayPtr=cmxy_target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGet", rc)
+
+ do ij = l(1), u(1)
+   call ij_to_i_j(unmapped_ptr(ij), i_target, j_target, i, j)
+   eahxy_target_ptr(i,j) = -9999.9 
+   tahxy_target_ptr(i,j) = -9999.9 
+   tgxy_target_ptr(i,j) = -9999.9 
+   tvxy_target_ptr(i,j) = -9999.9 
+   chxy_target_ptr(i,j) = -9999.9 
+   cmxy_target_ptr(i,j) = -9999.9 
+ enddo
+
+ if (localpet == 0) then
+   allocate(data_one_tile(i_target,j_target))
+   allocate(mask_target_one_tile(i_target,j_target))
+ else
+   allocate(data_one_tile(0,0))
+   allocate(mask_target_one_tile(0,0))
+ endif
+
+ do tile = 1, num_tiles_target_grid
+
+   print*,"- CALL FieldGather FOR TARGET GRID TAHXY: ", tile
+   call ESMF_FieldGather(tahxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGather", rc)
+
+   print*,"- CALL FieldGather FOR TARGET GRID MASK TILE: ", tile
+   call ESMF_FieldGather(landmask_target_grid, mask_target_one_tile, rootPet=0, tile=tile, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGather", rc)
+
+   if (localpet == 0) then
+     call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 85)
+   endif
+
+   print*,"- CALL FieldScatter FOR TARGET GRID TAHXY: ", tile
+   call ESMF_FieldScatter(tahxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+
+   print*,"- CALL FieldGather FOR TARGET GRID EAHXY: ", tile
+   call ESMF_FieldGather(eahxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGather", rc)
+
+   if (localpet == 0) then
+     call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 500)
+   endif
+
+   print*,"- CALL FieldScatter FOR TARGET GRID EAHXY: ", tile
+   call ESMF_FieldScatter(eahxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+
+   print*,"- CALL FieldGather FOR TARGET GRID TGXY: ", tile
+   call ESMF_FieldGather(tgxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGather", rc)
+
+   if (localpet == 0) then
+     call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 85)
+   endif
+
+   print*,"- CALL FieldScatter FOR TARGET GRID TGXY: ", tile
+   call ESMF_FieldScatter(tgxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+
+   print*,"- CALL FieldGather FOR TARGET GRID TVXY: ", tile
+   call ESMF_FieldGather(tvxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGather", rc)
+
+   if (localpet == 0) then
+     call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 85)
+   endif
+
+   print*,"- CALL FieldScatter FOR TARGET GRID TVXY: ", tile
+   call ESMF_FieldScatter(tvxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+
+   print*,"- CALL FieldGather FOR TARGET GRID CHXY: ", tile
+   call ESMF_FieldGather(chxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGather", rc)
+
+   if (localpet == 0) then
+     call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 501)
+   endif
+
+   print*,"- CALL FieldScatter FOR TARGET GRID CHXY: ", tile
+   call ESMF_FieldScatter(chxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+
+   print*,"- CALL FieldGather FOR TARGET GRID CMXY: ", tile
+   call ESMF_FieldGather(cmxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGather", rc)
+
+   if (localpet == 0) then
+     call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 502)
+   endif
+
+   print*,"- CALL FieldScatter FOR TARGET GRID CMXY: ", tile
+   call ESMF_FieldScatter(cmxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+
+ enddo
+
+ print*,"- CALL FieldRegridRelease."
+ call ESMF_FieldRegridRelease(routehandle=regrid_land, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegridRelease", rc)
+
+ method=ESMF_REGRIDMETHOD_NEAREST_STOD
+ isrctermprocessing = 1
+
+ print*,"- CALL FieldRegridStore for snowxy."
+ call ESMF_FieldRegridStore(snowxy_input_grid, &
+                            snowxy_target_grid, &
+                            srcmaskvalues=(/0/), &
+                            dstmaskvalues=(/0/), &
+                            polemethod=ESMF_POLEMETHOD_NONE, &
+                            srctermprocessing=isrctermprocessing, &
+                            unmappedaction=ESMF_UNMAPPEDACTION_IGNORE, &
+                            normtype=ESMF_NORMTYPE_FRACAREA, &
+                            routehandle=regrid_neighbor, &
+                            regridmethod=method, &
+                            unmappedDstList=unmapped_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegridStore", rc)
+
+ l = lbound(unmapped_ptr)
+ u = ubound(unmapped_ptr)
+
+ print*,'unmapped bounds ',l,u
+
+ do ij = l(1), u(1)
+   call ij_to_i_j(unmapped_ptr(ij), i_target, j_target, i, j)
+   print*,'unmapped neighbor at ',i,j
+   stop
+ enddo
+
+ print*,"- CALL Field_Regrid for taussxy."
+ call ESMF_FieldRegrid(taussxy_input_grid, &
+                       taussxy_target_grid, &
+                       routehandle=regrid_neighbor, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for snowxy."
+ call ESMF_FieldRegrid(snowxy_input_grid, &
+                       snowxy_target_grid, &
+                       routehandle=regrid_neighbor, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for sneqvoxy."
+ call ESMF_FieldRegrid(sneqvoxy_input_grid, &
+                       sneqvoxy_target_grid, &
+                       routehandle=regrid_neighbor, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for alboldxy."
+ call ESMF_FieldRegrid(alboldxy_input_grid, &
+                       alboldxy_target_grid, &
+                       routehandle=regrid_neighbor, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for qsnowxy."
+ call ESMF_FieldRegrid(qsnowxy_input_grid, &
+                       qsnowxy_target_grid, &
+                       routehandle=regrid_neighbor, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for tsnoxy."
+ call ESMF_FieldRegrid(tsnoxy_input_grid, &
+                       tsnoxy_target_grid, &
+                       routehandle=regrid_neighbor, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for snicexy."
+ call ESMF_FieldRegrid(snicexy_input_grid, &
+                       snicexy_target_grid, &
+                       routehandle=regrid_neighbor, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for snliqxy."
+ call ESMF_FieldRegrid(snliqxy_input_grid, &
+                       snliqxy_target_grid, &
+                       routehandle=regrid_neighbor, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for smcwtdxy."
+ call ESMF_FieldRegrid(smcwtdxy_input_grid, &
+                       smcwtdxy_target_grid, &
+                       routehandle=regrid_neighbor, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for slcxy."
+ call ESMF_FieldRegrid(slcxy_input_grid, &
+                       slcxy_target_grid, &
+                       routehandle=regrid_neighbor, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for smcxy."
+ call ESMF_FieldRegrid(smcxy_input_grid, &
+                       smcxy_target_grid, &
+                       routehandle=regrid_neighbor, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for stcxy."
+ call ESMF_FieldRegrid(stcxy_input_grid, &
+                       stcxy_target_grid, &
+                       routehandle=regrid_neighbor, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,'bottom of interp_noahmp'
+
+ end subroutine interp_noahmp
 
 !---------------------------------------------------------------------------------------------
 ! Horizontally interpolate surface fields using esmf routines.
@@ -3199,6 +3869,274 @@
  where(mask_ptr /= 0) data_ptr = 0.0
 
  end subroutine nst_land_fill
+
+ subroutine create_surface_noahmp_esmf_fields
+
+ use model_grid, only         : target_grid, lsnow_target_noahmp, &
+                                lsoil_target
+
+ implicit none
+
+ integer                     :: rc
+
+ print*,"- CALL FieldCreate FOR TARGET GRID FWETXY."
+ fwetxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID STBLCPXY."
+ stblcpxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID FASTCPXY."
+ fastcpxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID XLAIXY."
+ xlaixy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID XSAIXY."
+ xsaixy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID STMASSXY."
+ stmassxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID WOODXY."
+ woodxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID LFMASSXY."
+ lfmassxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID RTMASSXY."
+ rtmassxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID WAXY."
+ waxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID WTXY."
+ wtxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID WSLAKEXY."
+ wslakexy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID ZWTXY."
+ zwtxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID DEEPRECHXY."
+ deeprechxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID RECHXY."
+ rechxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID CANICEXY."
+ canicexy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID CANLIQXY."
+ canliqxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID TAHXY."
+ tahxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID EAHXY."
+ eahxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID TGXY."
+ tgxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID TVXY."
+ tvxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID TAUSSXY."
+ taussxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID SMCWTDXY."
+ smcwtdxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID SNEQVOXY."
+ sneqvoxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID ALBOLDXY."
+ alboldxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID QSNOWXY."
+ qsnowxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID SNOWXY."
+ snowxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID CHXY."
+ chxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID CMXY."
+ cmxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID STCXY."
+ stcxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                    ungriddedLBound=(/1/), &
+                                    ungriddedUBound=(/lsoil_target/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID SMCXY."
+ smcxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                    ungriddedLBound=(/1/), &
+                                    ungriddedUBound=(/lsoil_target/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID SLCXY."
+ slcxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                    ungriddedLBound=(/1/), &
+                                    ungriddedUBound=(/lsoil_target/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID TSNOXY."
+ tsnoxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                    ungriddedLBound=(/1/), &
+                                    ungriddedUBound=(/lsnow_target_noahmp/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID SNICEXY."
+ snicexy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                    ungriddedLBound=(/1/), &
+                                    ungriddedUBound=(/lsnow_target_noahmp/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID SNLIQXY."
+ snliqxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                    ungriddedLBound=(/1/), &
+                                    ungriddedUBound=(/lsnow_target_noahmp/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ end subroutine create_surface_noahmp_esmf_fields
 
  subroutine create_surface_esmf_fields
 

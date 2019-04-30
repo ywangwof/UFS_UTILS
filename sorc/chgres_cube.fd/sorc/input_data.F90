@@ -42,9 +42,11 @@
  use model_grid, only             : input_grid,        &
                                     i_input, j_input,  &
                                     ip1_input, jp1_input,  &
+                                    i_input_noahmp, j_input_noahmp,  &
                                     num_tiles_input_grid, &
                                     latitude_input_grid, &
-                                    longitude_input_grid
+                                    longitude_input_grid, &
+                                    input_noahmp_grid
 
  implicit none
 
@@ -120,11 +122,61 @@
  type(esmf_field), public        :: z_c_input_grid
  type(esmf_field), public        :: zm_input_grid
 
+! Fields associated with noahmp.
+
+! 2-d fields
+
+ type(esmf_field), public        :: landsea_mask_input_noahmp_grid
+ type(esmf_field), public        :: alboldxy_input_grid
+ type(esmf_field), public        :: chxy_input_grid
+ type(esmf_field), public        :: cmxy_input_grid
+ type(esmf_field), public        :: canicexy_input_grid
+ type(esmf_field), public        :: canliqxy_input_grid
+ type(esmf_field), public        :: deeprechxy_input_grid
+ type(esmf_field), public        :: eahxy_input_grid
+ type(esmf_field), public        :: fastcpxy_input_grid
+ type(esmf_field), public        :: fwetxy_input_grid
+ type(esmf_field), public        :: lfmassxy_input_grid
+ type(esmf_field), public        :: qsnowxy_input_grid
+ type(esmf_field), public        :: rechxy_input_grid
+ type(esmf_field), public        :: rtmassxy_input_grid
+ type(esmf_field), public        :: smcwtdxy_input_grid
+ type(esmf_field), public        :: sneqvoxy_input_grid
+ type(esmf_field), public        :: snowxy_input_grid
+ type(esmf_field), public        :: stblcpxy_input_grid
+ type(esmf_field), public        :: stmassxy_input_grid
+ type(esmf_field), public        :: tahxy_input_grid
+ type(esmf_field), public        :: taussxy_input_grid
+ type(esmf_field), public        :: tgxy_input_grid
+ type(esmf_field), public        :: tvxy_input_grid
+ type(esmf_field), public        :: waxy_input_grid
+ type(esmf_field), public        :: woodxy_input_grid
+ type(esmf_field), public        :: wslakexy_input_grid
+ type(esmf_field), public        :: wtxy_input_grid
+ type(esmf_field), public        :: xlaixy_input_grid
+ type(esmf_field), public        :: xsaixy_input_grid
+ type(esmf_field), public        :: zwtxy_input_grid
+
+! 3-d fields
+
+ type(esmf_field), public        :: slcxy_input_grid
+ type(esmf_field), public        :: smcxy_input_grid
+ type(esmf_field), public        :: stcxy_input_grid
+ type(esmf_field), public        :: snicexy_input_grid
+ type(esmf_field), public        :: snliqxy_input_grid
+ type(esmf_field), public        :: tsnoxy_input_grid
+
+ integer, parameter, public      :: lsoil_input_noahmp=4  ! # of soil layers,
+                                                   ! # hardwire for now
+ integer, parameter, public      :: lsnow_input_noahmp=3  ! # of snow layers,
+                                                   ! # hardwire for now
+
  public :: read_input_atm_data
  public :: cleanup_input_atm_data
  public :: read_input_sfc_data
  public :: cleanup_input_sfc_data
  public :: read_input_nst_data
+ public :: read_input_noahmp_data
  public :: cleanup_input_nst_data
  
  contains
@@ -153,6 +205,803 @@
  endif
 
  end subroutine read_input_atm_data
+
+!---------------------------------------------------------------------------
+! Read input noahmp data.
+!---------------------------------------------------------------------------
+
+ subroutine read_input_noahmp_data(localpet)
+
+ implicit none
+
+ integer, intent(in)             :: localpet
+
+ character(len=300)              :: noahmp_file
+
+ integer                         :: id_var, error, ncid, rc, i, j
+
+ real(esmf_kind_r8), allocatable :: dummy2d(:,:), dummy3d(:,:,:)
+
+ print*,"- READ INPUT GRID NOAHMP DATA."
+
+ print*,"- CALL FieldCreate FOR INPUT NOAHMP GRID LANDSEA MASK."
+ landsea_mask_input_noahmp_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                     typekind=ESMF_TYPEKIND_R8, &
+                                     staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID SNOWXY."
+ snowxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID TVXY."
+ tvxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID TGXY."
+ tgxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID CANICEXY."
+ canicexy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID CANLIQXY."
+ canliqxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID EAHXY."
+ eahxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID TAHXY."
+ tahxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID CMXY."
+ cmxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID CHXY."
+ chxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID FWETXY."
+ fwetxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID SNEQVOXY."
+ sneqvoxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID ALBOLDXY."
+ alboldxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID QSNOWXY."
+ qsnowxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID WSLAKEXY."
+ wslakexy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID ZWTXY."
+ zwtxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID WAXY."
+ waxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID WTXY."
+ wtxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID LFMASSXY."
+ lfmassxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID RTMASSXY."
+ rtmassxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID STMASSXY."
+ stmassxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID WOODXY."
+ woodxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID STBLCPXY."
+ stblcpxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID FASTCPXY."
+ fastcpxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID XSAIXY."
+ xsaixy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID XLAIXY."
+ xlaixy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID TAUSSXY."
+ taussxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID SMCWTDXY."
+ smcwtdxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID DEEPRECHXY."
+ deeprechxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID RECHXY."
+ rechxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID SMCXY."
+ smcxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                   ungriddedLBound=(/1/), &
+                                   ungriddedUBound=(/lsoil_input_noahmp/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID SLCXY."
+ slcxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                   ungriddedLBound=(/1/), &
+                                   ungriddedUBound=(/lsoil_input_noahmp/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID STCXY."
+ stcxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                   ungriddedLBound=(/1/), &
+                                   ungriddedUBound=(/lsoil_input_noahmp/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID TSNOXY."
+ tsnoxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                   ungriddedLBound=(/1/), &
+                                   ungriddedUBound=(/lsnow_input_noahmp/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID SNICEXY."
+ snicexy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                   ungriddedLBound=(/1/), &
+                                   ungriddedUBound=(/lsnow_input_noahmp/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID SNLIQXY."
+ snliqxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                   ungriddedLBound=(/1/), &
+                                   ungriddedUBound=(/lsnow_input_noahmp/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+!------------------------------------
+! open and read file.
+!------------------------------------
+
+ noahmp_file = "/scratch4/NCEPDEV/stmp4/Jiarui.Dong/noahmp/R1D4C1B1S1/LIS_RST_NOAHMP36_2018123100"
+ print*,"- READ NOAHMP DATA FROM: ", trim(noahmp_file)
+ error=nf90_open(trim(noahmp_file),nf90_nowrite,ncid)
+ call netcdf_err(error, 'opening: '//trim(noahmp_file) )
+
+ if (localpet == 0) then
+   allocate(dummy2d(i_input_noahmp,j_input_noahmp))
+ else
+   allocate(dummy2d(0,0))
+ endif
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'FWETXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'fwetxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR FWETXY."
+ call ESMF_FieldScatter(fwetxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   do j= 1, j_input_noahmp
+   do i= 1, i_input_noahmp
+     if (dummy2d(i,j) < -999.) then
+       dummy2d(i,j) = 0.0  ! not land
+     else
+       dummy2d(i,j) = 1.0  ! land
+     endif
+   enddo
+   enddo
+ endif
+
+ print*,"- CALL FieldScatter FOR NOAHMP LANDMASK."
+ call ESMF_FieldScatter(landsea_mask_input_noahmp_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'SNOWXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'snowxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR SNOWXY."
+ call ESMF_FieldScatter(snowxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'TVXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'tvxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR TVXY."
+ call ESMF_FieldScatter(tvxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'TGXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'tgxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR TGXY."
+ call ESMF_FieldScatter(tgxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'CANICEXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'canicexy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR CANICEXY."
+ call ESMF_FieldScatter(canicexy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'CANLIQXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'canliqxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR CANLIQXY."
+ call ESMF_FieldScatter(canliqxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'EAHXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'eahxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR EAHXY."
+ call ESMF_FieldScatter(eahxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'TAHXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'tahxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR TAHXY."
+ call ESMF_FieldScatter(tahxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'CMXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'cmxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR CMXY."
+ call ESMF_FieldScatter(cmxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'CHXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'chxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR CHXY."
+ call ESMF_FieldScatter(chxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'SNEQVOXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'sneqvoxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR SNEQVOXY."
+ call ESMF_FieldScatter(sneqvoxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'ALBOLDXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'alboldxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR ALBOLDXY."
+ call ESMF_FieldScatter(alboldxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'QSNOWXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'qsnowxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR QSNOWXY."
+ call ESMF_FieldScatter(qsnowxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'WSLAKEXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'wslakexy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR WSLAKEXY."
+ call ESMF_FieldScatter(wslakexy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'ZWTXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'zwtxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR ZWTXY."
+ call ESMF_FieldScatter(zwtxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'WAXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'waxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR WAXY."
+ call ESMF_FieldScatter(waxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'WTXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'wtxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR WTXY."
+ call ESMF_FieldScatter(wtxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'LFMASSXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'lfmassxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR LFMASSXY."
+ call ESMF_FieldScatter(lfmassxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'RTMASSXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'rtmassxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR RTMASSXY."
+ call ESMF_FieldScatter(rtmassxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'STMASSXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'stmassxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR STMASSXY."
+ call ESMF_FieldScatter(stmassxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'WOODXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'woodxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR WOODXY."
+ call ESMF_FieldScatter(woodxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'STBLCPXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'stblcpxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR STBLCPXY."
+ call ESMF_FieldScatter(stblcpxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'FASTCPXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'fastcpxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR FASTCPXY."
+ call ESMF_FieldScatter(fastcpxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'XSAIXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'xsaixy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR XSAIXY."
+ call ESMF_FieldScatter(xsaixy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'XLAIXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'xlaixy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR XLAIXY."
+ call ESMF_FieldScatter(xlaixy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'TAUSSXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'taussxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR TAUSSXY."
+ call ESMF_FieldScatter(taussxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'SMCWTDXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'smcwtdxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR SMCWTDXY."
+ call ESMF_FieldScatter(smcwtdxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'DEEPRECHXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'deeprechxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR DEEPRECHXY."
+ call ESMF_FieldScatter(deeprechxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'RECHXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'rechxy ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR RECHXY."
+ call ESMF_FieldScatter(rechxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ deallocate(dummy2d)
+
+!------------------
+! 3-d soil fields
+!------------------
+
+ if (localpet == 0) then
+   allocate(dummy3d(i_input_noahmp,j_input_noahmp,lsoil_input_noahmp))
+ else
+   allocate(dummy3d(0,0,0))
+ endif
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'SMC', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy3d)
+   call netcdf_err(error, 'reading field' )
+   print*,'smcxy ',maxval(dummy3d),minval(dummy3d)
+ endif
+
+ print*,"- CALL FieldScatter FOR SMCXY."
+ call ESMF_FieldScatter(smcxy_input_grid, dummy3d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'SH2O', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy3d)
+   call netcdf_err(error, 'reading field' )
+   print*,'slcxy ',maxval(dummy3d),minval(dummy3d)
+ endif
+
+ print*,"- CALL FieldScatter FOR SLCXY."
+ call ESMF_FieldScatter(slcxy_input_grid, dummy3d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'SSTC', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy3d, start=(/1,1,lsnow_input_noahmp+1/),count=(/i_input_noahmp,j_input_noahmp,lsoil_input_noahmp/))
+   call netcdf_err(error, 'reading field' )
+   print*,'stcxy ',maxval(dummy3d),minval(dummy3d)
+ endif
+
+ print*,"- CALL FieldScatter FOR STCXY."
+ call ESMF_FieldScatter(stcxy_input_grid, dummy3d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ deallocate(dummy3d)
+
+ if (localpet == 0) then
+   allocate(dummy3d(i_input_noahmp,j_input_noahmp,lsnow_input_noahmp))
+ else
+   allocate(dummy3d(0,0,0))
+ endif
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'SSTC', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy3d, start=(/1,1,1/),count=(/i_input_noahmp,j_input_noahmp,lsnow_input_noahmp/))
+   call netcdf_err(error, 'reading field' )
+   print*,'tsnoxy ',maxval(dummy3d),minval(dummy3d)
+ endif
+
+ print*,"- CALL FieldScatter FOR TSNOXY."
+ call ESMF_FieldScatter(tsnoxy_input_grid, dummy3d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'SNICEXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy3d)
+   call netcdf_err(error, 'reading field' )
+   print*,'snicexy ',maxval(dummy3d),minval(dummy3d)
+ endif
+
+ print*,"- CALL FieldScatter FOR SNICEXY."
+ call ESMF_FieldScatter(snicexy_input_grid, dummy3d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'SNLIQXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy3d)
+   call netcdf_err(error, 'reading field' )
+   print*,'snliqxy ',maxval(dummy3d),minval(dummy3d)
+ endif
+
+ print*,"- CALL FieldScatter FOR SNLIQXY."
+ call ESMF_FieldScatter(snliqxy_input_grid, dummy3d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ deallocate(dummy3d)
+
+ error = nf90_close(ncid)
+
+
+
+ end subroutine read_input_noahmp_data
 
 !---------------------------------------------------------------------------
 ! Read input grid nst data driver

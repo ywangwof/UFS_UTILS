@@ -1429,7 +1429,8 @@
 
  use model_grid, only            : num_tiles_target_grid, &
                                    landmask_target_grid, &
-                                   i_target, j_target, lsoil_target
+                                   i_target, j_target, lsoil_target, &
+                                   lsnow_target_noahmp
 
  use program_setup, only         : convert_nst, halo=>halo_bndy
 
@@ -1468,7 +1469,25 @@
                                    xtts_target_grid, &
                                    xzts_target_grid, &
                                    z_c_target_grid, &
-                                   zm_target_grid
+                                   zm_target_grid, fwetxy_target_grid, &
+                                   sneqvoxy_target_grid, alboldxy_target_grid, &
+                                   qsnowxy_target_grid, &
+                                   lfmassxy_target_grid, rtmassxy_target_grid, &
+                                   stblcpxy_target_grid, fastcpxy_target_grid, &
+                                   stmassxy_target_grid, woodxy_target_grid, &
+                                   waxy_target_grid, wtxy_target_grid, &
+                                   wslakexy_target_grid, zwtxy_target_grid, &
+                                   deeprechxy_target_grid, rechxy_target_grid, &
+                                   canicexy_target_grid, canliqxy_target_grid, &
+                                   eahxy_target_grid, tahxy_target_grid, &
+                                   chxy_target_grid, cmxy_target_grid, &
+                                   tgxy_target_grid, tvxy_target_grid, &
+                                   snowxy_target_grid, tsnoxy_target_grid, &
+                                   snicexy_target_grid, snliqxy_target_grid, &
+                                   taussxy_target_grid, smcwtdxy_target_grid, &
+                                   smcxy_target_grid, slcxy_target_grid, &
+                                   stcxy_target_grid, &
+                                   xsaixy_target_grid, xlaixy_target_grid
 
  use static_data, only           : alvsf_target_grid,   &
                                    alnsf_target_grid,   &
@@ -1492,9 +1511,9 @@
 
  integer                        :: fsize=65536, initial = 0
  integer                        :: header_buffer_val = 16384
- integer                        :: dim_x, dim_y, dim_lsoil, dim_time
+ integer                        :: dim_x, dim_y, dim_lsoil, dim_time, dim_lsnow
  integer                        :: error, i, ncid, tile
- integer                        :: id_x, id_y, id_lsoil
+ integer                        :: id_x, id_y, id_lsoil, id_lsnow
  integer                        :: id_slmsk, id_time
  integer                        :: id_tsea, id_sheleg, id_tg3
  integer                        :: id_zorl, id_alvsf, id_alvwf
@@ -1512,17 +1531,32 @@
  integer                        :: id_xt, id_xs, id_xu, id_xv
  integer                        :: id_xz, id_zm, id_xtts, id_xzts
  integer                        :: id_d_conv, id_ifd, id_dt_cool
- integer                        :: id_qrain
+ integer                        :: id_qrain, id_fwetxy, id_xsaixy
+ integer                        :: id_sneqvoxy, id_alboldxy, id_qsnowxy
+ integer                        :: id_xlaixy, id_stblcpxy, id_fastcpxy
+ integer                        :: id_stmassxy, id_woodxy, id_lfmassxy
+ integer                        :: id_rtmassxy, id_waxy, id_wtxy
+ integer                        :: id_wslakexy, id_zwtxy, id_deeprechxy
+ integer                        :: id_rechxy, id_canicexy, id_canliqxy
+ integer                        :: id_eahxy, id_tahxy, id_tgxy, id_tvxy
+ integer                        :: id_chxy, id_cmxy
+ integer                        :: id_snowxy, id_tsnoxy, id_snicexy, id_snliqxy
+ integer                        :: id_smcwtdxy, id_taussxy
  integer                        :: i_target_out, j_target_out
  integer                        :: istart, iend, jstart, jend
 
  integer(esmf_kind_i8), allocatable :: idata_one_tile(:,:)
 
+ logical :: noahmp
+
  real(kind=4), allocatable       :: lsoil_data(:), x_data(:), y_data(:)
- real(kind=8), allocatable       :: dum2d(:,:), dum3d(:,:,:)
+ real(kind=8), allocatable       :: dum2d(:,:), dum3d(:,:,:), dum3dsnow(:,:,:)
  real(kind=4)                    :: times
  real(esmf_kind_r8), allocatable :: data_one_tile(:,:)
  real(esmf_kind_r8), allocatable :: data_one_tile_3d(:,:,:)
+ real(esmf_kind_r8), allocatable :: data_one_tile_3dsnow(:,:,:)
+
+     noahmp=.true.
 
 ! Remove any halo region.
 
@@ -1558,15 +1592,19 @@
  if (localpet == 0) then
    allocate(data_one_tile(i_target,j_target))
    allocate(data_one_tile_3d(i_target,j_target,lsoil_target))
+   allocate(data_one_tile_3dsnow(i_target,j_target,lsnow_target_noahmp))
    allocate(idata_one_tile(i_target,j_target))
    allocate(dum2d(i_target_out,j_target_out))
    allocate(dum3d(i_target_out,j_target_out,lsoil_target))
+   allocate(dum3dsnow(i_target_out,j_target_out,lsnow_target_noahmp))
  else
    allocate(data_one_tile(0,0))
    allocate(data_one_tile_3d(0,0,0))
+   allocate(data_one_tile_3dsnow(0,0,0))
    allocate(idata_one_tile(0,0))
    allocate(dum2d(0,0))
    allocate(dum3d(0,0,0))
+   allocate(dum3dsnow(0,0,0))
  endif
 
  TILE_LOOP : do tile = 1, num_tiles_target_grid
@@ -1587,6 +1625,11 @@
      call netcdf_err(error, 'DEFINING YAXIS DIMENSION' )
      error = nf90_def_dim(ncid, 'zaxis_1', lsoil_target, dim_lsoil)
      call netcdf_err(error, 'DEFINING ZAXIS DIMENSION' )
+! noahmp only !!!
+     if (noahmp) then
+       error = nf90_def_dim(ncid, 'zaxis_2', lsnow_target_noahmp, dim_lsnow)
+       call netcdf_err(error, 'DEFINING ZAXIS_2 DIMENSION' )
+     endif
      error = nf90_def_dim(ncid, 'Time', 1, dim_time)
      call netcdf_err(error, 'DEFINING TIME DIMENSION' )
 
@@ -1617,6 +1660,15 @@
      call netcdf_err(error, 'DEFINING ZAXIS_1 UNITS' )
      error = nf90_put_att(ncid, id_lsoil, "cartesian_axis", "Z")
      call netcdf_err(error, 'WRITING ZAXIS_1 FIELD' )
+
+     error = nf90_def_var(ncid, 'zaxis_2', NF90_FLOAT, (/dim_lsnow/), id_lsnow)
+     call netcdf_err(error, 'DEFINING ZAXIS_2 FIELD' )
+     error = nf90_put_att(ncid, id_lsnow, "long_name", "zaxis_2")
+     call netcdf_err(error, 'DEFINING ZAXIS_2 LONG NAME' )
+     error = nf90_put_att(ncid, id_lsnow, "units", "none")
+     call netcdf_err(error, 'DEFINING ZAXIS_2 UNITS' )
+     error = nf90_put_att(ncid, id_lsnow, "cartesian_axis", "Z")
+     call netcdf_err(error, 'WRITING ZAXIS_2 FIELD' )
 
      error = nf90_def_var(ncid, 'Time', NF90_FLOAT, dim_time, id_time)
      call netcdf_err(error, 'DEFINING TIME FIELD' )
@@ -1995,6 +2047,234 @@
 
      endif  ! nsst records
 
+     if (noahmp) then
+
+       error = nf90_def_var(ncid, 'snowxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_snowxy)
+       call netcdf_err(error, 'DEFINING SNOWXY' )
+       error = nf90_put_att(ncid, id_snowxy, "long_name", "snowxy")
+       call netcdf_err(error, 'DEFINING SNOWXY LONG NAME' )
+       error = nf90_put_att(ncid, id_snowxy, "units", "none")
+       call netcdf_err(error, 'DEFINING SNOWXY UNITS' )
+
+       error = nf90_def_var(ncid, 'tvxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_tvxy)
+       call netcdf_err(error, 'DEFINING TVXY' )
+       error = nf90_put_att(ncid, id_tvxy, "long_name", "tvxy")
+       call netcdf_err(error, 'DEFINING TVXY LONG NAME' )
+       error = nf90_put_att(ncid, id_tvxy, "units", "none")
+       call netcdf_err(error, 'DEFINING TVXY UNITS' )
+
+       error = nf90_def_var(ncid, 'tgxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_tgxy)
+       call netcdf_err(error, 'DEFINING TGXY' )
+       error = nf90_put_att(ncid, id_tgxy, "long_name", "tgxy")
+       call netcdf_err(error, 'DEFINING TGXY LONG NAME' )
+       error = nf90_put_att(ncid, id_tgxy, "units", "none")
+       call netcdf_err(error, 'DEFINING TGXY UNITS' )
+
+       error = nf90_def_var(ncid, 'canicexy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_canicexy)
+       call netcdf_err(error, 'DEFINING CANICEXY' )
+       error = nf90_put_att(ncid, id_canicexy, "long_name", "canicexy")
+       call netcdf_err(error, 'DEFINING CANICEXY LONG NAME' )
+       error = nf90_put_att(ncid, id_canicexy, "units", "none")
+       call netcdf_err(error, 'DEFINING CANICEXY UNITS' )
+
+       error = nf90_def_var(ncid, 'canliqxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_canliqxy)
+       call netcdf_err(error, 'DEFINING CANLIQXY' )
+       error = nf90_put_att(ncid, id_canliqxy, "long_name", "canliqxy")
+       call netcdf_err(error, 'DEFINING CANLIQXY LONG NAME' )
+       error = nf90_put_att(ncid, id_canliqxy, "units", "none")
+       call netcdf_err(error, 'DEFINING CANLIQXY UNITS' )
+
+       error = nf90_def_var(ncid, 'eahxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_eahxy)
+       call netcdf_err(error, 'DEFINING EAHXY' )
+       error = nf90_put_att(ncid, id_eahxy, "long_name", "eahxy")
+       call netcdf_err(error, 'DEFINING EAHXY LONG NAME' )
+       error = nf90_put_att(ncid, id_eahxy, "units", "none")
+       call netcdf_err(error, 'DEFINING EAHXY UNITS' )
+
+       error = nf90_def_var(ncid, 'tahxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_tahxy)
+       call netcdf_err(error, 'DEFINING TAHXY' )
+       error = nf90_put_att(ncid, id_tahxy, "long_name", "tahxy")
+       call netcdf_err(error, 'DEFINING TAHXY LONG NAME' )
+       error = nf90_put_att(ncid, id_tahxy, "units", "none")
+       call netcdf_err(error, 'DEFINING TAHXY UNITS' )
+
+       error = nf90_def_var(ncid, 'chxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_chxy)
+       call netcdf_err(error, 'DEFINING CHXY' )
+       error = nf90_put_att(ncid, id_chxy, "long_name", "chxy")
+       call netcdf_err(error, 'DEFINING CHXY LONG NAME' )
+       error = nf90_put_att(ncid, id_chxy, "units", "none")
+       call netcdf_err(error, 'DEFINING CHXY UNITS' )
+
+       error = nf90_def_var(ncid, 'cmxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_cmxy)
+       call netcdf_err(error, 'DEFINING CMXY' )
+       error = nf90_put_att(ncid, id_cmxy, "long_name", "cmxy")
+       call netcdf_err(error, 'DEFINING CMXY LONG NAME' )
+       error = nf90_put_att(ncid, id_cmxy, "units", "none")
+       call netcdf_err(error, 'DEFINING CMXY UNITS' )
+
+       error = nf90_def_var(ncid, 'fwetxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_fwetxy)
+       call netcdf_err(error, 'DEFINING FWETXY' )
+       error = nf90_put_att(ncid, id_fwetxy, "long_name", "fwetxy")
+       call netcdf_err(error, 'DEFINING FWETXY LONG NAME' )
+       error = nf90_put_att(ncid, id_fwetxy, "units", "none")
+       call netcdf_err(error, 'DEFINING FWETXY UNITS' )
+
+       error = nf90_def_var(ncid, 'sneqvoxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_sneqvoxy)
+       call netcdf_err(error, 'DEFINING SNEQVOXY' )
+       error = nf90_put_att(ncid, id_sneqvoxy, "long_name", "sneqvoxy")
+       call netcdf_err(error, 'DEFINING SNEQVOXY LONG NAME' )
+       error = nf90_put_att(ncid, id_sneqvoxy, "units", "none")
+       call netcdf_err(error, 'DEFINING SNEQVOXY UNITS' )
+
+       error = nf90_def_var(ncid, 'alboldxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_alboldxy)
+       call netcdf_err(error, 'DEFINING ALBOLDXY' )
+       error = nf90_put_att(ncid, id_alboldxy, "long_name", "alboldxy")
+       call netcdf_err(error, 'DEFINING ALBOLDXY LONG NAME' )
+       error = nf90_put_att(ncid, id_alboldxy, "units", "none")
+       call netcdf_err(error, 'DEFINING ALBOLDXY UNITS' )
+
+       error = nf90_def_var(ncid, 'qsnowxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_qsnowxy)
+       call netcdf_err(error, 'DEFINING QSNOWXY' )
+       error = nf90_put_att(ncid, id_qsnowxy, "long_name", "qsnowxy")
+       call netcdf_err(error, 'DEFINING QSNOWXY LONG NAME' )
+       error = nf90_put_att(ncid, id_qsnowxy, "units", "none")
+       call netcdf_err(error, 'DEFINING QSNOWXY UNITS' )
+
+       error = nf90_def_var(ncid, 'wslakexy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_wslakexy)
+       call netcdf_err(error, 'DEFINING WSLAKEXY' )
+       error = nf90_put_att(ncid, id_wslakexy, "long_name", "wslakexy")
+       call netcdf_err(error, 'DEFINING WSLAKEXY LONG NAME' )
+       error = nf90_put_att(ncid, id_wslakexy, "units", "none")
+       call netcdf_err(error, 'DEFINING WSLAKEXY UNITS' )
+
+       error = nf90_def_var(ncid, 'zwtxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_zwtxy)
+       call netcdf_err(error, 'DEFINING ZWTXY' )
+       error = nf90_put_att(ncid, id_zwtxy, "long_name", "zwtxy")
+       call netcdf_err(error, 'DEFINING ZWTXY LONG NAME' )
+       error = nf90_put_att(ncid, id_zwtxy, "units", "none")
+       call netcdf_err(error, 'DEFINING ZWTXY UNITS' )
+
+       error = nf90_def_var(ncid, 'waxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_waxy)
+       call netcdf_err(error, 'DEFINING WAXY' )
+       error = nf90_put_att(ncid, id_waxy, "long_name", "waxy")
+       call netcdf_err(error, 'DEFINING WAXY LONG NAME' )
+       error = nf90_put_att(ncid, id_waxy, "units", "none")
+       call netcdf_err(error, 'DEFINING WAXY UNITS' )
+
+       error = nf90_def_var(ncid, 'wtxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_wtxy)
+       call netcdf_err(error, 'DEFINING WTXY' )
+       error = nf90_put_att(ncid, id_wtxy, "long_name", "wtxy")
+       call netcdf_err(error, 'DEFINING WTXY LONG NAME' )
+       error = nf90_put_att(ncid, id_wtxy, "units", "none")
+       call netcdf_err(error, 'DEFINING WTXY UNITS' )
+
+       error = nf90_def_var(ncid, 'lfmassxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_lfmassxy)
+       call netcdf_err(error, 'DEFINING LFMASSXY' )
+       error = nf90_put_att(ncid, id_lfmassxy, "long_name", "lfmassxy")
+       call netcdf_err(error, 'DEFINING LFMASSXY LONG NAME' )
+       error = nf90_put_att(ncid, id_lfmassxy, "units", "none")
+       call netcdf_err(error, 'DEFINING LFMASSXY UNITS' )
+
+       error = nf90_def_var(ncid, 'rtmassxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_rtmassxy)
+       call netcdf_err(error, 'DEFINING RTMASSXY' )
+       error = nf90_put_att(ncid, id_rtmassxy, "long_name", "rtmassxy")
+       call netcdf_err(error, 'DEFINING RTMASSXY LONG NAME' )
+       error = nf90_put_att(ncid, id_rtmassxy, "units", "none")
+       call netcdf_err(error, 'DEFINING RTMASSXY UNITS' )
+
+       error = nf90_def_var(ncid, 'stmassxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_stmassxy)
+       call netcdf_err(error, 'DEFINING STMASSXY' )
+       error = nf90_put_att(ncid, id_stmassxy, "long_name", "stmassxy")
+       call netcdf_err(error, 'DEFINING STMASSXY LONG NAME' )
+       error = nf90_put_att(ncid, id_stmassxy, "units", "none")
+       call netcdf_err(error, 'DEFINING STMASSXY UNITS' )
+
+       error = nf90_def_var(ncid, 'woodxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_woodxy)
+       call netcdf_err(error, 'DEFINING WOODXY' )
+       error = nf90_put_att(ncid, id_woodxy, "long_name", "woodxy")
+       call netcdf_err(error, 'DEFINING WOODXY LONG NAME' )
+       error = nf90_put_att(ncid, id_woodxy, "units", "none")
+       call netcdf_err(error, 'DEFINING WOODXY UNITS' )
+
+       error = nf90_def_var(ncid, 'stblcpxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_stblcpxy)
+       call netcdf_err(error, 'DEFINING STBLCPXY' )
+       error = nf90_put_att(ncid, id_stblcpxy, "long_name", "stblcpxy")
+       call netcdf_err(error, 'DEFINING STBLCPXY LONG NAME' )
+       error = nf90_put_att(ncid, id_stblcpxy, "units", "none")
+       call netcdf_err(error, 'DEFINING STBLCPXY UNITS' )
+
+       error = nf90_def_var(ncid, 'fastcpxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_fastcpxy)
+       call netcdf_err(error, 'DEFINING FASTCPXY' )
+       error = nf90_put_att(ncid, id_fastcpxy, "long_name", "fastcpxy")
+       call netcdf_err(error, 'DEFINING FASTCPXY LONG NAME' )
+       error = nf90_put_att(ncid, id_fastcpxy, "units", "none")
+       call netcdf_err(error, 'DEFINING FASTCPXY UNITS' )
+
+       error = nf90_def_var(ncid, 'xsaixy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_xsaixy)
+       call netcdf_err(error, 'DEFINING XSAIXY' )
+       error = nf90_put_att(ncid, id_xsaixy, "long_name", "xsaixy")
+       call netcdf_err(error, 'DEFINING XSAIXY LONG NAME' )
+       error = nf90_put_att(ncid, id_xsaixy, "units", "none")
+       call netcdf_err(error, 'DEFINING XSAIXY UNITS' )
+
+       error = nf90_def_var(ncid, 'xlaixy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_xlaixy)
+       call netcdf_err(error, 'DEFINING XLAIXY' )
+       error = nf90_put_att(ncid, id_xlaixy, "long_name", "xlaixy")
+       call netcdf_err(error, 'DEFINING XLAIXY LONG NAME' )
+       error = nf90_put_att(ncid, id_xlaixy, "units", "none")
+       call netcdf_err(error, 'DEFINING XLAIXY UNITS' )
+
+       error = nf90_def_var(ncid, 'taussxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_taussxy)
+       call netcdf_err(error, 'DEFINING TAUSSXY' )
+       error = nf90_put_att(ncid, id_taussxy, "long_name", "taussxy")
+       call netcdf_err(error, 'DEFINING TAUSSXY LONG NAME' )
+       error = nf90_put_att(ncid, id_taussxy, "units", "none")
+       call netcdf_err(error, 'DEFINING TAUSSXY UNITS' )
+
+       error = nf90_def_var(ncid, 'smcwtdxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_smcwtdxy)
+       call netcdf_err(error, 'DEFINING SMCWTDXY' )
+       error = nf90_put_att(ncid, id_smcwtdxy, "long_name", "smcwtdxy")
+       call netcdf_err(error, 'DEFINING SMCWTDXY LONG NAME' )
+       error = nf90_put_att(ncid, id_smcwtdxy, "units", "none")
+       call netcdf_err(error, 'DEFINING SMCWTDXY UNITS' )
+
+       error = nf90_def_var(ncid, 'deeprechxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_deeprechxy)
+       call netcdf_err(error, 'DEFINING DEEPRECHXY' )
+       error = nf90_put_att(ncid, id_deeprechxy, "long_name", "deeprechxy")
+       call netcdf_err(error, 'DEFINING DEEPRECHXY LONG NAME' )
+       error = nf90_put_att(ncid, id_deeprechxy, "units", "none")
+       call netcdf_err(error, 'DEFINING DEEPRECHXY UNITS' )
+
+       error = nf90_def_var(ncid, 'rechxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_rechxy)
+       call netcdf_err(error, 'DEFINING RECHXY' )
+       error = nf90_put_att(ncid, id_rechxy, "long_name", "rechxy")
+       call netcdf_err(error, 'DEFINING RECHXY LONG NAME' )
+       error = nf90_put_att(ncid, id_rechxy, "units", "none")
+       call netcdf_err(error, 'DEFINING RECHXY UNITS' )
+
+       error = nf90_def_var(ncid, 'tsnoxy', NF90_DOUBLE, (/dim_x,dim_y,dim_lsnow,dim_time/), id_tsnoxy)
+       call netcdf_err(error, 'DEFINING TSNOXY' )
+       error = nf90_put_att(ncid, id_tsnoxy, "long_name", "tsnoxy")
+       call netcdf_err(error, 'DEFINING TSNOXY LONG NAME' )
+       error = nf90_put_att(ncid, id_tsnoxy, "units", "none")
+       call netcdf_err(error, 'DEFINING TSNOXY UNITS' )
+
+       error = nf90_def_var(ncid, 'snicexy', NF90_DOUBLE, (/dim_x,dim_y,dim_lsnow,dim_time/), id_snicexy)
+       call netcdf_err(error, 'DEFINING SNICEXY' )
+       error = nf90_put_att(ncid, id_snicexy, "long_name", "snicexy")
+       call netcdf_err(error, 'DEFINING SNICEXY LONG NAME' )
+       error = nf90_put_att(ncid, id_snicexy, "units", "none")
+       call netcdf_err(error, 'DEFINING SNICEXY UNITS' )
+
+       error = nf90_def_var(ncid, 'snliqxy', NF90_DOUBLE, (/dim_x,dim_y,dim_lsnow,dim_time/), id_snliqxy)
+       call netcdf_err(error, 'DEFINING SNLIQXY' )
+       error = nf90_put_att(ncid, id_snliqxy, "long_name", "snliqxy")
+       call netcdf_err(error, 'DEFINING SNLIQXY LONG NAME' )
+       error = nf90_put_att(ncid, id_snliqxy, "units", "none")
+       call netcdf_err(error, 'DEFINING SNLIQXY UNITS' )
+
+     endif
+
      error = nf90_enddef(ncid, header_buffer_val,4,0,4)
      call netcdf_err(error, 'DEFINING HEADER' )
 
@@ -2348,7 +2628,11 @@
 ! soil temperature 
 
    print*,"- CALL FieldGather FOR TARGET GRID SOIL TEMPERATURE FOR TILE: ", tile
-   call ESMF_FieldGather(soil_temp_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
+   if (noahmp) then
+     call ESMF_FieldGather(stcxy_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
+   else
+     call ESMF_FieldGather(soil_temp_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
+   endif
    if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldGather", error)
 
@@ -2361,7 +2645,11 @@
 ! soil moisture (total)
 
    print*,"- CALL FieldGather FOR TARGET GRID TOTAL SOIL MOISTURE FOR TILE: ", tile
-   call ESMF_FieldGather(soilm_tot_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
+   if (noahmp) then
+     call ESMF_FieldGather(smcxy_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
+   else
+     call ESMF_FieldGather(soilm_tot_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
+   endif
    if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldGather", error)
 
@@ -2374,7 +2662,11 @@
 ! soil moisture (liquid)
 
    print*,"- CALL FieldGather FOR TARGET GRID LIQUID SOIL MOISTURE FOR TILE: ", tile
-   call ESMF_FieldGather(soilm_liq_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
+   if (noahmp) then
+     call ESMF_FieldGather(slcxy_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
+   else
+     call ESMF_FieldGather(soilm_liq_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
+   endif
    if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldGather", error)
 
@@ -2586,6 +2878,362 @@
 
    endif ! convert nst
 
+   if (noahmp) then
+
+     print*,"- CALL FieldGather FOR TARGET QSNOWXY FOR TILE: ", tile
+     call ESMF_FieldGather(qsnowxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_qsnowxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING QSNOWXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET SNEQVOXY FOR TILE: ", tile
+     call ESMF_FieldGather(sneqvoxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_sneqvoxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING SNEQVOXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET ALBOLDXY FOR TILE: ", tile
+     call ESMF_FieldGather(alboldxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_alboldxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING ALBOLDXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET FWETXY FOR TILE: ", tile
+     call ESMF_FieldGather(fwetxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_fwetxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING FWETXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET LFMASSXY FOR TILE: ", tile
+     call ESMF_FieldGather(lfmassxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_lfmassxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING LFMASSXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET RTMASSXY FOR TILE: ", tile
+     call ESMF_FieldGather(rtmassxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_rtmassxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING RTMASSXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET STMASSXY FOR TILE: ", tile
+     call ESMF_FieldGather(stmassxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_stmassxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING STMASSXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET WOODXY FOR TILE: ", tile
+     call ESMF_FieldGather(woodxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_woodxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING WOODXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET STBLCPXY FOR TILE: ", tile
+     call ESMF_FieldGather(stblcpxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_stblcpxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING STBLCPXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET FASTCPXY FOR TILE: ", tile
+     call ESMF_FieldGather(fastcpxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_fastcpxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING FASTCPXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET XSAIXY FOR TILE: ", tile
+     call ESMF_FieldGather(xsaixy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_xsaixy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING XSAIXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET XLAIXY FOR TILE: ", tile
+     call ESMF_FieldGather(xlaixy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_xlaixy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING XLAIXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET WAXY FOR TILE: ", tile
+     call ESMF_FieldGather(waxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_waxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING WAXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET WTXY FOR TILE: ", tile
+     call ESMF_FieldGather(wtxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_wtxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING WTXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET WSLAKEXY FOR TILE: ", tile
+     call ESMF_FieldGather(wslakexy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_wslakexy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING WSLAKEXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET ZWTXY FOR TILE: ", tile
+     call ESMF_FieldGather(zwtxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_zwtxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING ZWTXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET TAUSSXY FOR TILE: ", tile
+     call ESMF_FieldGather(taussxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_taussxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING TAUSSXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET SMCWTDXY FOR TILE: ", tile
+     call ESMF_FieldGather(smcwtdxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_smcwtdxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING SMCWTDXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET DEEPRECHXY FOR TILE: ", tile
+     call ESMF_FieldGather(deeprechxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_deeprechxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING DEEPRECHXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET RECHXY FOR TILE: ", tile
+     call ESMF_FieldGather(rechxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_rechxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING RECHXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET CANICEXY FOR TILE: ", tile
+     call ESMF_FieldGather(canicexy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_canicexy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING CANICEXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET CANLIQXY FOR TILE: ", tile
+     call ESMF_FieldGather(canliqxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_canliqxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING CANLIQXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET CHXY FOR TILE: ", tile
+     call ESMF_FieldGather(chxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_chxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING CHXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET CMXY FOR TILE: ", tile
+     call ESMF_FieldGather(cmxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_cmxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING CMXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET TAHXY FOR TILE: ", tile
+     call ESMF_FieldGather(tahxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_tahxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING TAHXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET EAHXY FOR TILE: ", tile
+     call ESMF_FieldGather(eahxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_eahxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING EAHXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET TVXY FOR TILE: ", tile
+     call ESMF_FieldGather(tvxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_tvxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING TVXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET TGXY FOR TILE: ", tile
+     call ESMF_FieldGather(tgxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_tgxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING TGXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET SNOWXY FOR TILE: ", tile
+     call ESMF_FieldGather(snowxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_snowxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING SNOWXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET GRID TSNOXY FOR TILE: ", tile
+     call ESMF_FieldGather(tsnoxy_target_grid, data_one_tile_3dsnow, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum3dsnow(:,:,:) = data_one_tile_3dsnow(istart:iend, jstart:jend,:)
+       error = nf90_put_var( ncid, id_tsnoxy, dum3dsnow, start=(/1,1,1,1/), count=(/i_target_out,j_target_out,lsnow_target_noahmp,1/))
+       call netcdf_err(error, 'WRITING TSNOXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET GRID SNICEXY FOR TILE: ", tile
+     call ESMF_FieldGather(snicexy_target_grid, data_one_tile_3dsnow, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum3dsnow(:,:,:) = data_one_tile_3dsnow(istart:iend, jstart:jend,:)
+       error = nf90_put_var( ncid, id_snicexy, dum3dsnow, start=(/1,1,1,1/), count=(/i_target_out,j_target_out,lsnow_target_noahmp,1/))
+       call netcdf_err(error, 'WRITING SNICEXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET GRID SNLIQXY FOR TILE: ", tile
+     call ESMF_FieldGather(snliqxy_target_grid, data_one_tile_3dsnow, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum3dsnow(:,:,:) = data_one_tile_3dsnow(istart:iend, jstart:jend,:)
+       error = nf90_put_var( ncid, id_snliqxy, dum3dsnow, start=(/1,1,1,1/), count=(/i_target_out,j_target_out,lsnow_target_noahmp,1/))
+       call netcdf_err(error, 'WRITING SNLIQXY RECORD' )
+     endif
+
+   endif
+
 !-------------------------------------------------------------------------------
 ! close file
 !-------------------------------------------------------------------------------
@@ -2596,6 +3244,7 @@
 
  deallocate(lsoil_data, x_data, y_data)
  deallocate(data_one_tile, data_one_tile_3d, idata_one_tile, dum2d, dum3d)
+ if (noahmp) deallocate(data_one_tile_3dsnow, dum3dsnow)
 
  return
 

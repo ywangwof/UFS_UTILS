@@ -91,6 +91,12 @@
      default_value = 0.0
    case (224) ! soil type, flag value to turn off soil moisture rescaling.
      default_value = -99999.9
+   case (500) ! eahxy (Pa)
+     default_value = 500.0
+   case (501) ! chxy
+     default_value = 0.01
+   case (502) ! cmxy
+     default_value = 0.01
    case default
      print*,'- FATAL ERROR.  UNIDENTIFIED FIELD NUMBER : ', field
      call mpi_abort(mpi_comm_world, 77, ierr)

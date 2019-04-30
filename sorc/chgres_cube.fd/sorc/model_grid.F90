@@ -65,6 +65,7 @@
 
  integer, parameter, public             :: lsoil_target = 4 ! # soil layers
  integer, public                        :: i_input, j_input
+ integer, public                        :: i_input_noahmp, j_input_noahmp
  integer, public                        :: ip1_input, jp1_input
  integer, public                        :: i_target, j_target
  integer, public                        :: ip1_target, jp1_target
@@ -72,6 +73,7 @@
  integer, public                        :: num_tiles_target_grid
 
  type(esmf_grid),  public               :: input_grid
+ type(esmf_grid),  public               :: input_noahmp_grid
  type(esmf_grid),  public               :: target_grid
 
  type(esmf_field),  public              :: latitude_input_grid
@@ -90,6 +92,9 @@
  type(esmf_field),  public              :: longitude_w_target_grid
  type(esmf_field),  public              :: seamask_target_grid
  type(esmf_field),  public              :: terrain_target_grid
+
+! noahmp
+ integer, parameter, public             :: lsnow_target_noahmp = 3 ! # snow layers
 
  public :: define_target_grid
  public :: define_input_grid
@@ -122,7 +127,176 @@
    call define_input_grid_mosaic(localpet, npets)
  endif
 
+ call define_input_noahmp_grid(npets)
+
  end subroutine define_input_grid
+
+!----------------------------------------------------------------------------
+! Define grid containing input noahmp data.
+!----------------------------------------------------------------------------
+
+ subroutine define_input_noahmp_grid(npets)
+
+ implicit none
+
+ integer, intent(in) :: npets
+ integer :: i, j, rc, clb(2), cub(2)
+
+ real(esmf_kind_r8), allocatable  :: latitude(:,:)
+ real(esmf_kind_r8), allocatable  :: longitude(:,:)
+ real(esmf_kind_r8), pointer      :: lat_src_ptr(:,:)
+ real(esmf_kind_r8), pointer      :: lon_src_ptr(:,:)
+ real(esmf_kind_r8)               :: deltalon
+
+ real(esmf_kind_r8), allocatable  :: slat(:), wlat(:)
+ type(esmf_field)                :: latitude_input_noahmp_grid
+ type(esmf_field)                :: longitude_input_noahmp_grid
+ type(esmf_polekind_flag)         :: polekindflag(2)
+
+ print*,'top of define_input_noahmp_grid '
+ i_input_noahmp = 3072
+ j_input_noahmp = 1536
+
+ polekindflag(1:2) = ESMF_POLEKIND_MONOPOLE
+
+ print*,"- CALL GridCreate1PeriDim FOR INPUT NOAHMP GRID."
+ input_noahmp_grid = ESMF_GridCreate1PeriDim(minIndex=(/1,1/), &
+                                    maxIndex=(/i_input_noahmp,j_input_noahmp/), &
+                                    polekindflag=polekindflag, &
+                                    periodicDim=1, &
+                                    poleDim=2,  &
+                                    coordSys=ESMF_COORDSYS_SPH_DEG, &
+                                    regDecomp=(/1,npets/),  &
+                                    indexflag=ESMF_INDEX_GLOBAL, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN GridCreate1PeriDim", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID LATITUDE."
+ latitude_input_noahmp_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                   name="input_noahmp_grid_latitude", rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID LONGITUDE."
+ longitude_input_noahmp_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                   name="input_noahmp_grid_longitude", rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   call error_handler("IN FieldCreate", rc)
+
+ allocate(longitude(i_input_noahmp,j_input_noahmp))
+ allocate(latitude(i_input_noahmp,j_input_noahmp))
+
+ deltalon = 360.0_esmf_kind_r8 / real(i_input_noahmp,kind=esmf_kind_r8)
+ do i = 1, i_input_noahmp
+   longitude(i,:) = (real((i-1),kind=esmf_kind_r8) * deltalon) - 180.0_esmf_kind_r8
+ enddo
+
+ allocate(slat(j_input_noahmp))
+ allocate(wlat(j_input_noahmp))
+ call splat(4, j_input_noahmp, slat, wlat)
+
+ do i = 1, j_input_noahmp
+   latitude(:,i) = (acos(slat(i))* 180.0_esmf_kind_r8 / &
+                  (4.0_esmf_kind_r8*atan(1.0_esmf_kind_r8))) - 90.0_esmf_kind_r8
+ enddo
+
+ deallocate(slat, wlat)
+
+ print*,"- CALL FieldScatter FOR INPUT GRID LONGITUDE."
+ call ESMF_FieldScatter(longitude_input_noahmp_grid, longitude, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ print*,"- CALL FieldScatter FOR INPUT GRID LATITUDE."
+ call ESMF_FieldScatter(latitude_input_noahmp_grid, latitude, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ print*,"- CALL GridAddCoord FOR INPUT GRID."
+ call ESMF_GridAddCoord(input_noahmp_grid, &
+                        staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN GridAddCoord", rc)
+
+ print*,"- CALL GridGetCoord FOR INPUT GRID X-COORD."
+ nullify(lon_src_ptr)
+ call ESMF_GridGetCoord(input_noahmp_grid, &
+                        staggerLoc=ESMF_STAGGERLOC_CENTER, &
+                        coordDim=1, &
+                        farrayPtr=lon_src_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN GridGetCoord", rc)
+
+ print*,"- CALL GridGetCoord FOR INPUT GRID Y-COORD."
+ nullify(lat_src_ptr)
+ call ESMF_GridGetCoord(input_noahmp_grid, &
+                        staggerLoc=ESMF_STAGGERLOC_CENTER, &
+                        coordDim=2, &
+                        computationalLBound=clb, &
+                        computationalUBound=cub, &
+                        farrayPtr=lat_src_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN GridGetCoord", rc)
+
+ do j = clb(2), cub(2)
+   do i = clb(1), cub(1)
+     lon_src_ptr(i,j) = longitude(i,j)
+     if (lon_src_ptr(i,j) > 360.0_esmf_kind_r8) lon_src_ptr(i,j) = lon_src_ptr(i,j) - 360.0_esmf_kind_r8
+     lat_src_ptr(i,j) = latitude(i,j)
+   enddo
+ enddo
+
+ print*,"- CALL GridAddCoord FOR INPUT GRID."
+ call ESMF_GridAddCoord(input_noahmp_grid, &
+                        staggerloc=ESMF_STAGGERLOC_CORNER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN GridAddCoord", rc)
+
+ print*,"- CALL GridGetCoord FOR INPUT GRID X-COORD."
+ nullify(lon_src_ptr)
+ call ESMF_GridGetCoord(input_noahmp_grid, &
+                        staggerLoc=ESMF_STAGGERLOC_CORNER, &
+                        coordDim=1, &
+                        farrayPtr=lon_src_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN GridGetCoord", rc)
+
+ print*,"- CALL GridGetCoord FOR INPUT GRID Y-COORD."
+ nullify(lat_src_ptr)
+ call ESMF_GridGetCoord(input_noahmp_grid, &
+                        staggerLoc=ESMF_STAGGERLOC_CORNER, &
+                        coordDim=2, &
+                        computationalLBound=clb, &
+                        computationalUBound=cub, &
+                        farrayPtr=lat_src_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN GridGetCoord", rc)
+
+ do j = clb(2), cub(2)
+   do i = clb(1), cub(1)
+     lon_src_ptr(i,j) = longitude(i,1) - (0.5_esmf_kind_r8*deltalon)
+     if (lon_src_ptr(i,j) < -180.0_esmf_kind_r8) lon_src_ptr(i,j) = lon_src_ptr(i,j) + 360.0_esmf_kind_r8
+     if (j == 1) then 
+       lat_src_ptr(i,j) = -90.0_esmf_kind_r8
+       cycle
+     endif
+     if (j == (j_input_noahmp+1)) then
+       lat_src_ptr(i,j) = 90.0_esmf_kind_r8
+       cycle
+     endif
+     lat_src_ptr(i,j) = 0.5_esmf_kind_r8 * (latitude(i,j-1)+ latitude(i,j))
+   enddo
+ enddo
+
+ deallocate(latitude,longitude)
+
+ print*,'bottom of define_input_noahmp_grid'
+
+ end subroutine define_input_noahmp_grid
 
 !--------------------------------------------------------------------------
 ! Define grid object for input data on global gaussian grids.
