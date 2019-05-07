@@ -310,6 +310,8 @@
                                        num_tiles_target_grid, &
                                        i_target, j_target
 
+ use static_data, only               : veg_type_target_grid
+
  use search_util
 
  implicit none
@@ -317,7 +319,8 @@
  integer, intent(in)                 :: localpet
 
  integer                             :: isrctermprocessing, rc
- integer                            :: l(1), u(1), i, j, ij, tile
+ integer                            :: l(1), u(1), i, j, k, ij, tile
+ integer                             :: clb(3), cub(3)
  
  integer(esmf_kind_i4), pointer      :: unmapped_ptr(:)
  integer(esmf_kind_i4), pointer      :: mask_input_ptr(:,:)
@@ -331,6 +334,10 @@
  real(esmf_kind_r8), pointer         :: tahxy_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: tgxy_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: tvxy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: vegt_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: slcxy_target_ptr(:,:,:)
+ real(esmf_kind_r8), pointer         :: stcxy_target_ptr(:,:,:)
+ real(esmf_kind_r8), pointer         :: smcxy_target_ptr(:,:,:)
 
  integer(esmf_kind_i8), allocatable  :: mask_target_one_tile(:,:)
  real(esmf_kind_r8), allocatable    :: data_one_tile(:,:)
@@ -901,6 +908,48 @@
                        termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldRegrid", rc)
+
+! Adjust for land ice
+
+ print*,"- CALL FieldGet FOR TARGET smcxy."
+ call ESMF_FieldGet(smcxy_target_grid, &
+                    computationalLBound=clb, &
+                    computationalUBound=cub, &
+                    farrayPtr=smcxy_target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGet", rc)
+
+ print*,"- CALL FieldGet FOR TARGET vegtype."
+ call ESMF_FieldGet(veg_type_target_grid, &
+                    farrayPtr=vegt_target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGet", rc)
+
+ print*,"- CALL FieldGet FOR TARGET slcxy."
+ call ESMF_FieldGet(slcxy_target_grid, &
+                    farrayPtr=slcxy_target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGet", rc)
+
+ print*,"- CALL FieldGet FOR TARGET stcxy."
+ call ESMF_FieldGet(stcxy_target_grid, &
+                    farrayPtr=stcxy_target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGet", rc)
+
+ do j = clb(2), cub(2)
+ do i = clb(1), cub(1)
+
+   if (nint(vegt_target_ptr(i,j)) == veg_type_landice_target) then
+     do k = clb(3), cub(3)
+       smcxy_target_ptr(i,j,k) = 1.0
+       slcxy_target_ptr(i,j,k) = 1.0
+       stcxy_target_ptr(i,j,k) = min(stcxy_target_ptr(i,j,k),273.15)
+     enddo
+   endif
+
+ enddo
+ enddo
 
  print*,'bottom of interp_noahmp'
 

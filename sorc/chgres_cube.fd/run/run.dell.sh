@@ -28,8 +28,8 @@ module load NetCDF/4.5.0
 export OMP_STACKSIZE=1024M
 export OMP_NUM_THREADS=4
 
-EXECDIR=/gpfs/dell2/emc/modeling/noscrub/George.Gayno/fv3gfs.git/global-workflow/chgres_cube/exec
-RUNDIR=/gpfs/dell2/emc/modeling/noscrub/George.Gayno/fv3gfs.git/global-workflow/chgres_cube/run
+EXECDIR=/gpfs/dell2/emc/modeling/noscrub/George.Gayno/ufs_utils.git/UFS_UTILS/sorc/chgres_cube.fd/exec
+RUNDIR=/gpfs/dell2/emc/modeling/noscrub/George.Gayno/ufs_utils.git/UFS_UTILS/sorc/chgres_cube.fd/run
 
 WORKDIR=/gpfs/dell1/stmp/George.Gayno/chgres.fv3
 rm -fr $WORKDIR
@@ -40,8 +40,8 @@ cd $WORKDIR
 #cp $RUNDIR/config.C768.l91.dell.nml ./fort.41
 #cp $RUNDIR/config.C384.dell.nml ./fort.41
 #cp $RUNDIR/config.C384.gaussian.dell.nml ./fort.41
-#cp $RUNDIR/config.C48.dell.nml ./fort.41
-cp $RUNDIR/config.C48.gfs.spectral.dell.nml  ./fort.41
+cp $RUNDIR/config.noahmp.nml ./fort.41
+#cp $RUNDIR/config.C48.gfs.spectral.dell.nml  ./fort.41
 
 mpirun $EXECDIR/global_chgres.exe
 
