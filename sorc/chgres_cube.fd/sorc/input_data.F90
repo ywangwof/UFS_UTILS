@@ -162,6 +162,8 @@
    call read_input_atm_gfs_spectral_file(localpet)
  elseif (trim(input_type) == "grib2") then
    call read_input_atm_grib2_file(localpet)
+ elseif (trim(input_type) == "wrfout") then
+   call read_input_atm_wrf_file(localpet)
  endif
 
  end subroutine read_input_atm_data
@@ -1833,6 +1835,360 @@
  print*,"- READ INPUT ATMOS DATA FROM TILED HISTORY FILES."
 
  tilefile = trim(data_dir_input_grid) // "/" // trim(atm_files_input_grid(1))
+ error=nf90_open(trim(tilefile),nf90_nowrite,ncid)
+ call netcdf_err(error, 'opening: '//trim(tilefile) )
+
+ error=nf90_inq_dimid(ncid, 'grid_xt', id_dim)
+ call netcdf_err(error, 'reading grid_xt id' )
+ error=nf90_inquire_dimension(ncid,id_dim,len=idim_input)
+ call netcdf_err(error, 'reading grid_xt value' )
+
+ error=nf90_inq_dimid(ncid, 'grid_yt', id_dim)
+ call netcdf_err(error, 'reading grid_yt id' )
+ error=nf90_inquire_dimension(ncid,id_dim,len=jdim_input)
+ call netcdf_err(error, 'reading grid_yt value' )
+
+ if (idim_input /= i_input .or. jdim_input /= j_input) then
+   call error_handler("DIMENSION MISMATCH BETWEEN SFC AND OROG FILES.", 2)
+ endif
+
+ error=nf90_inq_dimid(ncid, 'pfull', id_dim)
+ call netcdf_err(error, 'reading pfull id' )
+ error=nf90_inquire_dimension(ncid,id_dim,len=lev_input)
+ call netcdf_err(error, 'reading pfull value' )
+
+ error=nf90_inq_dimid(ncid, 'phalf', id_dim)
+ call netcdf_err(error, 'reading phalf id' )
+ error=nf90_inquire_dimension(ncid,id_dim,len=levp1_input)
+ call netcdf_err(error, 'reading phalf value' )
+
+ error=nf90_get_att(ncid, nf90_global, 'ncnsto', num_tracers_file)
+ call netcdf_err(error, 'reading ntracer value' )
+
+ error = nf90_close(ncid)
+
+ print*,'- FILE HAS ', num_tracers_file, ' TRACERS.'
+ print*,'- WILL PROCESS ', num_tracers, ' TRACERS.'
+
+ allocate(tracers_input_grid(num_tracers))
+
+ do i = 1, num_tracers
+
+   print*,"- CALL FieldCreate FOR INPUT GRID TRACER ", trim(tracers_input(i))
+   tracers_input_grid(i) = ESMF_FieldCreate(input_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                   ungriddedLBound=(/1/), &
+                                   ungriddedUBound=(/lev_input/), rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     call error_handler("IN FieldCreate", rc)
+
+ enddo
+
+ print*,"- CALL FieldCreate FOR INPUT GRID DZDT."
+ dzdt_input_grid = ESMF_FieldCreate(input_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                   ungriddedLBound=(/1/), &
+                                   ungriddedUBound=(/lev_input/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID DELTA PRESSURE."
+ dpres_input_grid = ESMF_FieldCreate(input_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                   ungriddedLBound=(/1/), &
+                                   ungriddedUBound=(/lev_input/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID TEMPERATURE."
+ temp_input_grid = ESMF_FieldCreate(input_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                   ungriddedLBound=(/1/), &
+                                   ungriddedUBound=(/lev_input/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID U."
+ u_input_grid = ESMF_FieldCreate(input_grid, &
+                                 typekind=ESMF_TYPEKIND_R8, &
+                                 staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                 ungriddedLBound=(/1/), &
+                                 ungriddedUBound=(/lev_input/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID V."
+ v_input_grid = ESMF_FieldCreate(input_grid, &
+                                 typekind=ESMF_TYPEKIND_R8, &
+                                 staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                 ungriddedLBound=(/1/), &
+                                 ungriddedUBound=(/lev_input/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID SURFACE PRESSURE."
+ ps_input_grid = ESMF_FieldCreate(input_grid, &
+                                  typekind=ESMF_TYPEKIND_R8, &
+                                  staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID TERRAIN."
+ terrain_input_grid = ESMF_FieldCreate(input_grid, &
+                                  typekind=ESMF_TYPEKIND_R8, &
+                                  staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ if (localpet < num_tiles_input_grid) then
+   allocate(data_one_tile(i_input,j_input))
+   allocate(data_one_tile_3d(i_input,j_input,lev_input))
+ else
+   allocate(data_one_tile(0,0))
+   allocate(data_one_tile_3d(0,0,0))
+ endif
+
+ if (localpet < num_tiles_input_grid) then
+   tile = localpet+1
+   tilefile= trim(data_dir_input_grid) // "/" // trim(atm_files_input_grid(tile))
+   print*,"- READ ATMOSPHERIC DATA FROM: ", trim(tilefile)
+   error=nf90_open(trim(tilefile),nf90_nowrite,ncid)
+   call netcdf_err(error, 'opening: '//trim(tilefile) )
+ endif
+
+ if (localpet < num_tiles_input_grid) then
+   print*,"- READ VERTICAL VELOCITY."
+   error=nf90_inq_varid(ncid, 'dzdt', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, data_one_tile_3d)
+   call netcdf_err(error, 'reading field' )
+   data_one_tile_3d(:,:,1:lev_input) = data_one_tile_3d(:,:,lev_input:1:-1)
+ endif
+
+ do tile = 1, num_tiles_input_grid
+   print*,"- CALL FieldScatter FOR INPUT GRID VERTICAL VELOCITY."
+   call ESMF_FieldScatter(dzdt_input_grid, data_one_tile_3d, rootpet=tile-1, tile=tile, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+ enddo
+
+ do n = 1, num_tracers
+
+   if (localpet < num_tiles_input_grid) then
+     print*,"- READ ", trim(tracers_input(n))
+     error=nf90_inq_varid(ncid, tracers_input(n), id_var)
+     call netcdf_err(error, 'reading field id' )
+     error=nf90_get_var(ncid, id_var, data_one_tile_3d)
+     call netcdf_err(error, 'reading field' )
+     data_one_tile_3d(:,:,1:lev_input) = data_one_tile_3d(:,:,lev_input:1:-1)
+   endif
+
+   do tile = 1, num_tiles_input_grid
+     print*,"- CALL FieldScatter FOR INPUT GRID TRACER ", trim(tracers_input(n))
+     call ESMF_FieldScatter(tracers_input_grid(n), data_one_tile_3d, rootpet=tile-1, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldScatter", rc)
+   enddo
+
+ enddo
+
+ if (localpet < num_tiles_input_grid) then
+   print*,"- READ TEMPERATURE."
+   error=nf90_inq_varid(ncid, 'tmp', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, data_one_tile_3d)
+   call netcdf_err(error, 'reading field' )
+   data_one_tile_3d(:,:,1:lev_input) = data_one_tile_3d(:,:,lev_input:1:-1)
+ endif
+
+ do tile = 1, num_tiles_input_grid
+   print*,"- CALL FieldScatter FOR INPUT GRID TEMPERATURE."
+   call ESMF_FieldScatter(temp_input_grid, data_one_tile_3d, rootpet=tile-1, tile=tile, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+ enddo
+
+ if (localpet < num_tiles_input_grid) then
+   print*,"- READ U-WIND."
+   error=nf90_inq_varid(ncid, 'ugrd', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, data_one_tile_3d)
+   call netcdf_err(error, 'reading field' )
+   data_one_tile_3d(:,:,1:lev_input) = data_one_tile_3d(:,:,lev_input:1:-1)
+ endif
+
+ do tile = 1, num_tiles_input_grid
+   print*,"- CALL FieldScatter FOR INPUT GRID U."
+   call ESMF_FieldScatter(u_input_grid, data_one_tile_3d, rootpet=tile-1, tile=tile, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+ enddo
+
+ if (localpet < num_tiles_input_grid) then
+   print*,"- READ V-WIND."
+   error=nf90_inq_varid(ncid, 'vgrd', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, data_one_tile_3d)
+   call netcdf_err(error, 'reading field' )
+   data_one_tile_3d(:,:,1:lev_input) = data_one_tile_3d(:,:,lev_input:1:-1)
+ endif
+
+ do tile = 1, num_tiles_input_grid
+   print*,"- CALL FieldScatter FOR INPUT GRID V."
+   call ESMF_FieldScatter(v_input_grid, data_one_tile_3d, rootpet=tile-1, tile=tile, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+ enddo
+
+ if (localpet < num_tiles_input_grid) then
+   print*,"- READ SURFACE PRESSURE."
+   error=nf90_inq_varid(ncid, 'pressfc', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, data_one_tile)
+   call netcdf_err(error, 'reading field' )
+ endif
+
+ do tile = 1, num_tiles_input_grid
+   print*,"- CALL FieldScatter FOR INPUT GRID SURFACE PRESSURE."
+   call ESMF_FieldScatter(ps_input_grid, data_one_tile, rootpet=tile-1, tile=tile, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+ enddo
+
+ if (localpet < num_tiles_input_grid) then
+   print*,"- READ TERRAIN."
+   error=nf90_inq_varid(ncid, 'hgtsfc', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, data_one_tile)
+   call netcdf_err(error, 'reading field' )
+ endif
+
+ do tile = 1, num_tiles_input_grid
+   print*,"- CALL FieldScatter FOR INPUT GRID TERRAIN."
+   call ESMF_FieldScatter(terrain_input_grid, data_one_tile, rootpet=tile-1, tile=tile, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+ enddo
+
+ if (localpet < num_tiles_input_grid) then
+   print*,"- READ DELTA PRESSURE."
+   error=nf90_inq_varid(ncid, 'dpres', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, data_one_tile_3d)
+   call netcdf_err(error, 'reading field' )
+   data_one_tile_3d(:,:,1:lev_input) = data_one_tile_3d(:,:,lev_input:1:-1)
+ endif
+
+ do tile = 1, num_tiles_input_grid
+   print*,"- CALL FieldScatter FOR INPUT DELTA PRESSURE."
+   call ESMF_FieldScatter(dpres_input_grid, data_one_tile_3d, rootpet=tile-1, tile=tile, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+ enddo
+
+ if (localpet < num_tiles_input_grid) error = nf90_close(ncid)
+
+ deallocate(data_one_tile_3d, data_one_tile)
+
+!---------------------------------------------------------------------------
+! Convert from 2-d to 3-d cartesian winds.
+!---------------------------------------------------------------------------
+
+ call convert_winds
+
+!---------------------------------------------------------------------------
+! Compute pressure.
+!---------------------------------------------------------------------------
+
+ print*,"- CALL FieldCreate FOR INPUT GRID PRESSURE."
+ pres_input_grid = ESMF_FieldCreate(input_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                   ungriddedLBound=(/1/), &
+                                   ungriddedUBound=(/lev_input/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldGet FOR PRESSURE."
+ call ESMF_FieldGet(pres_input_grid, &
+                    computationalLBound=clb, &
+                    computationalUBound=cub, &
+                    farrayPtr=presptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ print*,"- CALL FieldGet FOR DELTA PRESSURE."
+ call ESMF_FieldGet(dpres_input_grid, &
+                    farrayPtr=dpresptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ print*,"- CALL FieldGet FOR SURFACE PRESSURE."
+ call ESMF_FieldGet(ps_input_grid, &
+                    farrayPtr=psptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ allocate(pres_interface(levp1_input))
+
+ if (localpet == 0) then
+   print*,'dpres is ',dpresptr(1,1,:)
+ endif
+
+ do i = clb(1), cub(1)
+   do j = clb(2), cub(2)
+     pres_interface(1) = psptr(i,j)
+     do k = 2, levp1_input
+       pres_interface(k) = pres_interface(k-1) - dpresptr(i,j,k-1)
+     enddo
+     do k = 1, lev_input
+       presptr(i,j,k) = (pres_interface(k) + pres_interface(k+1)) / 2.0_8
+     enddo
+   enddo
+ enddo
+
+ if (localpet == 0) then
+   print*,'pres is ',presptr(1,1,:)
+ endif
+
+ deallocate(pres_interface)
+
+ call ESMF_FieldDestroy(dpres_input_grid, rc=rc)
+
+ end subroutine read_input_atm_history_file
+ 
+!---------------------------------------------------------------------------
+! Read input grid wrf history files.
+!---------------------------------------------------------------------------
+
+ subroutine read_input_atm_history_file(localpet)
+
+ implicit none
+
+ include 'mpif.h'
+
+ integer, intent(in)             :: localpet
+
+ character(len=500)              :: the_file
+
+ integer                         :: error, ncid, rc, tile
+ integer                         :: id_dim, idim_input, jdim_input
+ integer                         :: id_var, i, j, k, n
+ integer                         :: clb(3), cub(3), num_tracers_file
+
+ real(esmf_kind_r8), allocatable :: data_one_tile(:,:)
+ real(esmf_kind_r8), allocatable :: data_one_tile_3d(:,:,:)
+ real(esmf_kind_r8), pointer     :: presptr(:,:,:), dpresptr(:,:,:)
+ real(esmf_kind_r8), pointer     :: psptr(:,:)
+ real(esmf_kind_r8), allocatable :: pres_interface(:)
+
+ print*,"- READ INPUT ATMOS DATA FROM TILED HISTORY FILES."
+
+ tilefile = trim(data_dir_input_grid) // "/" // trim(wrf_out_file_input_grid)
  error=nf90_open(trim(tilefile),nf90_nowrite,ncid)
  call netcdf_err(error, 'opening: '//trim(tilefile) )
 
