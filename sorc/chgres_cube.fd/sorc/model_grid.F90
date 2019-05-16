@@ -127,8 +127,8 @@
    call define_input_grid_gaussian(localpet, npets)
  elseif (trim(input_type) == "grib2") then
    call define_input_grid_grib2(localpet,npets)
- elseif (trim(input_type) == "wrfout") then
-   call defined_input_grid_wrf(localpet,npets)
+ elseif (trim(input_type) == "wrf") then
+   call define_input_grid_wrf(localpet,npets)
  else
    call define_input_grid_mosaic(localpet, npets)
  endif
@@ -891,37 +891,30 @@
 
 
  use netcdf
- use program_setup, only       : wrf_out_file_input_grid, data_dir_input_grid
+ use program_setup, only       : wrf_file_input_grid, data_dir_input_grid
  implicit none
  
  include 'mpif.h'
 
- character(len=500)           :: the_file, metadata, temp_file
+ character(len=500)           :: the_file
 
  integer, intent(in)          :: localpet, npets
 
- integer                      :: error, extra, i, j, clb(2), cub(2) !, decomptile(2)
- !integer, allocatable         :: decomptile(:,:)
+ integer                      :: error, extra, i, j, clb(2), cub(2) 
 
- !integer(esmf_kind_i8), allocatable    :: landmask_one_tile(:,:) !allocated but not used
 
- real(esmf_kind_r4), allocatable       :: latitude(:,:), longitude(:,:)
- !real(esmf_kind_r4), allocatable       :: latitude_p1(:,:), longitude_p1(:,:)
- real(esmf_kind_r8)                    :: lat_target(i_target,j_target), &
-                                          lon_target(i_target,j_target)
- real(esmf_kind_r8)                    :: deltalon
+ real(esmf_kind_r8), allocatable       :: latitude(:,:), longitude(:,:)
  integer                               :: ncid,id_var, id_dim 
  real(esmf_kind_r8), pointer           :: lat_src_ptr(:,:), lon_src_ptr(:,:)
- character(len=1000)            :: cmdline_msg, temp_msg
- character(len=10)              :: temp_num
+ real(esmf_kind_r8)										 :: dx
 
  num_tiles_input_grid = 1
 
- the_file = trim(data_dir_input_grid) // "/" // wrf_out_file_input_grid
+ the_file = trim(data_dir_input_grid) // "/" // wrf_file_input_grid
 
  input_grid_type = "lambert"
     
- print*,'- OPEN AND INVENTORY WRF INPUT FILE: ',trim(the_file)
+ print*,'- OPEN WRF INPUT FILE: ',trim(the_file)
  error=nf90_open(trim(the_file),nf90_nowrite,ncid)
  if (error /=0) call error_handler("OPENING WRF INPUT FILE",error)
 
@@ -959,6 +952,10 @@
  print*,'- READ LATITUDE'
  error=nf90_get_var(ncid, id_var, latitude)
  call netcdf_err(error, 'reading latitude')
+	
+ print*,'- READ GLOBAL ATTRIBUTE DX'
+ error = nf90_get_att(ncid,NF90_GLOBAL,'DX',dx)
+ call netcdf_err(error, 'reading dx')
 	
  if (localpet==0) print*, "from file lon(1:10,1) = ", longitude(1:10,1)
  if (localpet==0) print*, "from file lat(1,1:10) = ", latitude(1,1:10)
@@ -1062,10 +1059,37 @@
   
   nullify(lon_src_ptr)
   nullify(lat_src_ptr)
+  
+  print*,"- CALL GridAddCoord FOR INPUT GRID."
+ call ESMF_GridAddCoord(input_grid, &
+                        staggerloc=ESMF_STAGGERLOC_CORNER, rc=error)
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN GridAddCoord", error)
 
- deallocate(longitude_one_tile)
- 
- deallocate(latitude_one_tile)
+ print*,"- CALL GridGetCoord FOR INPUT GRID X-COORD."
+ nullify(lon_src_ptr)
+ call ESMF_GridGetCoord(input_grid, &
+                        staggerLoc=ESMF_STAGGERLOC_CORNER, &
+                        coordDim=1, &
+                        farrayPtr=lon_src_ptr, rc=error)
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN GridGetCoord", error)
+
+ print*,"- CALL GridGetCoord FOR INPUT GRID Y-COORD."
+ nullify(lat_src_ptr)
+ call ESMF_GridGetCoord(input_grid, &
+                        staggerLoc=ESMF_STAGGERLOC_CORNER, &
+                        coordDim=2, &
+                        computationalLBound=clb, &
+                        computationalUBound=cub, &
+                        farrayPtr=lat_src_ptr, rc=error)
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN GridGetCoord", error)
+  
+ call get_cell_corners( latitude, longitude, lat_src_ptr, lon_src_ptr, dx, clb, cub)
+
+ deallocate(longitude)
+ deallocate(latitude)
  
  !deallocate(landmask_one_tile)
 
@@ -1485,6 +1509,79 @@
  error = nf90_close(ncid)
 
  end subroutine get_model_latlons
+ 
+ 
+!-----------------------------------------------------------------------
+! Get lat/lon of grid cell corners for non-EQ lat/lon grids
+!-----------------------------------------------------------------------
+
+ subroutine get_cell_corners( latitude, longitude, latitude_sw, longitude_sw, dx,clb,cub)
+ 
+ 
+	implicit none
+
+	real(esmf_kind_r8), intent(in)    :: latitude(i_input,j_input)
+	real(esmf_kind_r8), intent(inout), pointer   :: latitude_sw(:,:)
+	real(esmf_kind_r8), intent(in)    :: longitude(i_input, j_input)
+	real(esmf_kind_r8), intent(inout), pointer   :: longitude_sw(:,:)
+	real(esmf_kind_r8), intent(in)	  :: dx !grid cell side size (m)
+	
+	integer, intent(in) :: clb(2), cub(2)
+	
+	real(esmf_kind_r8)                :: lat1, lon1, lat2, lon2, d, brng
+	
+
+	real(esmf_kind_r8), parameter    :: pi = 3.14159265359
+	real(esmf_kind_r8), parameter    :: R =  6370000.0
+	real(esmf_kind_r8), parameter    :: bearingInDegrees = 225.0
+
+  integer                           :: i, j
+  
+  d = sqrt(dx**2.0_esmf_kind_r8/2.0_esmf_kind_r8)
+  
+	do j = clb(2),cub(2)-1
+	 do i = clb(1), cub(1)-1
+		 lat1 = latitude(i,j)  * ( pi / 180.0_esmf_kind_r8 )
+		 lon1 = longitude(i,j) * ( pi / 180.0_esmf_kind_r8 )
+
+		 brng = bearingInDegrees * ( pi / 180.0_esmf_kind_r8 );
+		 lat2 = asin( sin( lat1 ) * cos( d / R ) + cos( lat1 ) * sin( d / R ) * cos( brng ) );
+		 lon2= lon1 + atan2( sin( brng ) * sin( d / R ) * cos( lat1 ), cos( d / R ) - sin( lat1 ) * sin( lat2 ) );
+		 
+		 latitude_sw(i,j) = lat2 * 180.0_esmf_kind_r8 / pi
+		 longitude_sw(i,j) = lon2 * 180.0_esmf_kind_r8 / pi
+		 
+		 if (i == i_input) then
+		   brng = 315.0_esmf_kind_r8 * pi / 180.0_esmf_kind_r8
+		   lat2 = asin( sin( lat1 ) * cos( d / R ) + cos( lat1 ) * sin( d / R ) * cos( brng ) );
+		 	 lon2= lon1 + atan2( sin( brng ) * sin( d / R ) * cos( lat1 ), cos( d / R ) - sin( lat1 ) * sin( lat2 ) );
+		 	 latitude_sw(ip1_input,j) = lat2 * 180.0_esmf_kind_r8 / pi
+		   longitude_sw(ip1_input,j) = lon2 * 180.0_esmf_kind_r8 / pi
+		 endif
+		 
+		 if (j == j_input) then
+		   brng = 135.0_esmf_kind_r8 * pi / 180.0_esmf_kind_r8
+		   lat2 = asin( sin( lat1 ) * cos( d / R ) + cos( lat1 ) * sin( d / R ) * cos( brng ) );
+		 	 lon2= lon1 + atan2( sin( brng ) * sin( d / R ) * cos( lat1 ), cos( d / R ) - sin( lat1 ) * sin( lat2 ) );
+		 	 latitude_sw(i,jp1_input) = lat2 * 180.0_esmf_kind_r8 / pi
+		   longitude_sw(i,jp1_input) = lon2 * 180.0_esmf_kind_r8 / pi
+		 endif
+	 enddo
+ enddo
+ 
+ if (cub(2) == jp1_input .and. cub(1) == ip1_input) then
+	 brng = 145.0_esmf_kind_r8 * pi / 180.0_esmf_kind_r8
+	 lat2 = asin( sin( lat1 ) * cos( d / R ) + cos( lat1 ) * sin( d / R ) * cos( brng ) );
+	 lon2= lon1 + atan2( sin( brng ) * sin( d / R ) * cos( lat1 ), cos( d / R ) - sin( lat1 ) * sin( lat2 ) );
+	 latitude_sw(ip1_input,jp1_input) = lat2 * 180.0_esmf_kind_r8 / pi
+	 longitude_sw(jp1_input,jp1_input) = lon2 * 180.0_esmf_kind_r8 / pi
+ endif
+ 
+ print*, 'min, max lat corners = ', minval(latitude_sw), maxval(latitude_sw)
+ print*, 'min, max lon corners = ', minval(longitude_sw), maxval(longitude_sw)
+
+ end subroutine get_cell_corners
+
  
 !-----------------------------------------------------------------------
 ! Read the model land mask and terrain for a single tile.

@@ -226,7 +226,7 @@
 ! Write data to file.
 !---------------------------------------------------------------------------------------------
 
- if(trim(input_type) == "grib2") then
+ if(trim(input_type) == "grib2" .or. trim(input_type) == "wrf") then
    call write_fv3_sfc_grib2data_netcdf(localpet)
  else
    call write_fv3_sfc_data_netcdf(localpet)
@@ -301,7 +301,7 @@
                                        landmask_target_grid, &
                                        seamask_target_grid,  &
                                        latitude_target_grid, &
-                                       input_grid_type
+                                       input_grid_type, i_input, j_input
 
  use program_setup, only             : convert_nst
 
@@ -328,7 +328,7 @@
  integer(esmf_kind_i8), allocatable :: land_target_one_tile(:,:)
  integer(esmf_kind_i8), pointer     :: seamask_target_ptr(:,:)
 
- real(esmf_kind_r8), allocatable    :: data_one_tile(:,:)
+ real(esmf_kind_r8), allocatable    :: data_one_tile(:,:), data_one_tile_input(:,:)
  real(esmf_kind_r8), allocatable    :: data_one_tile_3d(:,:,:)
  real(esmf_kind_r8), allocatable    :: latitude_one_tile(:,:)
  real(esmf_kind_r8), pointer        :: canopy_mc_target_ptr(:,:)
@@ -526,10 +526,10 @@
 ! Interpolate.
 !-----------------------------------------------------------------------
 
- if (trim(input_grid_type) == "latlon") then
+ if (trim(input_grid_type) == "latlon" .OR. trim(input_grid_type) == "lambert") then
     method=ESMF_REGRIDMETHOD_CONSERVE
  else
-    method=ESMF_REGRIDMETHOD_BILINEAR
+    method=ESMF_REGRIDMETHOD_NEAREST_STOD
  endif
  isrctermprocessing = 1
 
@@ -558,6 +558,7 @@
 
  if (localpet == 0) then
    allocate(data_one_tile(i_target,j_target))
+   allocate(data_one_tile_input(i_input,j_input))
    allocate(data_one_tile_3d(i_target,j_target,lsoil_target))
    allocate(mask_target_one_tile(i_target,j_target))
  else
@@ -589,11 +590,12 @@
  endif
  
  do tile = 1, num_tiles_target_grid  
-    
+   
     print*,"- CALL FieldGather FOR TARGET GRID SEAICE FRACTION TILE: ", tile
     call ESMF_FieldGather(seaice_fract_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
    if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldGather", rc)
+      
       
    print*,"- CALL FieldGather FOR TARGET GRID MASK TILE: ", tile
    call ESMF_FieldGather(seamask_target_grid, mask_target_one_tile, rootPet=0, tile=tile, rc=rc)
@@ -663,7 +665,8 @@
    if (landmask_target_ptr(i,j) == 2) mask_target_ptr(i,j) = 1
  enddo
  enddo
-
+ print*, "NUM LANDMASK_TARGET = 2 ", count(landmask_target_ptr == 2)
+  print*, "NUM LANDMASK_INPUT = 2 ", count(landmask_input_ptr == 2)
  method=ESMF_REGRIDMETHOD_NEAREST_STOD
  isrctermprocessing = 1
  
@@ -723,6 +726,9 @@
                     farrayPtr=snow_depth_target_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldGet", rc)
+    
+ print*, "before sea ice regrid, target snow depth min, max = ", minval(snow_depth_target_ptr), &
+ 				maxval(snow_depth_target_ptr)
 
  print*,"- CALL Field_Regrid for snow liq equiv."
  call ESMF_FieldRegrid(snow_liq_equiv_input_grid, &
@@ -770,6 +776,11 @@
    call ESMF_FieldGather(seaice_depth_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
    if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldGather", rc)
+      
+		print*,"- CALL FieldGather FOR INPUT GRID SEAICE DEPTH TILE: ", tile
+    call ESMF_FieldGather(seaice_depth_input_grid, data_one_tile_input, rootPet=0, tile=tile, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGather", rc)
 
    print*,"- CALL FieldGather FOR TARGET LANDMASK TILE: ", tile
    call ESMF_FieldGather(landmask_target_grid, mask_target_one_tile, rootPet=0, tile=tile, rc=rc)
@@ -780,6 +791,11 @@
      where(mask_target_one_tile == 1) mask_target_one_tile = 0
      where(mask_target_one_tile == 2) mask_target_one_tile = 1
      call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 92)
+     
+     if (count(mask_target_one_tile==1) == 0 .and. all(data_one_tile_input<-9999.0_esmf_kind_r8)) &
+     		data_one_tile(:,:) = -9999.9
+     
+     deallocate(data_one_tile_input)
    endif
 
    print*,"- CALL FieldScatter FOR TARGET GRID SEAICE DEPTH TILE: ", tile
@@ -794,6 +810,8 @@
 
    if (localpet == 0) then
      call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 66)
+     print*, "after search at sea ice, target snow depth min, max = ", minval(data_one_tile), &
+ 				maxval(data_one_tile)
    endif
 
    print*,"- CALL FieldScatter FOR TARGET GRID SNOW DEPTH TILE: ", tile
@@ -864,7 +882,7 @@
  mask_target_ptr = 0
  where (landmask_target_ptr == 0) mask_target_ptr = 1
 
-  if (trim(input_grid_type) == "latlon") then
+  if (trim(input_grid_type) == "latlon" .OR. trim(input_grid_type) == "lambert") then
     method=ESMF_REGRIDMETHOD_CONSERVE
  else
     method=ESMF_REGRIDMETHOD_BILINEAR
@@ -894,8 +912,6 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldRegrid", rc)
     
-
-
  print*,"- CALL FieldGet FOR TARGET skin temperature."
  call ESMF_FieldGet(skin_temp_target_grid, &
                     farrayPtr=skin_temp_target_ptr, rc=rc)
@@ -1575,8 +1591,9 @@
  mask_target_ptr = 0
  where (landmask_target_ptr == 1) mask_target_ptr = 1
 
-  if (trim(input_grid_type) == "latlon") then
+  if (trim(input_grid_type) == "latlon" .OR. trim(input_grid_type) == "lambert") then
     method=ESMF_REGRIDMETHOD_CONSERVE
+    print*, 'conserve'
  else
     method=ESMF_REGRIDMETHOD_BILINEAR
  endif
@@ -1630,6 +1647,9 @@
                    farrayPtr=snow_depth_target_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldGet", rc)
+    
+ print*, "before land regrid, target snow depth min, max = ", minval(snow_depth_target_ptr), &
+ 				maxval(snow_depth_target_ptr)
 
  print*,"- CALL FieldGet FOR TARGET snow liq equiv."
  call ESMF_FieldGet(snow_liq_equiv_target_grid, &
@@ -1670,6 +1690,8 @@
      land_target_one_tile = 0
      where(mask_target_one_tile == 1) land_target_one_tile = 1
      call search(data_one_tile, land_target_one_tile, i_target, j_target, tile, 66)
+     print*, "after search at land, target snow depth min, max = ", minval(data_one_tile), &
+ 				maxval(data_one_tile)
    endif
 
    print*,"- CALL FieldScatter FOR TARGET GRID SNOW DEPTH: ", tile

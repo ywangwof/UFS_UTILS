@@ -152,8 +152,10 @@
        elseif (field_num == 91) then  ! sea ice fract
          if (abs(latitude(i,j)) > 55.0) then
            field(i,j) = default_value
+           print*, "replacing sea ice with 0.5"
          else
            field(i,j) = 0.0
+           print*, "replacing sea ice with 0.0"
          endif
        else
          field(i,j) = default_value  ! Search failed.  Use default value.

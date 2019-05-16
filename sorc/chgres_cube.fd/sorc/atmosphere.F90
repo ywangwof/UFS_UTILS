@@ -958,7 +958,7 @@
 
 ! Find specific humidity in the array of tracer fields.
 
- print*, "Tracer names are: ", tracers
+
  do ii = 1, num_tracers
    if (trim(tracers(ii)) == "sphum") exit
  enddo
@@ -1123,9 +1123,10 @@
  endif
 
  print*
- do k = 1, levp1_target
-   print*,'VCOORD FOR LEV ', k, 'IS: ', vcoord_target(k,:)
- enddo
+
+ !do k = 1, levp1_target
+ !  print*,'VCOORD FOR LEV ', k, 'IS: ', vcoord_target(k,:)
+ !enddo
 
  close(14)
 

@@ -106,6 +106,7 @@
  character(len=500), public      :: mosaic_file_target_grid = "NULL"
  character(len=500), public      :: nst_files_input_grid = "NULL"
  character(len=500), public      :: grib2_file_input_grid = "NULL"
+ character(len=500), public			 :: wrf_file_input_grid="NULL"
  character(len=500), public      :: geogrid_file_input_grid="NULL"
  character(len=500), public      :: orog_dir_input_grid = "NULL"
  character(len=500), public      :: orog_files_input_grid(6) = "NULL"
@@ -182,6 +183,7 @@
                    atm_core_files_input_grid,    &
                    atm_tracer_files_input_grid,    &
                    grib2_file_input_grid, &
+                   wrf_file_input_grid, &
                    geogrid_file_input_grid, &
                    data_dir_input_grid,     &
                    vcoord_file_target_grid, &
@@ -262,6 +264,8 @@
      print*,'- INPUT DATA FROM SPECTRAL GFS SIGIO/SFCIO FILE.'
    case ("grib2")
      print*,'- INPUT DATA FROM A GRIB2 FILE'
+   case ("wrf")
+     print*,'- INPUT DATA FROM A WRF FILE'
    case default
      call error_handler("UNRECOGNIZED INPUT DATA TYPE.", 1)
  end select
