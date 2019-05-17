@@ -526,11 +526,9 @@
 ! Interpolate.
 !-----------------------------------------------------------------------
 
- if (trim(input_grid_type) == "latlon" .OR. trim(input_grid_type) == "lambert") then
-    method=ESMF_REGRIDMETHOD_CONSERVE
- else
-    method=ESMF_REGRIDMETHOD_NEAREST_STOD
- endif
+
+ method=ESMF_REGRIDMETHOD_CONSERVE
+
  isrctermprocessing = 1
 
  print*,"- CALL FieldRegridStore for sea ice fraction."
@@ -882,11 +880,8 @@
  mask_target_ptr = 0
  where (landmask_target_ptr == 0) mask_target_ptr = 1
 
-  if (trim(input_grid_type) == "latlon" .OR. trim(input_grid_type) == "lambert") then
-    method=ESMF_REGRIDMETHOD_CONSERVE
- else
-    method=ESMF_REGRIDMETHOD_BILINEAR
- endif
+ method=ESMF_REGRIDMETHOD_CONSERVE
+
  isrctermprocessing = 1
 
  print*,"- CALL FieldRegridStore for water fields."
@@ -1591,12 +1586,8 @@
  mask_target_ptr = 0
  where (landmask_target_ptr == 1) mask_target_ptr = 1
 
-  if (trim(input_grid_type) == "latlon" .OR. trim(input_grid_type) == "lambert") then
-    method=ESMF_REGRIDMETHOD_CONSERVE
-    print*, 'conserve'
- else
-    method=ESMF_REGRIDMETHOD_BILINEAR
- endif
+ method=ESMF_REGRIDMETHOD_CONSERVE
+
  isrctermprocessing = 1
 
  print*,"- CALL FieldRegridStore for land fields."

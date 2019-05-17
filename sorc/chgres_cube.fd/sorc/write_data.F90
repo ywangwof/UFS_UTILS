@@ -1028,7 +1028,8 @@
  use netcdf
 
  use program_setup, only           : halo=>halo_bndy, &
-                                     input_type, tracers, num_tracers, regional
+                                     input_type, tracers, num_tracers, &
+                                     regional
 
  use atmosphere, only              : lev_target, &
                                      levp1_target, &
