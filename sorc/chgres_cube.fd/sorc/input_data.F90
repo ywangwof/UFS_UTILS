@@ -2187,15 +2187,16 @@
 
  integer                         :: error, ncid, rc
  integer                         :: id_dim
- integer                         :: id_var, i, n
+ integer                         :: id_var, i, n, k
  integer                         ::  varnum
  
  real(esmf_kind_r4)              :: value
  real(esmf_kind_r8), parameter	 :: rocp = 0.286
  
 
- real(esmf_kind_r8), allocatable :: data_one_tile(:,:)
- real(esmf_kind_r8), allocatable :: data_one_tile_3d(:,:,:), tmp_3d(:,:,:), p_3d(:,:,:)
+ real(esmf_kind_r8), allocatable :: data_one_tile(:,:), cosa_2d(:,:), sina_2d(:,:)
+ real(esmf_kind_r8), allocatable :: data_one_tile_3d(:,:,:), tmp_3d(:,:,:), p_3d(:,:,:),&
+ 																		data_one_tile_3d2(:,:,:), u_tmp_3d(:,:,:), v_tmp_3d(:,:,:)
 
  print*,"- READ INPUT ATMOS DATA FROM TILED HISTORY FILES."
 
@@ -2454,15 +2455,55 @@
  call ESMF_FieldScatter(temp_input_grid, data_one_tile_3d, rootpet=0, tile=1, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
 		call error_handler("IN FieldScatter", rc)
-
+		
+	
+	allocate(data_one_tile_3d2(i_input,j_input,lev_input))
+	
+ !WRF winds are grid-relative, so they need to be rotated
  if (localpet == 0) then
+   allocate(cosa_2d(i_input,j_input))
+	 allocate(sina_2d(i_input,j_input))
+	 allocate(u_tmp_3d(i_input,j_input,lev_input))
+	 allocate(v_tmp_3d(i_input,j_input,lev_input))
    print*,"- READ U-WIND."
    error=nf90_inq_varid(ncid, 'U', id_var)
    call netcdf_err(error, 'reading field id' )
-   error=nf90_get_var(ncid, id_var, data_one_tile_3d)
+   error=nf90_get_var(ncid, id_var, u_tmp_3d)
    call netcdf_err(error, 'reading field' )
-
+   
+   print*,"- READ V-WIND."
+   error=nf90_inq_varid(ncid, 'V', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, v_tmp_3d)
+   call netcdf_err(error, 'reading field' )
+   
+   print*,"- READ COSALPHA"
+   error=nf90_inq_varid(ncid, 'COSALPHA', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, cosa_2d)
+   call netcdf_err(error, 'reading field' )
+   
+   print*,"- READ SINALPHA"
+   error=nf90_inq_varid(ncid, 'SINALPHA', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, sina_2d)
+   call netcdf_err(error, 'reading field' )
+   
+   
+   do k = 1,lev_input
+      !Rotate U
+   		data_one_tile_3d(:,:,k) = u_tmp_3d(:,:,k)*cosa_2d-v_tmp_3d(:,:,k)*sina_2d
+   		
+   		!Rotate V
+   		data_one_tile_3d2(:,:,k) = v_tmp_3d(:,:,k)*cosa_2d+u_tmp_3d(:,:,k)*sina_2d
+   enddo
+   
+   deallocate(cosa_2d)
+   deallocate(sina_2d)
+   deallocate(u_tmp_3d)
+   deallocate(v_tmp_3d)
 	 print*, 'max, min U ', minval(data_one_tile_3d), maxval(data_one_tile_3d)
+	 print*, 'max, min V ', minval(data_one_tile_3d2), maxval(data_one_tile_3d2)
  endif
 
  print*,"- CALL FieldScatter FOR INPUT GRID U."
@@ -2470,21 +2511,13 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
 		call error_handler("IN FieldScatter", rc)
 
- if (localpet == 0 ) then
-   print*,"- READ V-WIND."
-   error=nf90_inq_varid(ncid, 'V', id_var)
-   call netcdf_err(error, 'reading field id' )
-   error=nf90_get_var(ncid, id_var, data_one_tile_3d)
-   call netcdf_err(error, 'reading field' )
-
-		print*, 'max, min V ', minval(data_one_tile_3d), maxval(data_one_tile_3d)
- endif
-
  print*,"- CALL FieldScatter FOR INPUT GRID V."
- call ESMF_FieldScatter(v_input_grid, data_one_tile_3d, rootpet=0, tile=1, rc=rc)
+ call ESMF_FieldScatter(v_input_grid, data_one_tile_3d2, rootpet=0, tile=1, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
 		call error_handler("IN FieldScatter", rc)
+ deallocate(data_one_tile_3d2)
 
+ 
  if (localpet == 0) then
    print*,"- READ SURFACE PRESSURE."
    error=nf90_inq_varid(ncid, 'PSFC', id_var)

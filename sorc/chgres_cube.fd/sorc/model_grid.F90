@@ -1094,7 +1094,7 @@
  if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN GridGetCoord", error)
   
- call get_cell_corners( latitude, longitude, lat_src_ptr, lon_src_ptr, dx, clb, cub)
+ call get_cell_corners(real(latitude,esmf_kind_r4), real(longitude,esmf_kind_r4), lat_src_ptr, lon_src_ptr, dx, clb, cub)
 
  deallocate(longitude)
  deallocate(latitude)
