@@ -25,7 +25,7 @@
  cycle_mon=3
  cycle_day=8
  cycle_hour=0
- convert_atm=.false.
+ convert_atm=.true.
  convert_sfc=.true.
  convert_nst=.false.
  regional=1

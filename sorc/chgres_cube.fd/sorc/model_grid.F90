@@ -406,6 +406,7 @@
 
  real(esmf_kind_r4), allocatable       :: latitude_one_tile(:,:), lat_corners(:,:)
  real(esmf_kind_r4), allocatable       :: longitude_one_tile(:,:), lon_corners(:,:)
+ real(esmf_kind_r8), allocatable			 :: lat(:,:), lon(:,:)
  real(esmf_kind_r8)                    :: lat_target(i_target,j_target), &
                                           lon_target(i_target,j_target)
                                           !lat_corners(ip1_input,jp1_input), &
@@ -413,12 +414,12 @@
  real(esmf_kind_r8)                    :: deltalon, dx
  integer                               :: ncid,id_var, id_dim 
  real(esmf_kind_r8), pointer           :: lat_src_ptr(:,:), lon_src_ptr(:,:)
- character(len=1000)            :: cmdline_msg, temp_msg
+ character(len=10000)            :: cmdline_msg, temp_msg, temp_msg2
  character(len=10)              :: temp_num
 
  num_tiles_input_grid = 1
 
- inv_file = trim(data_dir_input_grid) // "/" // "chgres.inv"
+ inv_file = "chgres.inv"
  the_file = trim(data_dir_input_grid) // "/" // grib2_file_input_grid
  temp_file = trim(base_install_dir)//"/fix/fix_chgres/latlon_grid3.32769.nc" 
   
@@ -483,17 +484,35 @@
     if (temp_num =="3.30") input_grid_type = "lambert"
     
     print*,'- OPEN AND INVENTORY GRIB2 FILE: ',trim(the_file)
-    error=grb2_mk_inv(the_file,inv_file)
-    if (error /=0) call error_handler("OPENING GRIB2 FILE",error)
-  
-    error = grb2_inq(the_file,inv_file,':PRES:',':surface:',nx=i_input, ny=j_input, & 
-            lat=latitude_one_tile, lon=longitude_one_tile, desc=metadata)
-    if (error /= 1) call error_handler("READING FILE", error)
+    
+    if (localpet == 0) then
+      error=grb2_mk_inv(the_file,inv_file)
+      if (error /=0) call error_handler("OPENING GRIB2 FILE",error)
+	  endif
+	  call MPI_BARRIER(MPI_COMM_WORLD, error)
+		error = grb2_inq(the_file,inv_file,':PRES:',':surface:',nx=i_input, ny=j_input, & 
+						lat=latitude_one_tile, lon=longitude_one_tile)
+		if (error /= 1) call error_handler("READING FILE", error)
+			
+		!else
+		!  allocate(latitude_one_tile(0,0))
+		!  allocate(longitude_one_tile(0,0))
+		!endif
+		
+    !call MPI_BARRIER(MPI_COMM_WORLD, error)
+    !call MPI_BCAST(latitude_one_tile,i_input*j_input,MPI_REAL8,0,MPI_COMM_WORLD,error)
+    !call MPI_BCAST(longitude_one_tile,i_input*j_input,MPI_REAL8,0,MPI_COMM_WORLD,error)
+    !print*, 'size of i_input on localpet ',localpet,  sizeof(i_input)
+    !if (localpet==0) print*, 'size of i_input on localpet ', localpet, sizeof(i_input)
+    !call MPI_BARRIER(MPI_COMM_WORLD, error)
+    !call MPI_BCAST(i_input,1,MPI_INTEGER,0,MPI_COMM_WORLD,error)
+    !call MPI_BCAST(j_input,1,MPI_INTEGER,0,MPI_COMM_WORLD,error)
     
    if (localpet==0) print*, "from file lon(1:10,1) = ", longitude_one_tile(1:10,1)
    if (localpet==0) print*, "from file lat(1,1:10) = ", latitude_one_tile(1,1:10)
                 
  endif
+ 
  
  !if (localpet/=0) then
   ! deallocate(longitude_one_tile)
@@ -593,8 +612,8 @@
       do i = clb(1), cub(1)
         !print *, i,j
         !print *, longitude_one_tile(i,j)
-        lon_src_ptr(i,j)=real(longitude_one_tile(i,j),esmf_kind_r8)
-        lat_src_ptr(i,j)=real(latitude_one_tile(i,j),esmf_kind_r8)
+        lon_src_ptr(i,j)=longitude_one_tile(i,j)
+        lat_src_ptr(i,j)=latitude_one_tile(i,j)
       enddo
     enddo
     
@@ -638,15 +657,28 @@
          enddo
        enddo
      else
-       cmdline_msg = trim(wgrib2_path)//" "//trim(the_file)//" -d 1 -grid &> temp.out"
-       call system(cmdline_msg)
-       open(4,file="temp.out")
-       read(4,"(A)") temp_msg
-       close(4)
-       i = index(temp_msg, "Dx ") + len("Dx ")
-       j = index(temp_msg," m Dy")
-       read(temp_msg(i:j-1),*) dx
-       call get_cell_corners( latitude_one_tile, longitude_one_tile, lat_src_ptr, lon_src_ptr, dx, clb, cub)
+       if (localpet==0) then    
+         cmdline_msg = trim(wgrib2_path)//" "//trim(the_file)//" -d 1 -grid &> temp2.out"
+         call system(cmdline_msg)
+				 open(4,file="temp2.out")
+				 do i = 1,6
+				   read(4,"(A)") temp_msg2
+				 enddo
+				 close(4)
+				 print*, trim(temp_msg2)
+				 i = index(temp_msg2, "Dx ") + len("Dx ")
+				 print*, i
+				 j = index(temp_msg2," m Dy")
+				 print*, j
+				 read(temp_msg2(i:j-1),*) dx
+				 print*, "DX = ", dx
+			 endif
+			 call MPI_BARRIER(MPI_COMM_WORLD,error)
+			 call MPI_BCAST(dx,1,MPI_INTEGER,0,MPI_COMM_WORLD,error)
+			 
+       call get_cell_corners(real(latitude_one_tile,esmf_kind_r8), &
+       											real(longitude_one_tile, esmf_kind_r8), &
+       											lat_src_ptr, lon_src_ptr, dx, clb, cub)
      endif     
   elseif (trim(input_grid_type) == "rotated_latlon") then !Read the corner coords from file
   
@@ -680,9 +712,6 @@
   nullify(lon_src_ptr)
   nullify(lat_src_ptr)
 
- deallocate(longitude_one_tile)
- 
- deallocate(latitude_one_tile)
  
  !deallocate(landmask_one_tile)
 
@@ -1094,7 +1123,7 @@
  if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN GridGetCoord", error)
   
- call get_cell_corners(real(latitude,esmf_kind_r4), real(longitude,esmf_kind_r4), lat_src_ptr, lon_src_ptr, dx, clb, cub)
+ call get_cell_corners(latitude, longitude, lat_src_ptr, lon_src_ptr, dx, clb, cub)
 
  deallocate(longitude)
  deallocate(latitude)
@@ -1527,9 +1556,9 @@
   subroutine get_cell_corners( latitude, longitude, latitude_sw, longitude_sw, dx,clb,cub)
   implicit none
 
-  real(esmf_kind_r4), intent(in)    :: latitude(i_input,j_input)
+  real(esmf_kind_r8), intent(in)    :: latitude(i_input,j_input)
   real(esmf_kind_r8), intent(inout), pointer   :: latitude_sw(:,:)
-  real(esmf_kind_r4), intent(in)    :: longitude(i_input, j_input)
+  real(esmf_kind_r8), intent(in)    :: longitude(i_input, j_input)
   real(esmf_kind_r8), intent(inout), pointer   :: longitude_sw(:,:)
   real(esmf_kind_r8), intent(in)    :: dx !grid cell side size (m)
 
@@ -1581,7 +1610,7 @@
    lat2 = asin( sin( lat1 ) * cos( d / R ) + cos( lat1 ) * sin( d / R ) * cos( brng ) );
    lon2= lon1 + atan2( sin( brng ) * sin( d / R ) * cos( lat1 ), cos( d / R ) - sin( lat1 ) * sin( lat2 ) );
    latitude_sw(ip1_input,jp1_input) = lat2 * 180.0_esmf_kind_r8 / pi
-   longitude_sw(jp1_input,jp1_input) = lon2 * 180.0_esmf_kind_r8 / pi
+   longitude_sw(ip1_input,jp1_input) = lon2 * 180.0_esmf_kind_r8 / pi
  endif
 
  end subroutine get_cell_corners
