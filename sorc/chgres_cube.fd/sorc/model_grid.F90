@@ -395,7 +395,7 @@
  
  include 'mpif.h'
 
- character(len=500)           :: the_file, metadata, temp_file
+ character(len=500)           :: the_file, temp_file
 
  integer, intent(in)          :: localpet, npets
 
@@ -488,6 +488,7 @@
     if (localpet == 0) then
       error=grb2_mk_inv(the_file,inv_file)
       if (error /=0) call error_handler("OPENING GRIB2 FILE",error)
+<<<<<<< HEAD
 	  endif
 	  call MPI_BARRIER(MPI_COMM_WORLD, error)
 		error = grb2_inq(the_file,inv_file,':PRES:',':surface:',nx=i_input, ny=j_input, & 
@@ -660,25 +661,25 @@
        if (localpet==0) then    
          cmdline_msg = trim(wgrib2_path)//" "//trim(the_file)//" -d 1 -grid &> temp2.out"
          call system(cmdline_msg)
-				 open(4,file="temp2.out")
-				 do i = 1,6
-				   read(4,"(A)") temp_msg2
-				 enddo
-				 close(4)
-				 print*, trim(temp_msg2)
-				 i = index(temp_msg2, "Dx ") + len("Dx ")
-				 print*, i
-				 j = index(temp_msg2," m Dy")
-				 print*, j
-				 read(temp_msg2(i:j-1),*) dx
-				 print*, "DX = ", dx
-			 endif
-			 call MPI_BARRIER(MPI_COMM_WORLD,error)
-			 call MPI_BCAST(dx,1,MPI_INTEGER,0,MPI_COMM_WORLD,error)
-			 
+         open(4,file="temp2.out")
+         do i = 1,6
+           read(4,"(A)") temp_msg2
+         enddo
+         close(4)
+         print*, trim(temp_msg2)
+         i = index(temp_msg2, "Dx ") + len("Dx ")
+         print*, i
+         j = index(temp_msg2," m Dy")
+         print*, j
+         read(temp_msg2(i:j-1),*) dx
+         print*, "DX = ", dx
+       endif
+       call MPI_BARRIER(MPI_COMM_WORLD,error)
+       call MPI_BCAST(dx,1,MPI_INTEGER,0,MPI_COMM_WORLD,error)
+       
        call get_cell_corners(real(latitude_one_tile,esmf_kind_r8), &
-       											real(longitude_one_tile, esmf_kind_r8), &
-       											lat_src_ptr, lon_src_ptr, dx, clb, cub)
+                            real(longitude_one_tile, esmf_kind_r8), &
+                            lat_src_ptr, lon_src_ptr, dx, clb, cub)
      endif     
   elseif (trim(input_grid_type) == "rotated_latlon") then !Read the corner coords from file
   
@@ -712,6 +713,9 @@
   nullify(lon_src_ptr)
   nullify(lat_src_ptr)
 
+ deallocate(longitude_one_tile)
+
+ deallocate(latitude_one_tile)
  
  !deallocate(landmask_one_tile)
 

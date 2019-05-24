@@ -1,4 +1,4 @@
- module input_data
+module input_data
 
 !--------------------------------------------------------------------------
 ! Module input_data
@@ -4809,6 +4809,7 @@ if (localpet == 0) then
  else
    allocate(dummy3d(0,0,0))
    allocate(dummy2d_8(0,0))
+   allocate(dummy2d(0,0))
 
  endif
  
@@ -6605,7 +6606,7 @@ if (localpet == 0) then
  use wgrib2api
  use netcdf
  use program_setup, only      : get_var_cond, base_install_dir, wgrib2_path
- use model_grid, only         : input_grid_type, longitude_target_grid
+ use model_grid, only         : input_grid_type
  implicit none
  
  character(len=250), intent(in)          :: file, inv
@@ -6614,20 +6615,20 @@ if (localpet == 0) then
  
  real(esmf_kind_r4), dimension(i_input,j_input)  :: alpha
  real(esmf_kind_r8), dimension(i_input,j_input)  :: lon
- real(esmf_kind_r4), allocatable			   :: u_tmp(:,:), v_tmp(:,:)
+ real(esmf_kind_r4), allocatable         :: u_tmp(:,:), v_tmp(:,:)
  real(esmf_kind_r4)                      :: value_u, value_v, lov
  
  integer                                 :: varnum_u, varnum_v, ncid, vlev, id_var, & 
- 																						error, iret, i, j
+                                            error, iret, i
  
- character(len=20)						           :: vname
+ character(len=20)                       :: vname
  character(len=50)                       :: method_u, method_v
- character(len=250)											 :: file_coord, cmdline_msg
- character(len=10000)										 :: temp_msg
+ character(len=250)                      :: file_coord, cmdline_msg
+ character(len=10000)                    :: temp_msg
  
  if (localpet==0) then
-	 allocate(u(i_input,j_input,lev_input))
-	 allocate(v(i_input,j_input,lev_input))
+   allocate(u(i_input,j_input,lev_input))
+   allocate(v(i_input,j_input,lev_input))
  else
    allocate(u(0,0,0))
    allocate(v(0,0,0))
@@ -6644,74 +6645,74 @@ if (localpet == 0) then
                        
  if (trim(input_grid_type)=="rotated_latlon") then  
    if (localpet==0) then                   
-		 print*,"- READ ROTATION ANGLE"
-		 print*, trim(file_coord)
-		 error=nf90_open(trim(file_coord),nf90_nowrite,ncid)
-		 call netcdf_err(error, 'opening nc file' )
-		 error=nf90_inq_varid(ncid, 'gridrot', id_var)
-		 call netcdf_err(error, 'reading field id' )
-		 error=nf90_get_var(ncid, id_var, alpha)
-		 call netcdf_err(error, 'reading field' )
-		 error = nf90_close(ncid)
-	 endif
+     print*,"- READ ROTATION ANGLE"
+     print*, trim(file_coord)
+     error=nf90_open(trim(file_coord),nf90_nowrite,ncid)
+     call netcdf_err(error, 'opening nc file' )
+     error=nf90_inq_varid(ncid, 'gridrot', id_var)
+     call netcdf_err(error, 'reading field id' )
+     error=nf90_get_var(ncid, id_var, alpha)
+     call netcdf_err(error, 'reading field' )
+     error = nf90_close(ncid)
+   endif
  elseif (trim(input_grid_type) == "lambert") then
  
    print*,"- CALL FieldGather FOR INPUT GRID LONGITUDE"
-	 call ESMF_FieldGather(longitude_input_grid, lon, rootPet=0, tile=1, rc=error)
-	 if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-				call error_handler("IN FieldGather", error)
-				
+   call ESMF_FieldGather(longitude_input_grid, lon, rootPet=0, tile=1, rc=error)
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+        
    if (localpet==0) then
-		 cmdline_msg = trim(wgrib2_path)//" "//trim(file)//" -d 1 -grid &> temp.out"
-		 call system(cmdline_msg)
-		 open(4,file="temp2.out")
-		 do i = 1,3
-			read(4,"(A)") temp_msg
-		 enddo
-		 close(4)
-		 i = index(temp_msg, "LoV ") + len("LoV ")
+     cmdline_msg = trim(wgrib2_path)//" "//trim(file)//" -d 1 -grid &> temp.out"
+     call system(cmdline_msg)
+     open(4,file="temp2.out")
+     do i = 1,3
+      read(4,"(A)") temp_msg
+     enddo
+     close(4)
+     i = index(temp_msg, "LoV ") + len("LoV ")
 
-		 read(temp_msg(i:i+10),*) lov
-	 
-			print*, "- CALL GRIDROT"		
-			call gridrot(lov,lon,alpha)
-	 endif
+     read(temp_msg(i:i+10),*) lov
+   
+      print*, "- CALL GRIDROT"    
+      call gridrot(lov,lon,alpha)
+   endif
  endif
  
  if (localpet==0) then
-	 do vlev = 1, lev_input
+   do vlev = 1, lev_input
  
-		 vname = ":UGRD:"
-		 iret = grb2_inq(file,inv,vname,slevs(vlev),data2=u_tmp)
-		 if (iret <= 0) then
-				call handle_grib_error(vname, slevs(vlev),method_u,value_u,varnum_u,iret,var=u_tmp)
-				if (iret==1) then ! missing_var_method == skip
-					call error_handler("READING IN U AT LEVEL "//trim(slevs(vlev))//". SET A FILL "// &
-												"VALUE IN THE VARMAP TABLE IF THIS ERROR IS NOT DESIRABLE.",iret)
-				endif
-		 endif
-	 
-		 vname = ":VGRD:"
-		 iret = grb2_inq(file,inv,vname,slevs(vlev),data2=v_tmp)
-		 if (iret <= 0) then
-				call handle_grib_error(vname, slevs(vlev),method_v,value_v,varnum_v,iret,var=v_tmp)
-				if (iret==1) then ! missing_var_method == skip 
-					call error_handler("READING IN V AT LEVEL "//trim(slevs(vlev))//". SET A FILL "// &
-													"VALUE IN THE VARMAP TABLE IF THIS ERROR IS NOT DESIRABLE.",iret)
-				endif
-			endif
-		
-			if (trim(input_grid_type) == "latlon") then
-				u(:,:,vlev) = u_tmp
-				v(:,:,vlev) = v_tmp
-			else 
-				u(:,:,vlev) = real(u_tmp * cos(alpha) - v_tmp * sin(alpha), esmf_kind_r8)
-				v(:,:,vlev) = real(v_tmp * cos(alpha) + u_tmp * sin(alpha), esmf_kind_r8)
-			endif
-		
-			print*, 'max, min U ', minval(u(:,:,vlev)), maxval(u(:,:,vlev))
-			print*, 'max, min V ', minval(u(:,:,vlev)), maxval(u(:,:,vlev))
-	  enddo
+     vname = ":UGRD:"
+     iret = grb2_inq(file,inv,vname,slevs(vlev),data2=u_tmp)
+     if (iret <= 0) then
+        call handle_grib_error(vname, slevs(vlev),method_u,value_u,varnum_u,iret,var=u_tmp)
+        if (iret==1) then ! missing_var_method == skip
+          call error_handler("READING IN U AT LEVEL "//trim(slevs(vlev))//". SET A FILL "// &
+                        "VALUE IN THE VARMAP TABLE IF THIS ERROR IS NOT DESIRABLE.",iret)
+        endif
+     endif
+   
+     vname = ":VGRD:"
+     iret = grb2_inq(file,inv,vname,slevs(vlev),data2=v_tmp)
+     if (iret <= 0) then
+        call handle_grib_error(vname, slevs(vlev),method_v,value_v,varnum_v,iret,var=v_tmp)
+        if (iret==1) then ! missing_var_method == skip 
+          call error_handler("READING IN V AT LEVEL "//trim(slevs(vlev))//". SET A FILL "// &
+                          "VALUE IN THE VARMAP TABLE IF THIS ERROR IS NOT DESIRABLE.",iret)
+        endif
+      endif
+    
+      if (trim(input_grid_type) == "latlon") then
+        u(:,:,vlev) = u_tmp
+        v(:,:,vlev) = v_tmp
+      else 
+        u(:,:,vlev) = real(u_tmp * cos(alpha) - v_tmp * sin(alpha), esmf_kind_r8)
+        v(:,:,vlev) = real(v_tmp * cos(alpha) + u_tmp * sin(alpha), esmf_kind_r8)
+      endif
+    
+      print*, 'max, min U ', minval(u(:,:,vlev)), maxval(u(:,:,vlev))
+      print*, 'max, min V ', minval(u(:,:,vlev)), maxval(u(:,:,vlev))
+    enddo
  endif
 
 end subroutine read_winds
@@ -6722,16 +6723,16 @@ end subroutine read_winds
 
 subroutine gridrot(lov,lon,rot)
 
-  use model_grid, only								: i_input,j_input
+  use model_grid, only                : i_input,j_input
   implicit none
   
   
-  real(esmf_kind_r4), intent(in) 			:: lov
+  real(esmf_kind_r4), intent(in)      :: lov
   real(esmf_kind_r4), intent(inout)   :: rot(i_input,j_input)
-  real(esmf_kind_r8), intent(in) 			:: lon(i_input,j_input)
+  real(esmf_kind_r8), intent(in)      :: lon(i_input,j_input)
   
-  real(esmf_kind_r4)									:: trot(i_input,j_input), trot_tmp(i_input,j_input)
-  real(esmf_kind_r4)									:: pior = 3.14159265359/180.0_esmf_kind_r4
+  real(esmf_kind_r4)                  :: trot(i_input,j_input), trot_tmp(i_input,j_input)
+  real(esmf_kind_r4)                  :: pior = 3.14159265359/180.0_esmf_kind_r4
   
   trot_tmp = real(lon,esmf_kind_r4)-lov
   trot = trot_tmp
