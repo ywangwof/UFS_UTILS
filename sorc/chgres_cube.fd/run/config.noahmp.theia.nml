@@ -1,13 +1,13 @@
 &config
- fix_dir_target_grid="/scratch4/NCEPDEV/da/noscrub/George.Gayno/chgres_cube/fix/gridgen_sfc/C48"
- mosaic_file_target_grid="/scratch4/NCEPDEV/da/save/George.Gayno/ufs_utils.git/UFS_UTILS/fix/fix_fv3_gmted2010/C48/C48_mosaic.nc"
- orog_dir_target_grid="/scratch4/NCEPDEV/da/save/George.Gayno/ufs_utils.git/UFS_UTILS/fix/fix_fv3_gmted2010/C48"
- orog_files_target_grid="C48_oro_data.tile1.nc","C48_oro_data.tile2.nc","C48_oro_data.tile3.nc","C48_oro_data.tile4.nc","C48_oro_data.tile5.nc","C48_oro_data.tile6.nc"
- data_dir_input_grid="/scratch4/NCEPDEV/da/noscrub/George.Gayno/noah_mp/gdas.2018123100"
- sfc_files_input_grid="gdas.t00z.sfcf000.nemsio"
+ fix_dir_target_grid="/scratch4/NCEPDEV/da/noscrub/George.Gayno/noah_mp/C192/fix_sfc"
+ mosaic_file_target_grid="/scratch4/NCEPDEV/da/noscrub/George.Gayno/noah_mp/C192/C192_mosaic.nc"
+ orog_dir_target_grid="/scratch4/NCEPDEV/da/noscrub/George.Gayno/noah_mp/C192"
+ orog_files_target_grid="C192_oro_data.tile1.nc","C192_oro_data.tile2.nc","C192_oro_data.tile3.nc","C192_oro_data.tile4.nc","C192_oro_data.tile5.nc","C192_oro_data.tile6.nc"
+ data_dir_input_grid="/scratch4/NCEPDEV/da/noscrub/George.Gayno/noah_mp/gfs.20190528"
+ sfc_files_input_grid="gfs.t00z.sfcf000.nemsio"
  vcoord_file_target_grid="/gpfs/dell2/emc/modeling/noscrub/George.Gayno/fv3gfs.git/global-workflow/fix/fix_am/global_hyblev.l64.txt"
- cycle_mon=12
- cycle_day=31
+ cycle_mon=5
+ cycle_day=28
  cycle_hour=0
  convert_atm=.false.
  convert_sfc=.true.

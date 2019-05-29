@@ -492,7 +492,7 @@
 ! open and read file.
 !------------------------------------
 
- noahmp_file="/scratch4/NCEPDEV/stmp4/Jiarui.Dong/noahmp/R1D5C1B2S2_clim/LIS_RST_NOAHMP36_123100"
+ noahmp_file="/scratch4/NCEPDEV/stmp4/Jiarui.Dong/noahmp/R1D5C1B2S2_clim/LIS_RST_NOAHMP36_052800"
  print*,"- READ NOAHMP DATA FROM: ", trim(noahmp_file)
  error=nf90_open(trim(noahmp_file),nf90_nowrite,ncid)
  call netcdf_err(error, 'opening: '//trim(noahmp_file) )
