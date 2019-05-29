@@ -24,7 +24,6 @@ module purge
 module load intel/18.1.163
 module load impi/5.1.1.109 
 module load netcdf/4.3.0
-module load slurm
 
 # Threads useful when ingesting spectral gfs sigio files.
 # Otherwise set to 1.
@@ -37,7 +36,7 @@ mkdir -p $WORKDIR
 cd $WORKDIR
 
 #ln -fs ${SLURM_SUBMIT_DIR}/test.nml ./fort.41
-ln -fs ${SLURM_SUBMIT_DIR}/config.C48.theia.nml ./fort.41
+ln -fs ${SLURM_SUBMIT_DIR}/config.noahmp.theia.nml ./fort.41
 #ln -fs ${SLURM_SUBMIT_DIR}/config.C48.gaussian.theia.nml ./fort.41
 #ln -fs ${SLURM_SUBMIT_DIR}/config.C48.gfs.gaussian.theia.nml ./fort.41
 #ln -fs ${SLURM_SUBMIT_DIR}/config.C48.gfs.spectral.theia.nml ./fort.41
@@ -53,7 +52,7 @@ ln -fs ${SLURM_SUBMIT_DIR}/config.C48.theia.nml ./fort.41
 
 date
 
-srun ${SLURM_SUBMIT_DIR}/../exec/global_chgres.exe
+srun /scratch4/NCEPDEV/da/save/George.Gayno/ufs_utils.git/UFS_UTILS/exec/chgres_cube.exe
 
 date
 
