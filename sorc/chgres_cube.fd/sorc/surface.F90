@@ -2063,7 +2063,7 @@
    if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldGather", rc)
 
-   if (localpet == 0) then
+   if (localpet == 0 .and. maxval(data_one_tile) > 0.0) then
      call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 224)
    endif
 
@@ -2497,6 +2497,9 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldGet", rc)
 
+ ! If soil type didn't exist in the input data, skip this routine 
+ if (minval(soil_type_input_ptr) < -999.9_esmf_kind_r8) return
+ 
  do j = clb(2), cub(2)
    do i = clb(1), cub(1)
 
