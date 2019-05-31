@@ -109,6 +109,7 @@
  character(len=500), public      :: orog_files_target_grid(6) = "NULL"
  character(len=500), public      :: sfc_files_input_grid(6) = "NULL"
  character(len=500), public      :: vcoord_file_target_grid = "NULL"
+ character(len=500), public      :: noahmp_file_input_grid = "NULL"
  character(len=6),   public      :: cres_target_grid = "      "
  character(len=500), public      :: atm_weight_file="NULL"
  character(len=20),  public      :: input_type="restart"
@@ -158,6 +159,7 @@
                    atm_files_input_grid,    &
                    atm_core_files_input_grid,    &
                    atm_tracer_files_input_grid,    &
+                   noahmp_file_input_grid, &
                    data_dir_input_grid,     &
                    vcoord_file_target_grid, &
                    cycle_mon, cycle_day,    &

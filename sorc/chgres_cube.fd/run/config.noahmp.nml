@@ -5,6 +5,7 @@
  orog_files_target_grid="C192_oro_data.tile1.nc","C192_oro_data.tile2.nc","C192_oro_data.tile3.nc","C192_oro_data.tile4.nc","C192_oro_data.tile5.nc","C192_oro_data.tile6.nc"
  data_dir_input_grid="/gpfs/hps3/emc/global/noscrub/George.Gayno/fv3gfs.git/chgres_cube/fix/ICs/C384_2018092800_gaussian"
  sfc_files_input_grid="gdas.t00z.sfcf000.nemsio"
+ noahmp_file_input_grid="NULL"
  vcoord_file_target_grid="/gpfs/dell2/emc/modeling/noscrub/George.Gayno/fv3gfs.git/global-workflow/fix/fix_am/global_hyblev.l64.txt"
  cycle_mon=12
  cycle_day=31

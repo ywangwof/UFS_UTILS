@@ -3,11 +3,12 @@
  mosaic_file_target_grid="/scratch4/NCEPDEV/da/noscrub/George.Gayno/noah_mp/C192/C192_mosaic.nc"
  orog_dir_target_grid="/scratch4/NCEPDEV/da/noscrub/George.Gayno/noah_mp/C192"
  orog_files_target_grid="C192_oro_data.tile1.nc","C192_oro_data.tile2.nc","C192_oro_data.tile3.nc","C192_oro_data.tile4.nc","C192_oro_data.tile5.nc","C192_oro_data.tile6.nc"
- data_dir_input_grid="/scratch4/NCEPDEV/da/noscrub/George.Gayno/noah_mp/gfs.20190528"
- sfc_files_input_grid="gfs.t00z.sfcf000.nemsio"
+ data_dir_input_grid="/scratch4/NCEPDEV/da/noscrub/George.Gayno/noah_mp/gdas.2017101600"
+ sfc_files_input_grid="gdas.t00z.sfcf000.nemsio"
+ noahmp_file_input_grid="/scratch4/NCEPDEV/stmp4/Jiarui.Dong/noahmp/R1D5C1B2S2_clim/LIS_RST_NOAHMP36_101600"
  vcoord_file_target_grid="/gpfs/dell2/emc/modeling/noscrub/George.Gayno/fv3gfs.git/global-workflow/fix/fix_am/global_hyblev.l64.txt"
- cycle_mon=5
- cycle_day=28
+ cycle_mon=10
+ cycle_day=16
  cycle_hour=0
  convert_atm=.false.
  convert_sfc=.true.

@@ -212,11 +212,11 @@
 
  subroutine read_input_noahmp_data(localpet)
 
+ use program_setup, only  : noahmp_file_input_grid
+
  implicit none
 
  integer, intent(in)             :: localpet
-
- character(len=300)              :: noahmp_file
 
  integer                         :: id_var, error, ncid, rc, i, j
 
@@ -492,10 +492,9 @@
 ! open and read file.
 !------------------------------------
 
- noahmp_file="/scratch4/NCEPDEV/stmp4/Jiarui.Dong/noahmp/R1D5C1B2S2_clim/LIS_RST_NOAHMP36_052800"
- print*,"- READ NOAHMP DATA FROM: ", trim(noahmp_file)
- error=nf90_open(trim(noahmp_file),nf90_nowrite,ncid)
- call netcdf_err(error, 'opening: '//trim(noahmp_file) )
+ print*,"- READ NOAHMP DATA FROM: ", trim(noahmp_file_input_grid)
+ error=nf90_open(trim(noahmp_file_input_grid),nf90_nowrite,ncid)
+ call netcdf_err(error, 'opening: '//trim(noahmp_file_input_grid) )
 
  if (localpet == 0) then
    allocate(dummy2d(i_input_noahmp,j_input_noahmp))
