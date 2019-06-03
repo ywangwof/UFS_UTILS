@@ -97,6 +97,28 @@
      default_value = 0.01
    case (502) ! cmxy
      default_value = 0.01
+   case (503) ! xlai
+     default_value = 1.0
+   case (504) ! xsai
+     default_value = 0.1
+   case (505) ! stblcpxy
+     default_value = 500.0
+   case (506) ! fastcpxy
+     default_value = 10000.0
+   case (507) ! stmassxy
+     default_value = 20.0
+   case (508) ! woodxy
+     default_value = 1000.0
+   case (509) ! lfmassxy
+     default_value = 20.0
+   case (510) ! rtmassxy
+     default_value = 150.0
+   case (511) ! waxy
+     default_value = 4800.0
+   case (512) ! wtxy
+     default_value = 4800.0
+   case (513) ! zwtxy
+     default_value = 2.0
    case default
      print*,'- FATAL ERROR.  UNIDENTIFIED FIELD NUMBER : ', field
      call mpi_abort(mpi_comm_world, 77, ierr)

@@ -328,13 +328,30 @@
  real(esmf_kind_r8), pointer     :: landmask_input_ptr(:,:)
  integer(esmf_kind_i8), pointer     :: landmask_target_ptr(:,:)
 
+ real(esmf_kind_r8), pointer         :: canicexy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: canliqxy_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: chxy_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: cmxy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: deeprechxy_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: eahxy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: fastcpxy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: fwetxy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: lfmassxy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: rechxy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: rtmassxy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: stblcpxy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: stmassxy_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: tahxy_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: tgxy_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: tvxy_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: vegt_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: waxy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: woodxy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: wslakexy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: wtxy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: xlaixy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: xsaixy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: zwtxy_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: slcxy_target_ptr(:,:,:)
  real(esmf_kind_r8), pointer         :: stcxy_target_ptr(:,:,:)
  real(esmf_kind_r8), pointer         :: smcxy_target_ptr(:,:,:)
@@ -547,13 +564,322 @@
  l = lbound(unmapped_ptr)
  u = ubound(unmapped_ptr)
 
- print*,'unmapped bounds ',1,u
+ print*,'unmapped bounds conserve ',1,u
 
- do ij = l(1), u(1)
-   call ij_to_i_j(unmapped_ptr(ij), i_target, j_target, i, j)
-   print*,'unmapped at ',i,j
-   stop
- enddo
+! Fill in any missing values that don't require a search.
+
+ if (u(1) > l(1)) then  ! fill in missing values
+
+   print*,"- CALL FieldGet FOR TARGET canicexy."
+   call ESMF_FieldGet(canicexy_target_grid, &
+                    farrayPtr=canicexy_target_ptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGet", rc)
+
+   print*,"- CALL FieldGet FOR TARGET canliqxy."
+   call ESMF_FieldGet(canliqxy_target_grid, &
+                    farrayPtr=canliqxy_target_ptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGet", rc)
+
+   print*,"- CALL FieldGet FOR TARGET fwetxy."
+   call ESMF_FieldGet(fwetxy_target_grid, &
+                    farrayPtr=fwetxy_target_ptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGet", rc)
+
+   print*,"- CALL FieldGet FOR TARGET wslakexy."
+   call ESMF_FieldGet(wslakexy_target_grid, &
+                    farrayPtr=wslakexy_target_ptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGet", rc)
+
+   print*,"- CALL FieldGet FOR TARGET deeprechxy."
+   call ESMF_FieldGet(deeprechxy_target_grid, &
+                    farrayPtr=deeprechxy_target_ptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGet", rc)
+
+   print*,"- CALL FieldGet FOR TARGET rechxy."
+   call ESMF_FieldGet(rechxy_target_grid, &
+                    farrayPtr=rechxy_target_ptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGet", rc)
+
+! for canopy moisture fields, just set to zero.  the remaining fields are not used
+! currently and are zero by default.
+
+   do ij = l(1), u(1)
+     call ij_to_i_j(unmapped_ptr(ij), i_target, j_target, i, j)
+     canicexy_target_ptr(i,j) = 0.0
+     canliqxy_target_ptr(i,j) = 0.0
+     fwetxy_target_ptr(i,j) = 0.0
+     wslakexy_target_ptr(i,j) = 0.0
+     deeprechxy_target_ptr(i,j) = 0.0
+     rechxy_target_ptr(i,j) = 0.0
+   enddo
+
+ endif ! fill in missing values from conservative
+
+! Fill in any missing values that do require a search.
+
+ if (u(1) > l(1)) then  ! fill in missing values
+
+   print*,"- CALL FieldGet FOR TARGET stblcpxy."
+   call ESMF_FieldGet(stblcpxy_target_grid, &
+                    farrayPtr=stblcpxy_target_ptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGet", rc)
+
+   print*,"- CALL FieldGet FOR TARGET fastcpxy."
+   call ESMF_FieldGet(fastcpxy_target_grid, &
+                    farrayPtr=fastcpxy_target_ptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGet", rc)
+
+   print*,"- CALL FieldGet FOR TARGET xsaixy."
+   call ESMF_FieldGet(xsaixy_target_grid, &
+                    farrayPtr=xsaixy_target_ptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGet", rc)
+
+   print*,"- CALL FieldGet FOR TARGET xlaixy."
+   call ESMF_FieldGet(xlaixy_target_grid, &
+                    farrayPtr=xlaixy_target_ptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGet", rc)
+
+   print*,"- CALL FieldGet FOR TARGET stmassxy."
+   call ESMF_FieldGet(stmassxy_target_grid, &
+                    farrayPtr=stmassxy_target_ptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGet", rc)
+
+   print*,"- CALL FieldGet FOR TARGET woodxy."
+   call ESMF_FieldGet(woodxy_target_grid, &
+                    farrayPtr=woodxy_target_ptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGet", rc)
+
+   print*,"- CALL FieldGet FOR TARGET lfmassxy."
+   call ESMF_FieldGet(lfmassxy_target_grid, &
+                    farrayPtr=lfmassxy_target_ptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGet", rc)
+
+   print*,"- CALL FieldGet FOR TARGET rtmassxy."
+   call ESMF_FieldGet(rtmassxy_target_grid, &
+                    farrayPtr=rtmassxy_target_ptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGet", rc)
+
+   print*,"- CALL FieldGet FOR TARGET waxy."
+   call ESMF_FieldGet(waxy_target_grid, &
+                    farrayPtr=waxy_target_ptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGet", rc)
+
+   print*,"- CALL FieldGet FOR TARGET wtxy."
+   call ESMF_FieldGet(wtxy_target_grid, &
+                    farrayPtr=wtxy_target_ptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGet", rc)
+
+   print*,"- CALL FieldGet FOR TARGET zwtxy."
+   call ESMF_FieldGet(zwtxy_target_grid, &
+                    farrayPtr=zwtxy_target_ptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGet", rc)
+
+   do ij = l(1), u(1)
+     call ij_to_i_j(unmapped_ptr(ij), i_target, j_target, i, j)
+     stblcpxy_target_ptr(i,j) = -9999.9
+     fastcpxy_target_ptr(i,j) = -9999.9
+     xlaixy_target_ptr(i,j) = -9999.9
+     xsaixy_target_ptr(i,j) = -9999.9
+     stmassxy_target_ptr(i,j) = -9999.9
+     woodxy_target_ptr(i,j) = -9999.9
+     lfmassxy_target_ptr(i,j) = -9999.9
+     rtmassxy_target_ptr(i,j) = -9999.9
+     waxy_target_ptr(i,j) = -9999.9
+     wtxy_target_ptr(i,j) = -9999.9
+     zwtxy_target_ptr(i,j) = -9999.9
+   enddo
+
+   if (localpet == 0) then
+     allocate(data_one_tile(i_target,j_target))
+     allocate(mask_target_one_tile(i_target,j_target))
+   else
+     allocate(data_one_tile(0,0))
+     allocate(mask_target_one_tile(0,0))
+   endif
+
+   do tile = 1, num_tiles_target_grid
+
+     print*,"- CALL FieldGather FOR TARGET GRID xlaixy: ", tile
+     call ESMF_FieldGather(xlaixy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGather", rc)
+
+     print*,"- CALL FieldGather FOR TARGET GRID MASK TILE: ", tile
+     call ESMF_FieldGather(landmask_target_grid, mask_target_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGather", rc)
+
+     if (localpet == 0) then
+       call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 503)
+     endif
+
+     print*,"- CALL FieldScatter FOR TARGET GRID xlaixy: ", tile
+     call ESMF_FieldScatter(xlaixy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+
+     print*,"- CALL FieldGather FOR TARGET GRID xsaixy: ", tile
+     call ESMF_FieldGather(xsaixy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGather", rc)
+
+     if (localpet == 0) then
+       call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 504)
+     endif
+
+     print*,"- CALL FieldScatter FOR TARGET GRID xsaixy: ", tile
+     call ESMF_FieldScatter(xsaixy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+
+     print*,"- CALL FieldGather FOR TARGET GRID stblcpxy: ", tile
+     call ESMF_FieldGather(stblcpxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGather", rc)
+
+     if (localpet == 0) then
+       call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 505)
+     endif
+
+     print*,"- CALL FieldScatter FOR TARGET GRID stblcpxy: ", tile
+     call ESMF_FieldScatter(stblcpxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+
+     print*,"- CALL FieldGather FOR TARGET GRID fastcpxy: ", tile
+     call ESMF_FieldGather(fastcpxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGather", rc)
+
+     if (localpet == 0) then
+       call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 506)
+     endif
+
+     print*,"- CALL FieldScatter FOR TARGET GRID fastcpxy: ", tile
+     call ESMF_FieldScatter(fastcpxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+
+     print*,"- CALL FieldGather FOR TARGET GRID stmassxy: ", tile
+     call ESMF_FieldGather(stmassxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGather", rc)
+
+     if (localpet == 0) then
+       call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 507)
+     endif
+
+     print*,"- CALL FieldScatter FOR TARGET GRID stmassxy: ", tile
+     call ESMF_FieldScatter(stmassxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+
+     print*,"- CALL FieldGather FOR TARGET GRID woodxy: ", tile
+     call ESMF_FieldGather(woodxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGather", rc)
+
+     if (localpet == 0) then
+       call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 508)
+     endif
+
+     print*,"- CALL FieldScatter FOR TARGET GRID woodxy: ", tile
+     call ESMF_FieldScatter(woodxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+
+     print*,"- CALL FieldGather FOR TARGET GRID lfmassxy: ", tile
+     call ESMF_FieldGather(lfmassxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGather", rc)
+
+     if (localpet == 0) then
+       call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 509)
+     endif
+
+     print*,"- CALL FieldScatter FOR TARGET GRID lfmassxy: ", tile
+     call ESMF_FieldScatter(lfmassxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+
+     print*,"- CALL FieldGather FOR TARGET GRID rtmassxy: ", tile
+     call ESMF_FieldGather(rtmassxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGather", rc)
+
+     if (localpet == 0) then
+       call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 510)
+     endif
+
+     print*,"- CALL FieldScatter FOR TARGET GRID rtmassxy: ", tile
+     call ESMF_FieldScatter(rtmassxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+
+     print*,"- CALL FieldGather FOR TARGET GRID waxy: ", tile
+     call ESMF_FieldGather(waxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGather", rc)
+
+     if (localpet == 0) then
+       call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 511)
+     endif
+
+     print*,"- CALL FieldScatter FOR TARGET GRID waxy: ", tile
+     call ESMF_FieldScatter(waxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+
+     print*,"- CALL FieldGather FOR TARGET GRID wtxy: ", tile
+     call ESMF_FieldGather(wtxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGather", rc)
+
+     if (localpet == 0) then
+       call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 512)
+     endif
+
+     print*,"- CALL FieldScatter FOR TARGET GRID wtxy: ", tile
+     call ESMF_FieldScatter(wtxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+
+     print*,"- CALL FieldGather FOR TARGET GRID zwtxy: ", tile
+     call ESMF_FieldGather(zwtxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGather", rc)
+
+     if (localpet == 0) then
+       call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 513)
+     endif
+
+     print*,"- CALL FieldScatter FOR TARGET GRID zwtxy: ", tile
+     call ESMF_FieldScatter(zwtxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldScatter", rc)
+
+   enddo ! tile number
+
+   deallocate(data_one_tile, mask_target_one_tile)
+
+ endif ! fill in missing values
 
  print*,"- CALL FieldRegridRelease."
  call ESMF_FieldRegridRelease(routehandle=regrid_land, rc=rc)
@@ -810,7 +1136,8 @@
  do ij = l(1), u(1)
    call ij_to_i_j(unmapped_ptr(ij), i_target, j_target, i, j)
    print*,'unmapped neighbor at ',i,j
-   stop
+   print*,'stop '
+   stop 3
  enddo
 
  print*,"- CALL Field_Regrid for taussxy."
