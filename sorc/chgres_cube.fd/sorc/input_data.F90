@@ -2246,7 +2246,7 @@ module input_data
 
 	 tracers_input_nc(n)=trac_names_nc(i)
 	 tracers_input_vmap(n)=trac_names_vmap(i)
-	 tracers(n)=tracers_default(n)
+	 tracers(n)=tracers_default(i)
 
  enddo
 
@@ -3238,7 +3238,7 @@ module input_data
    call read_vcoord(isnative,rlevs,vcoord,lev_input,levp1_input,pt,metadata,iret)
    if (iret /= 0) call error_handler("READING VERTICAL COORDINATE INFO.", iret)
    
-   if (localpet==0) print*, "VCOORD(:,1) = ", vcoord(:,1)
+   if (localpet==0) print*, "VCOORD(:,2) = ", vcoord(:,2)
  
    if (localpet == 0) print*,"- FIND SPFH OR RH IN FILE"
    iret = grb2_inq(the_file,inv_file,':SPFH:',lvl_str_space)
@@ -3604,7 +3604,11 @@ if (localpet == 0) then
  
  if (localpet == 0) then
    print*,'psfc is ',clb(1),clb(2),psptr(clb(1),clb(2))
-   print*,'pres is ',clb(1),clb(2),presptr(clb(1),clb(2),:)
+   if (isnative) then 
+     print*,'pres is ',clb(1),clb(2),presptr(clb(1),clb(2),:)
+   else
+     print*,'pres is ',clb(1),clb(2),atm(1)%var(clb(1),clb(2),:)
+   endif
 
   print*,'pres check 1',localpet,maxval(presptr(:,:,1)),minval(presptr(:,:,1))
   print*,'pres check lev',localpet,maxval(presptr(:,:,lev_input)),minval(presptr(:,:,lev_input))
@@ -5674,7 +5678,7 @@ if (localpet == 0) then
         print*, "WARNING: "//trim(vname)//" NOT AVAILABLE IN FILE. THIS FIELD WILL BE"//&
                    " REPLACED WITH CLIMO. SET A FILL "// &
                       "VALUE IN THE VARMAP TABLE IF THIS IS NOT DESIRABLE."
-        dummy2d(:,:) = -9999.9_esmf_kind_r8
+        dummy2d(:,:) = 0.0_esmf_kind_r8
       endif
    else
       rc=nf90_inq_varid(ncid, 'ICEDEPTH', id_var)
@@ -5726,7 +5730,7 @@ if (localpet == 0) then
  if (localpet == 0) then
    print*,"- READ FFMM."
    
-   dummy2d(:,:) = -9999.9_esmf_kind_r8
+   dummy2d(:,:) = 0.0_esmf_kind_r8
 
    print*,'ffmm ',maxval(dummy2d),minval(dummy2d)
  endif
@@ -5769,7 +5773,7 @@ if (localpet == 0) then
 
  if (localpet == 0) then
    print*,"- READ F10M."
-   dummy2d(:,:) = -9999.9_esmf_kind_r4
+   dummy2d(:,:) = 0.0_esmf_kind_r4
    print*,'f10m ',maxval(dummy2d),minval(dummy2d)
  endif
 
@@ -6677,7 +6681,7 @@ if (localpet == 0) then
       endif
     
       print*, 'max, min U ', minval(u(:,:,vlev)), maxval(u(:,:,vlev))
-      print*, 'max, min V ', minval(u(:,:,vlev)), maxval(u(:,:,vlev))
+      print*, 'max, min V ', minval(v(:,:,vlev)), maxval(v(:,:,vlev))
     enddo
  endif
 

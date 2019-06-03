@@ -336,6 +336,8 @@
    enddo
  enddo
 
+ if (localpet==0) print*, "lat(1,1:10) = ", lat_src_ptr(1,1:10)
+ if (localpet==0) print*, "lon(1,1:10) = ", lon_src_ptr(1,1:10)
  print*,"- CALL GridAddCoord FOR INPUT GRID."
  call ESMF_GridAddCoord(input_grid, &
                         staggerloc=ESMF_STAGGERLOC_CORNER, rc=rc)
@@ -491,26 +493,12 @@
     if (localpet == 0) then
       error=grb2_mk_inv(the_file,inv_file)
       if (error /=0) call error_handler("OPENING GRIB2 FILE",error)
-<<<<<<< HEAD
-	  endif
-	  call MPI_BARRIER(MPI_COMM_WORLD, error)
-		error = grb2_inq(the_file,inv_file,':PRES:',':surface:',nx=i_input, ny=j_input, & 
-						lat=latitude_one_tile, lon=longitude_one_tile)
-		if (error /= 1) call error_handler("READING FILE", error)
-			
-		!else
-		!  allocate(latitude_one_tile(0,0))
-		!  allocate(longitude_one_tile(0,0))
-		!endif
-		
-    !call MPI_BARRIER(MPI_COMM_WORLD, error)
-    !call MPI_BCAST(latitude_one_tile,i_input*j_input,MPI_REAL8,0,MPI_COMM_WORLD,error)
-    !call MPI_BCAST(longitude_one_tile,i_input*j_input,MPI_REAL8,0,MPI_COMM_WORLD,error)
-    !print*, 'size of i_input on localpet ',localpet,  sizeof(i_input)
-    !if (localpet==0) print*, 'size of i_input on localpet ', localpet, sizeof(i_input)
-    !call MPI_BARRIER(MPI_COMM_WORLD, error)
-    !call MPI_BCAST(i_input,1,MPI_INTEGER,0,MPI_COMM_WORLD,error)
-    !call MPI_BCAST(j_input,1,MPI_INTEGER,0,MPI_COMM_WORLD,error)
+     endif
+     call MPI_BARRIER(MPI_COMM_WORLD, error)
+     error = grb2_inq(the_file,inv_file,':PRES:',':surface:',nx=i_input, ny=j_input, & 
+		lat=latitude_one_tile, lon=longitude_one_tile)
+     if (error /= 1) call error_handler("READING FILE", error)
+
     
    if (localpet==0) print*, "from file lon(1:10,1) = ", longitude_one_tile(1:10,1)
    if (localpet==0) print*, "from file lat(1,1:10) = ", latitude_one_tile(1,1:10)
