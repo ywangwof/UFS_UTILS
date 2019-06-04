@@ -165,11 +165,14 @@
  type(esmf_field), public        :: snicexy_input_grid
  type(esmf_field), public        :: snliqxy_input_grid
  type(esmf_field), public        :: tsnoxy_input_grid
+ type(esmf_field), public        :: zsnsoxy_input_grid
 
  integer, parameter, public      :: lsoil_input_noahmp=4  ! # of soil layers,
                                                    ! # hardwire for now
  integer, parameter, public      :: lsnow_input_noahmp=3  ! # of snow layers,
                                                    ! # hardwire for now
+ integer, parameter, public      :: levels_input_noahmp = lsoil_input_noahmp + &
+                                                          lsnow_input_noahmp
 
  public :: read_input_atm_data
  public :: cleanup_input_atm_data
@@ -485,6 +488,15 @@
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lsnow_input_noahmp/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR INPUT GRID ZSNSOXY."
+ zsnsoxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                   ungriddedLBound=(/1/), &
+                                   ungriddedUBound=(/levels_input_noahmp/), rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldCreate", rc)
 
@@ -996,9 +1008,29 @@
 
  deallocate(dummy3d)
 
+ if (localpet == 0) then
+   allocate(dummy3d(i_input_noahmp,j_input_noahmp,levels_input_noahmp))
+ else
+   allocate(dummy3d(0,0,0))
+ endif
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'ZSNSOXY', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy3d, start=(/1,1,1/),count=(/i_input_noahmp,j_input_noahmp,levels_input_noahmp/))
+   call netcdf_err(error, 'reading field' )
+   print*,'zsnsoxy ',maxval(dummy3d),minval(dummy3d)
+ endif
+
+ print*,"- CALL FieldScatter FOR ZSNSOXY."
+ call ESMF_FieldScatter(zsnsoxy_input_grid, dummy3d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
  error = nf90_close(ncid)
 
 
+ deallocate(dummy3d)
 
  end subroutine read_input_noahmp_data
 

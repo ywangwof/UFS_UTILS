@@ -107,6 +107,7 @@
  type(esmf_field), public           :: slcxy_target_grid
  type(esmf_field), public           :: smcxy_target_grid
  type(esmf_field), public           :: smcwtdxy_target_grid
+ type(esmf_field), public           :: smoiseq_target_grid
  type(esmf_field), public           :: sneqvoxy_target_grid
  type(esmf_field), public           :: snicexy_target_grid
  type(esmf_field), public           :: snliqxy_target_grid
@@ -125,6 +126,7 @@
  type(esmf_field), public           :: wtxy_target_grid
  type(esmf_field), public           :: xlaixy_target_grid
  type(esmf_field), public           :: xsaixy_target_grid
+ type(esmf_field), public           :: zsnsoxy_target_grid
  type(esmf_field), public           :: zwtxy_target_grid
 
  type(esmf_field)                   :: soil_type_from_input_grid
@@ -285,7 +287,7 @@
 
  use esmf
 
- use input_data, only                : fwetxy_input_grid, &
+ use input_data, only                : fwetxy_input_grid, zsnsoxy_input_grid, &
                                        lfmassxy_input_grid, rtmassxy_input_grid, &
                                        stmassxy_input_grid, woodxy_input_grid, &
                                        stblcpxy_input_grid, fastcpxy_input_grid, &
@@ -355,6 +357,7 @@
  real(esmf_kind_r8), pointer         :: slcxy_target_ptr(:,:,:)
  real(esmf_kind_r8), pointer         :: stcxy_target_ptr(:,:,:)
  real(esmf_kind_r8), pointer         :: smcxy_target_ptr(:,:,:)
+ real(esmf_kind_r8), pointer         :: smoiseq_target_ptr(:,:,:)
 
  integer(esmf_kind_i8), allocatable  :: mask_target_one_tile(:,:)
  real(esmf_kind_r8), allocatable    :: data_one_tile(:,:)
@@ -1212,6 +1215,14 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldRegrid", rc)
 
+ print*,"- CALL Field_Regrid for zsnsoxy."
+ call ESMF_FieldRegrid(zsnsoxy_input_grid, &
+                       zsnsoxy_target_grid, &
+                       routehandle=regrid_neighbor, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
  print*,"- CALL Field_Regrid for slcxy."
  call ESMF_FieldRegrid(slcxy_input_grid, &
                        slcxy_target_grid, &
@@ -1264,6 +1275,12 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldGet", rc)
 
+ print*,"- CALL FieldGet FOR TARGET smoiseq."
+ call ESMF_FieldGet(smoiseq_target_grid, &
+                    farrayPtr=smoiseq_target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGet", rc)
+
  do j = clb(2), cub(2)
  do i = clb(1), cub(1)
 
@@ -1275,6 +1292,15 @@
      enddo
    endif
 
+! field not used currently.  set to flag value - the soil moisture
+! at layer 4.
+
+   if (landmask_target_ptr(i,j) == 1) then
+     smoiseq_target_ptr(i,j,:) = smcxy_target_ptr(i,j,cub(3))
+   else
+     smoiseq_target_ptr(i,j,:) = 0.0
+   endif
+     
  enddo
  enddo
 
@@ -4249,7 +4275,7 @@
  subroutine create_surface_noahmp_esmf_fields
 
  use model_grid, only         : target_grid, lsnow_target_noahmp, &
-                                lsoil_target
+                                lsoil_target, levels_target_noahmp
 
  implicit none
 
@@ -4485,6 +4511,15 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldCreate", rc)
 
+ print*,"- CALL FieldCreate FOR TARGET GRID SMOISEQ."
+ smoiseq_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                    ungriddedLBound=(/1/), &
+                                    ungriddedUBound=(/lsoil_target/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
  print*,"- CALL FieldCreate FOR TARGET GRID TSNOXY."
  tsnoxy_target_grid = ESMF_FieldCreate(target_grid, &
                                     typekind=ESMF_TYPEKIND_R8, &
@@ -4509,6 +4544,15 @@
                                     staggerloc=ESMF_STAGGERLOC_CENTER, &
                                     ungriddedLBound=(/1/), &
                                     ungriddedUBound=(/lsnow_target_noahmp/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldCreate FOR TARGET GRID ZSNSOXY."
+ zsnsoxy_target_grid = ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                    ungriddedLBound=(/1/), &
+                                    ungriddedUBound=(/levels_target_noahmp/), rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldCreate", rc)
 

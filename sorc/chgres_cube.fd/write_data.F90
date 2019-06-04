@@ -1430,7 +1430,7 @@
  use model_grid, only            : num_tiles_target_grid, &
                                    landmask_target_grid, &
                                    i_target, j_target, lsoil_target, &
-                                   lsnow_target_noahmp
+                                   lsnow_target_noahmp, levels_target_noahmp
 
  use program_setup, only         : convert_nst, halo=>halo_bndy
 
@@ -1486,8 +1486,9 @@
                                    snicexy_target_grid, snliqxy_target_grid, &
                                    taussxy_target_grid, smcwtdxy_target_grid, &
                                    smcxy_target_grid, slcxy_target_grid, &
-                                   stcxy_target_grid, &
-                                   xsaixy_target_grid, xlaixy_target_grid
+                                   stcxy_target_grid, zsnsoxy_target_grid, &
+                                   xsaixy_target_grid, xlaixy_target_grid, &
+                                   smoiseq_target_grid
 
  use static_data, only           : alvsf_target_grid,   &
                                    alnsf_target_grid,   &
@@ -1512,7 +1513,7 @@
  integer                        :: fsize=65536, initial = 0
  integer                        :: header_buffer_val = 16384
  integer                        :: dim_x, dim_y, dim_lsoil, dim_time, dim_lsnow
- integer                        :: error, i, ncid, tile
+ integer                        :: dim_levels, error, i, ncid, tile
  integer                        :: id_x, id_y, id_lsoil, id_lsnow
  integer                        :: id_slmsk, id_time
  integer                        :: id_tsea, id_sheleg, id_tg3
@@ -1539,9 +1540,9 @@
  integer                        :: id_wslakexy, id_zwtxy, id_deeprechxy
  integer                        :: id_rechxy, id_canicexy, id_canliqxy
  integer                        :: id_eahxy, id_tahxy, id_tgxy, id_tvxy
- integer                        :: id_chxy, id_cmxy
+ integer                        :: id_chxy, id_cmxy, id_zsnsoxy
  integer                        :: id_snowxy, id_tsnoxy, id_snicexy, id_snliqxy
- integer                        :: id_smcwtdxy, id_taussxy
+ integer                        :: id_smcwtdxy, id_taussxy, id_smoiseq
  integer                        :: i_target_out, j_target_out
  integer                        :: istart, iend, jstart, jend
 
@@ -1551,10 +1552,12 @@
 
  real(kind=4), allocatable       :: lsoil_data(:), x_data(:), y_data(:)
  real(kind=8), allocatable       :: dum2d(:,:), dum3d(:,:,:), dum3dsnow(:,:,:)
+ real(kind=8), allocatable       :: dum3dall(:,:,:)
  real(kind=4)                    :: times
  real(esmf_kind_r8), allocatable :: data_one_tile(:,:)
  real(esmf_kind_r8), allocatable :: data_one_tile_3d(:,:,:)
  real(esmf_kind_r8), allocatable :: data_one_tile_3dsnow(:,:,:)
+ real(esmf_kind_r8), allocatable :: data_one_tile_3dall(:,:,:)
 
      noahmp=.true.
 
@@ -1593,18 +1596,22 @@
    allocate(data_one_tile(i_target,j_target))
    allocate(data_one_tile_3d(i_target,j_target,lsoil_target))
    allocate(data_one_tile_3dsnow(i_target,j_target,lsnow_target_noahmp))
+   allocate(data_one_tile_3dall(i_target,j_target,levels_target_noahmp))
    allocate(idata_one_tile(i_target,j_target))
    allocate(dum2d(i_target_out,j_target_out))
    allocate(dum3d(i_target_out,j_target_out,lsoil_target))
    allocate(dum3dsnow(i_target_out,j_target_out,lsnow_target_noahmp))
+   allocate(dum3dall(i_target_out,j_target_out,levels_target_noahmp))
  else
    allocate(data_one_tile(0,0))
    allocate(data_one_tile_3d(0,0,0))
    allocate(data_one_tile_3dsnow(0,0,0))
+   allocate(data_one_tile_3dall(0,0,0))
    allocate(idata_one_tile(0,0))
    allocate(dum2d(0,0))
    allocate(dum3d(0,0,0))
    allocate(dum3dsnow(0,0,0))
+   allocate(dum3dall(0,0,0))
  endif
 
  TILE_LOOP : do tile = 1, num_tiles_target_grid
@@ -1629,6 +1636,8 @@
      if (noahmp) then
        error = nf90_def_dim(ncid, 'zaxis_2', lsnow_target_noahmp, dim_lsnow)
        call netcdf_err(error, 'DEFINING ZAXIS_2 DIMENSION' )
+       error = nf90_def_dim(ncid, 'zaxis_3', levels_target_noahmp, dim_levels)
+       call netcdf_err(error, 'DEFINING ZAXIS_3 DIMENSION' )
      endif
      error = nf90_def_dim(ncid, 'Time', 1, dim_time)
      call netcdf_err(error, 'DEFINING TIME DIMENSION' )
@@ -2272,6 +2281,20 @@
        call netcdf_err(error, 'DEFINING SNLIQXY LONG NAME' )
        error = nf90_put_att(ncid, id_snliqxy, "units", "none")
        call netcdf_err(error, 'DEFINING SNLIQXY UNITS' )
+
+       error = nf90_def_var(ncid, 'smoiseq', NF90_DOUBLE, (/dim_x,dim_y,dim_lsoil,dim_time/), id_smoiseq)
+       call netcdf_err(error, 'DEFINING SMOISEQ' )
+       error = nf90_put_att(ncid, id_smoiseq, "long_name", "smoiseq")
+       call netcdf_err(error, 'DEFINING SMOISEQ LONG NAME' )
+       error = nf90_put_att(ncid, id_smoiseq, "units", "none")
+       call netcdf_err(error, 'DEFINING SMOISEQ UNITS' )
+
+       error = nf90_def_var(ncid, 'zsnsoxy', NF90_DOUBLE, (/dim_x,dim_y,dim_levels,dim_time/), id_zsnsoxy)
+       call netcdf_err(error, 'DEFINING ZSNSOXY' )
+       error = nf90_put_att(ncid, id_zsnsoxy, "long_name", "zsnsoxy")
+       call netcdf_err(error, 'DEFINING ZSNSOXY LONG NAME' )
+       error = nf90_put_att(ncid, id_zsnsoxy, "units", "none")
+       call netcdf_err(error, 'DEFINING ZSNSOXY UNITS' )
 
      endif
 
@@ -3232,6 +3255,27 @@
        call netcdf_err(error, 'WRITING SNLIQXY RECORD' )
      endif
 
+     print*,"- CALL FieldGather FOR TARGET GRID ZSNSOXY FOR TILE: ", tile
+     call ESMF_FieldGather(zsnsoxy_target_grid, data_one_tile_3dall, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum3dall(:,:,:) = data_one_tile_3dall(istart:iend, jstart:jend,:)
+       error = nf90_put_var( ncid, id_zsnsoxy, dum3dall, start=(/1,1,1,1/), count=(/i_target_out,j_target_out,levels_target_noahmp,1/))
+       call netcdf_err(error, 'WRITING ZSNSOXY RECORD' )
+     endif
+
+     print*,"- CALL FieldGather FOR TARGET GRID SMOISEQ FOR TILE: ", tile
+     call ESMF_FieldGather(smoiseq_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       dum3d(:,:,:) = data_one_tile_3d(istart:iend, jstart:jend,:)
+       error = nf90_put_var( ncid, id_smoiseq, dum3d, start=(/1,1,1,1/), count=(/i_target_out,j_target_out,lsoil_target,1/))
+       call netcdf_err(error, 'WRITING SMOISEQ RECORD' )
+     endif
    endif
 
 !-------------------------------------------------------------------------------
@@ -3244,7 +3288,7 @@
 
  deallocate(lsoil_data, x_data, y_data)
  deallocate(data_one_tile, data_one_tile_3d, idata_one_tile, dum2d, dum3d)
- if (noahmp) deallocate(data_one_tile_3dsnow, dum3dsnow)
+ if (noahmp) deallocate(data_one_tile_3dsnow, dum3dsnow, data_one_tile_3dall, dum3dall)
 
  return
 

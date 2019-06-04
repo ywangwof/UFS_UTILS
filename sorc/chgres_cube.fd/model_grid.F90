@@ -95,6 +95,8 @@
 
 ! noahmp
  integer, parameter, public             :: lsnow_target_noahmp = 3 ! # snow layers
+ integer, parameter, public             :: levels_target_noahmp = lsoil_target + &
+                                                                  lsnow_target_noahmp
 
  public :: define_target_grid
  public :: define_input_grid
