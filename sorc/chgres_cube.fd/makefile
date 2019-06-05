@@ -2,7 +2,7 @@ SHELL=	/bin/sh
 
 include $(ESMFMKFILE)
 
-CMD= global_chgres.exe
+CMD= chgres_cube.exe
 
 OBJS = chgres.o \
        atmosphere.o \
@@ -18,7 +18,7 @@ OBJS = chgres.o \
        atmdata_type.o
 
 $(CMD):	$(OBJS)
-	$(FCOMP) $(FFLAGS) $(ESMF_F90COMPILEPATHS) -o $(CMD) $(OBJS) $(WGRIB2API_LIB) $(WGRIB2_LIB) $(SP_LIBd) $(NEMSIO_LIB) $(BACIO_LIB4) $(W3NCO_LIBd) $(SFCIO_LIB4) $(SIGIO_LIB4) $(ESMF_F90LINKPATHS) $(ESMF_F90ESMFLINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
+	$(FCOMP) $(FFLAGS) $(ESMF_F90COMPILEPATHS) -o $(CMD) $(OBJS) $(WGRIB2API_LIB) $(WGRIB2_LIB) $(SP_LIBd) $(NEMSIO_LIB) $(BACIO_LIB4) $(W3NCO_LIBd) $(SFCIO_LIB4) $(SIGIO_LIB4) $(ESMF_F90LINKPATHS) $(ESMF_F90ESMFLINKRPATHS) $(ESMF_F90ESMFLINKLIBS) -g -traceback
 	mv $(CMD) ../../../exec
 
 model_grid.o:  program_setup.o model_grid.F90
@@ -58,4 +58,7 @@ static_data.o: model_grid.o program_setup.o static_data.F90
 	$(FCOMP) $(FFLAGS) $(ESMF_F90COMPILEPATHS) -c static_data.F90
 
 clean:
-	rm -f *.o *.mod ${CMD} ../exec/${CMD}
+	rm -f *.o *.mod ${CMD} ../../exec/${CMD}
+
+install:
+	mv $(CMD) ../../exec
