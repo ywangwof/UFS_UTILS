@@ -3229,7 +3229,7 @@ module input_data
       slevs(i) = metadata(j-1:k)
       
       if (.not. isnative) rlevs(i) = rlevs(i) * 100.0
-      if (localpet==0) print*, "LEVEL = ", slevs
+      if (localpet==0) print*, "LEVEL = ", slevs(i)
     enddo
 
    allocate(vcoord(levp1_input,2))
@@ -3238,7 +3238,7 @@ module input_data
    call read_vcoord(isnative,rlevs,vcoord,lev_input,levp1_input,pt,metadata,iret)
    if (iret /= 0) call error_handler("READING VERTICAL COORDINATE INFO.", iret)
    
-   if (localpet==0) print*, "VCOORD(:,2) = ", vcoord(:,2)
+   !if (localpet==0) print*, "VCOORD(:,1) = ", vcoord(:,1)
  
    if (localpet == 0) print*,"- FIND SPFH OR RH IN FILE"
    iret = grb2_inq(the_file,inv_file,':SPFH:',lvl_str_space)
@@ -3604,7 +3604,7 @@ if (localpet == 0) then
  
  if (localpet == 0) then
    print*,'psfc is ',clb(1),clb(2),psptr(clb(1),clb(2))
-   if (isnative) then 
+   if (isnative) then
      print*,'pres is ',clb(1),clb(2),presptr(clb(1),clb(2),:)
    else
      print*,'pres is ',clb(1),clb(2),atm(1)%var(clb(1),clb(2),:)
@@ -5049,7 +5049,7 @@ if (localpet == 0) then
         print*, "WARNING: "//trim(vname)//" NOT AVAILABLE IN FILE. THIS FIELD WILL BE"//&
                    " REPLACED WITH CLIMO. SET A FILL "// &
                       "VALUE IN THE VARMAP TABLE IF THIS IS NOT DESIRABLE."
-        dummy2d(:,:) = -9999.9_esmf_kind_r4
+        dummy2d(:,:) = 0.0_esmf_kind_r4
       endif
     endif
    dummy2d_8= real(dummy2d,esmf_kind_r8)
@@ -5076,7 +5076,7 @@ if (localpet == 0) then
         print*, "WARNING: "//trim(vname)//" NOT AVAILABLE IN FILE. THIS FIELD WILL NOT"//&
                    " BE WRITTEN TO THE INPUT FILE. SET A FILL "// &
                       "VALUE IN THE VARMAP TABLE IF THIS IS NOT DESIRABLE."
-        dummy2d(:,:) = -9999.9_esmf_kind_r4
+        dummy2d(:,:) = 0.0_esmf_kind_r4
       endif
     endif
    dummy2d_8= real(dummy2d,esmf_kind_r8)
@@ -5102,7 +5102,7 @@ if (localpet == 0) then
         print*, "WARNING: "//trim(vname)//" NOT AVAILABLE IN FILE. THIS FIELD WILL NOT"//&
                    " BE WRITTEN TO THE INPUT FILE. SET A FILL "// &
                       "VALUE IN THE VARMAP TABLE IF THIS IS NOT DESIRABLE."
-        dummy2d(:,:) = -9999.9_esmf_kind_r4
+        dummy2d(:,:) = 0.0_esmf_kind_r4
       endif
     endif
    dummy2d_8= real(dummy2d,esmf_kind_r8)
@@ -5129,7 +5129,7 @@ if (localpet == 0) then
         print*, "WARNING: "//trim(vname)//" NOT AVAILABLE IN FILE. THIS FIELD WILL "//&
                    "REPLACED WITH CLIMO. SET A FILL "// &
                       "VALUE IN THE VARMAP TABLE IF THIS IS NOT DESIRABLE."
-        dummy2d(:,:) = -9999.9_esmf_kind_r4
+        dummy2d(:,:) = 0.0_esmf_kind_r4
       endif
     endif
    dummy2d_8= real(dummy2d,esmf_kind_r8)
@@ -5156,7 +5156,7 @@ if (localpet == 0) then
         print*, "WARNING: "//trim(vname)//" NOT AVAILABLE IN FILE. THIS FIELD WILL NOT"//&
                    " BE WRITTEN TO THE INPUT FILE. SET A FILL "// &
                       "VALUE IN THE VARMAP TABLE IF THIS IS NOT DESIRABLE."
-        dummy2d(:,:) = -9999.9_esmf_kind_r4
+        dummy2d(:,:) = 0.0_esmf_kind_r4
       endif
     endif
    dummy2d_8= real(dummy2d,esmf_kind_r8)
@@ -5183,7 +5183,7 @@ if (localpet == 0) then
         print*, "WARNING: "//trim(vname)//" NOT AVAILABLE IN FILE. THIS FIELD WILL"//&
                    " REPLACED WITH CLIMO. SET A FILL "// &
                       "VALUE IN THE VARMAP TABLE IF THIS IS NOT DESIRABLE."
-        dummy2d(:,:) = -9999.9_esmf_kind_r4
+        dummy2d(:,:) = 0.0_esmf_kind_r4
       endif
     endif
    dummy2d_8= real(dummy2d,esmf_kind_r8)
@@ -5210,7 +5210,7 @@ if (localpet == 0) then
         print*, "WARNING: "//trim(vname)//" NOT AVAILABLE IN FILE. THIS FIELD WILL BE"//&
                    " REPLACED WITH CLIMO. SET A FILL "// &
                       "VALUE IN THE VARMAP TABLE IF THIS IS NOT DESIRABLE."
-        dummy2d(:,:) = -9999.9_esmf_kind_r4
+        dummy2d(:,:) = 0.0_esmf_kind_r4
       endif
     else
       ! Grib files have z0 (m), but fv3 expects z0(cm)
