@@ -696,7 +696,8 @@
                     farrayPtr=soil_temp_target_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldGet", rc)
-
+      
+      
  print*,"- CALL Field_Regrid for sea ice depth."
  call ESMF_FieldRegrid(seaice_depth_input_grid, &
                        seaice_depth_target_grid, &
@@ -775,25 +776,23 @@
    if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldGather", rc)
       
-		print*,"- CALL FieldGather FOR INPUT GRID SEAICE DEPTH TILE: ", tile
-    call ESMF_FieldGather(seaice_depth_input_grid, data_one_tile_input, rootPet=0, tile=tile, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-      call error_handler("IN FieldGather", rc)
+   if (count(landmask_target_ptr == 2) == 0) data_one_tile(:,:) = 0.0_esmf_kind_r8
 
    print*,"- CALL FieldGather FOR TARGET LANDMASK TILE: ", tile
    call ESMF_FieldGather(landmask_target_grid, mask_target_one_tile, rootPet=0, tile=tile, rc=rc)
    if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldGather", rc)
 
+    
    if (localpet == 0) then
+   
+     print*, "before search at sea ice, target sea ice depth min, max = ", minval(data_one_tile), &
+ 				maxval(data_one_tile)
      where(mask_target_one_tile == 1) mask_target_one_tile = 0
      where(mask_target_one_tile == 2) mask_target_one_tile = 1
      call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 92)
-     
-     if (count(mask_target_one_tile==1) == 0 .and. all(data_one_tile_input<-9999.0_esmf_kind_r8)) &
-     		data_one_tile(:,:) = -9999.9
-     
-     deallocate(data_one_tile_input)
+     print*, "after search at sea ice, target sea ice depth min, max = ", minval(data_one_tile), &
+ 				maxval(data_one_tile)
    endif
 
    print*,"- CALL FieldScatter FOR TARGET GRID SEAICE DEPTH TILE: ", tile
@@ -806,7 +805,10 @@
    if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldGather", rc)
 
+   
    if (localpet == 0) then
+     print*, "before search at sea ice, target snow depth min, max = ", minval(data_one_tile), &
+ 				maxval(data_one_tile)
      call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 66)
      print*, "after search at sea ice, target snow depth min, max = ", minval(data_one_tile), &
  				maxval(data_one_tile)

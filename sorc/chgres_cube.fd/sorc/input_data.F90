@@ -5687,7 +5687,7 @@ if (localpet == 0) then
    		call netcdf_err(rc, 'reading field')
    endif
    
-   print*,'icetk ',maxval(dummy2d),minval(dummy2d)
+   print*,'hice ',maxval(dummy2d),minval(dummy2d)
  endif
 
  print*,"- CALL FieldScatter FOR INPUT GRID SEAICE DEPTH."
@@ -5710,7 +5710,7 @@ if (localpet == 0) then
         print*, "WARNING: "//trim(vname)//" NOT AVAILABLE IN FILE. THIS FIELD WILL NOT"//&
                    " BE WRITTEN TO THE INPUT FILE. SET A FILL "// &
                       "VALUE IN THE VARMAP TABLE IF THIS IS NOT DESIRABLE."
-        dummy2d(:,:) = -9999.9_esmf_kind_r8
+        dummy2d(:,:) = 0.0_esmf_kind_r8
       endif
     else
       rc=nf90_get_var(ncid, id_var, dummy2d)
@@ -5732,7 +5732,7 @@ if (localpet == 0) then
    
    dummy2d(:,:) = 0.0_esmf_kind_r8
 
-   print*,'ffmm ',maxval(dummy2d),minval(dummy2d)
+   print*,'hice ',maxval(dummy2d),minval(dummy2d)
  endif
 
  print*,"- CALL FieldScatter FOR INPUT GRID FFMM"
@@ -5755,7 +5755,7 @@ if (localpet == 0) then
         print*, "WARNING: "//trim(vname)//" NOT AVAILABLE IN FILE. THIS FIELD WILL "//&
                    "REPLACED WITH CLIMO. SET A FILL "// &
                       "VALUE IN THE VARMAP TABLE IF THIS IS NOT DESIRABLE."
-        dummy2d(:,:) = -9999.9_esmf_kind_r8
+        dummy2d(:,:) = 0.0_esmf_kind_r8
       endif
     else
       rc=nf90_get_var(ncid, id_var, dummy2d)
@@ -5797,7 +5797,7 @@ if (localpet == 0) then
         print*, "WARNING: "//trim(vname)//" NOT AVAILABLE IN FILE. THIS FIELD WILL"//&
                    " REPLACED WITH CLIMO. SET A FILL "// &
                       "VALUE IN THE VARMAP TABLE IF THIS IS NOT DESIRABLE."
-        dummy2d(:,:) = -9999.9_esmf_kind_r4
+        dummy2d(:,:) = 0.0_esmf_kind_r4
       endif
     else
       rc=nf90_get_var(ncid, id_var, dummy2d)
@@ -5827,7 +5827,7 @@ if (localpet == 0) then
         print*, "WARNING: "//trim(vname)//" NOT AVAILABLE IN FILE. THIS FIELD WILL BE"//&
                    " REPLACED WITH CLIMO. SET A FILL "// &
                       "VALUE IN THE VARMAP TABLE IF THIS IS NOT DESIRABLE."
-        dummy2d(:,:) = -9999.9_esmf_kind_r4
+        dummy2d(:,:) = 0.0_esmf_kind_r4
       endif
     else
       rc=nf90_get_var(ncid, id_var, dummy2d)

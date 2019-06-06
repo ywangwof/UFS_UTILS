@@ -2747,7 +2747,7 @@
      endif
 
 !--- open the file
-     error = nf90_create(outfile, IOR(NF90_NETCDF4,NF90_CLASSIC_MODEL), &
+     error = nf90_create(outfile, NF90_NETCDF4, & !IOR(NF90_NETCDF4,NF90_CLASSIC_MODEL), &
                          ncid, initialsize=initial, chunksize=fsize)
      call netcdf_err(error, 'CREATING FILE='//trim(outfile) )
 
