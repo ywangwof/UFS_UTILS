@@ -1514,7 +1514,7 @@
  integer                        :: header_buffer_val = 16384
  integer                        :: dim_x, dim_y, dim_lsoil, dim_time, dim_lsnow
  integer                        :: dim_levels, error, i, ncid, tile
- integer                        :: id_x, id_y, id_lsoil, id_lsnow
+ integer                        :: id_x, id_y, id_lsoil, id_lsnow, id_levels
  integer                        :: id_slmsk, id_time
  integer                        :: id_tsea, id_sheleg, id_tg3
  integer                        :: id_zorl, id_alvsf, id_alvwf
@@ -1551,6 +1551,7 @@
  logical :: noahmp
 
  real(kind=4), allocatable       :: lsoil_data(:), x_data(:), y_data(:)
+ real(kind=4), allocatable       :: lsnow_data(:), levels_data(:)
  real(kind=8), allocatable       :: dum2d(:,:), dum3d(:,:,:), dum3dsnow(:,:,:)
  real(kind=8), allocatable       :: dum3dall(:,:,:)
  real(kind=4)                    :: times
@@ -1574,6 +1575,16 @@
  allocate(lsoil_data(lsoil_target))
  do i = 1, lsoil_target
    lsoil_data(i) = float(i)
+ enddo
+
+ allocate(lsnow_data(lsnow_target_noahmp))
+ do i = 1, lsnow_target_noahmp
+   lsnow_data(i) = float(i)
+ enddo
+
+ allocate(levels_data(levels_target_noahmp))
+ do i = 1, levels_target_noahmp
+   levels_data(i) = float(i)
  enddo
 
  allocate(x_data(i_target_out))
@@ -1678,6 +1689,17 @@
      call netcdf_err(error, 'DEFINING ZAXIS_2 UNITS' )
      error = nf90_put_att(ncid, id_lsnow, "cartesian_axis", "Z")
      call netcdf_err(error, 'WRITING ZAXIS_2 FIELD' )
+
+     if (noahmp) then
+       error = nf90_def_var(ncid, 'zaxis_3', NF90_FLOAT, (/dim_levels/), id_levels)
+       call netcdf_err(error, 'DEFINING ZAXIS_3 FIELD' )
+       error = nf90_put_att(ncid, id_levels, "long_name", "zaxis_3")
+       call netcdf_err(error, 'DEFINING ZAXIS_3 LONG NAME' )
+       error = nf90_put_att(ncid, id_levels, "units", "none")
+       call netcdf_err(error, 'DEFINING ZAXIS_3 UNITS' )
+       error = nf90_put_att(ncid, id_levels, "cartesian_axis", "Z")
+       call netcdf_err(error, 'WRITING ZAXIS_3 FIELD' )
+     endif
 
      error = nf90_def_var(ncid, 'Time', NF90_FLOAT, dim_time, id_time)
      call netcdf_err(error, 'DEFINING TIME FIELD' )
@@ -2305,7 +2327,13 @@
 
    if (localpet == 0) then
      error = nf90_put_var( ncid, id_lsoil, lsoil_data)
-     call netcdf_err(error, 'WRITING ZAXIS RECORD' )
+     call netcdf_err(error, 'WRITING ZAXIS_1 RECORD' )
+     if (noahmp) then
+       error = nf90_put_var( ncid, id_lsnow, lsnow_data)
+       call netcdf_err(error, 'WRITING ZAXIS_2 RECORD' )
+       error = nf90_put_var( ncid, id_levels, levels_data)
+       call netcdf_err(error, 'WRITING ZAXIS_3 RECORD' )
+     endif
      error = nf90_put_var( ncid, id_x, x_data)
      call netcdf_err(error, 'WRITING XAXIS RECORD' )
      error = nf90_put_var( ncid, id_y, y_data)
@@ -3288,7 +3316,7 @@
 
  deallocate(lsoil_data, x_data, y_data)
  deallocate(data_one_tile, data_one_tile_3d, idata_one_tile, dum2d, dum3d)
- if (noahmp) deallocate(data_one_tile_3dsnow, dum3dsnow, data_one_tile_3dall, dum3dall)
+ if (noahmp) deallocate(data_one_tile_3dsnow, dum3dsnow, data_one_tile_3dall, dum3dall, lsnow_data, levels_data)
 
  return
 

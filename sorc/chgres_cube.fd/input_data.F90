@@ -549,6 +549,7 @@
    call netcdf_err(error, 'reading field id' )
    error=nf90_get_var(ncid, id_var, dummy2d)
    call netcdf_err(error, 'reading field' )
+   where (dummy2d < -999.) dummy2d=0.0
    print*,'snowxy ',maxval(dummy2d),minval(dummy2d)
  endif
 
