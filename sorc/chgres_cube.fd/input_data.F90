@@ -49,7 +49,8 @@ module input_data
                                     ip1_input, jp1_input,  &
                                     num_tiles_input_grid, &
                                     latitude_input_grid, &
-                                    longitude_input_grid, inv_file
+                                    longitude_input_grid, inv_file, &
+                                    lsoil_target
 
  use atmdata_type
 
@@ -5285,6 +5286,7 @@ if (localpet == 0) then
 
   use wgrib2api
   use netcdf
+  
 
   implicit none
 
@@ -5333,7 +5335,7 @@ if (localpet == 0) then
 	 call netcdf_err(rc, 'reading soil_layers_stag value' )
    print*, "- FILE HAS ", lsoil_input, " SOIL LEVELS"
 
-
+   ! print*, "- TARGET GRID HAS ", lsoil_target, " SOIL LEVELS"
    !We need to recreate the soil fields if we have something other than 4 levels
    if (lsoil_input /= 4) then
    

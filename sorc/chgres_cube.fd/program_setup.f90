@@ -139,6 +139,7 @@
  integer, public                 :: regional = 0
  integer, public                 :: halo_bndy = 4
  integer, public                 :: halo_blend = 0
+ integer, public                 :: numsoil_out = 4
 
  logical, public                 :: convert_atm = .false.
  logical, public                 :: convert_nst = .false.
@@ -194,7 +195,7 @@
                    atm_weight_file, tracers, &
                    tracers_input, replace_o3mr, &
                    replace_clwmr, phys_suite, wgrib2_path, &
-                   halo_bndy, halo_blend
+                   halo_bndy, halo_blend, numsoil_out
 
  print*,"- READ SETUP NAMELIST"
 
