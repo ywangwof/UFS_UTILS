@@ -358,6 +358,7 @@
  real(esmf_kind_r8), pointer         :: stcxy_target_ptr(:,:,:)
  real(esmf_kind_r8), pointer         :: smcxy_target_ptr(:,:,:)
  real(esmf_kind_r8), pointer         :: smoiseq_target_ptr(:,:,:)
+ real(esmf_kind_r8), pointer         :: soil_temp_target_ptr(:,:,:)
 
  integer(esmf_kind_i8), allocatable  :: mask_target_one_tile(:,:)
  real(esmf_kind_r8), allocatable    :: data_one_tile(:,:)
@@ -1275,6 +1276,12 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldGet", rc)
 
+ print*,"- CALL FieldGet FOR TARGET noah soil temperature."
+ call ESMF_FieldGet(soil_temp_target_grid, &
+                    farrayPtr=soil_temp_target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGet", rc)
+
  print*,"- CALL FieldGet FOR TARGET smoiseq."
  call ESMF_FieldGet(smoiseq_target_grid, &
                     farrayPtr=smoiseq_target_ptr, rc=rc)
@@ -1286,9 +1293,8 @@
 
    if (nint(vegt_target_ptr(i,j)) == veg_type_landice_target) then
      do k = clb(3), cub(3)
-       smcxy_target_ptr(i,j,k) = 1.0
-       slcxy_target_ptr(i,j,k) = 1.0
-       stcxy_target_ptr(i,j,k) = min(stcxy_target_ptr(i,j,k),273.15)
+       slcxy_target_ptr(i,j,k) = 0.0
+       stcxy_target_ptr(i,j,k) = soil_temp_target_ptr(i,j,k)
      enddo
    endif
 
