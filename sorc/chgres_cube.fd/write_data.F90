@@ -1488,7 +1488,8 @@
                                    smcxy_target_grid, slcxy_target_grid, &
                                    stcxy_target_grid, zsnsoxy_target_grid, &
                                    xsaixy_target_grid, xlaixy_target_grid, &
-                                   smoiseq_target_grid
+                                   smoiseq_target_grid, sneqvxy_target_grid, &
+                                   snowhxy_target_grid
 
  use static_data, only           : alvsf_target_grid,   &
                                    alnsf_target_grid,   &
@@ -2344,7 +2345,11 @@
    endif
 
    print*,"- CALL FieldGather FOR TARGET GRID SNOW LIQ EQUIV FOR TILE: ", tile
-   call ESMF_FieldGather(snow_liq_equiv_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+   if (noahmp) then
+     call ESMF_FieldGather(sneqvxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+   else
+     call ESMF_FieldGather(snow_liq_equiv_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+   endif
    if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldGather", error)
 
@@ -2355,7 +2360,11 @@
    endif
 
    print*,"- CALL FieldGather FOR TARGET GRID SNOW DEPTH FOR TILE: ", tile
-   call ESMF_FieldGather(snow_depth_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+   if (noahmp) then
+     call ESMF_FieldGather(snowhxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+   else
+     call ESMF_FieldGather(snow_depth_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+   endif
    if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldGather", error)
 
