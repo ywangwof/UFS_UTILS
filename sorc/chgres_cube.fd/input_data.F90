@@ -145,6 +145,7 @@
  type(esmf_field), public        :: sneqvoxy_input_grid
  type(esmf_field), public        :: snowxy_input_grid
  type(esmf_field), public        :: snowhxy_input_grid
+ type(esmf_field), public        :: soiltypexy_input_grid
  type(esmf_field), public        :: stblcpxy_input_grid
  type(esmf_field), public        :: stmassxy_input_grid
  type(esmf_field), public        :: tahxy_input_grid
@@ -228,6 +229,13 @@
  real(esmf_kind_r8), allocatable :: dummy2d(:,:), dummy3d(:,:,:)
 
  print*,"- READ INPUT GRID NOAHMP DATA."
+
+ print*,"- CALL FieldCreate FOR INPUT NOAHMP GRID SOIL TYPE."
+ soiltypexy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+                                     typekind=ESMF_TYPEKIND_R8, &
+                                     staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT NOAHMP GRID LANDSEA MASK."
  landsea_mask_input_noahmp_grid = ESMF_FieldCreate(input_noahmp_grid, &
@@ -520,15 +528,34 @@
 ! open and read file.
 !------------------------------------
 
- print*,"- READ NOAHMP DATA FROM: ", trim(noahmp_file_input_grid)
- error=nf90_open(trim(noahmp_file_input_grid),nf90_nowrite,ncid)
- call netcdf_err(error, 'opening: '//trim(noahmp_file_input_grid) )
-
  if (localpet == 0) then
    allocate(dummy2d(i_input_noahmp,j_input_noahmp))
  else
    allocate(dummy2d(0,0))
  endif
+
+ print*,"- READ NOAHMP SOIL TYPE DATA"
+ error=nf90_open("/scratch4/NCEPDEV/da/noscrub/George.Gayno/noah_mp/SOILTYPE_LIS-NOAHMP.nc",nf90_nowrite,ncid)
+ call netcdf_err(error, 'opening noahmp soiltype file')
+
+ if (localpet == 0) then
+   error=nf90_inq_varid(ncid, 'SOILTYPE', id_var)
+   call netcdf_err(error, 'reading field id' )
+   error=nf90_get_var(ncid, id_var, dummy2d)
+   call netcdf_err(error, 'reading field' )
+   print*,'soil type noahmp ',maxval(dummy2d),minval(dummy2d)
+ endif
+
+ print*,"- CALL FieldScatter FOR NOAHMP SOIL TYPE."
+ call ESMF_FieldScatter(soiltypexy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ error = nf90_close(ncid)
+
+ print*,"- READ NOAHMP DATA FROM: ", trim(noahmp_file_input_grid)
+ error=nf90_open(trim(noahmp_file_input_grid),nf90_nowrite,ncid)
+ call netcdf_err(error, 'opening: '//trim(noahmp_file_input_grid) )
 
  if (localpet == 0) then
    error=nf90_inq_varid(ncid, 'FWETXY', id_var)

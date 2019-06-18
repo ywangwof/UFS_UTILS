@@ -130,6 +130,7 @@
  type(esmf_field), public           :: xsaixy_target_grid
  type(esmf_field), public           :: zsnsoxy_target_grid
  type(esmf_field), public           :: zwtxy_target_grid
+ type(esmf_field)                   :: soiltypexy_from_input_grid
 
  type(esmf_field)                   :: soil_type_from_input_grid
                                        ! soil type interpolated from
@@ -308,7 +309,8 @@
                                        smcxy_input_grid, stcxy_input_grid, &
                                        chxy_input_grid, cmxy_input_grid, &
                                        snowhxy_input_grid, sneqvxy_input_grid, &
-                                       landsea_mask_input_noahmp_grid
+                                       landsea_mask_input_noahmp_grid, &
+                                       soiltypexy_input_grid
 
  use model_grid, only                : input_noahmp_grid, target_grid, &
                                        landmask_target_grid, &
@@ -1150,6 +1152,14 @@
    print*,'stop '
    stop 3
  enddo
+
+ print*,"- CALL Field_Regrid for soil type noahmp."
+ call ESMF_FieldRegrid(soiltypexy_input_grid, &
+                       soiltypexy_from_input_grid, &
+                       routehandle=regrid_neighbor, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
 
  print*,"- CALL Field_Regrid for taussxy."
  call ESMF_FieldRegrid(taussxy_input_grid, &
@@ -3258,7 +3268,8 @@
  print*,"- COMPUTE LIQUID PORTION OF TOTAL SOIL MOISTURE."
 
  print*,"- CALL FieldGet FOR TOTAL SOIL MOISTURE."
- call ESMF_FieldGet(soilm_tot_target_grid, &
+!noahmp call ESMF_FieldGet(soilm_tot_target_grid, &
+ call ESMF_FieldGet(smcxy_target_grid, &
                     computationalLBound=clb, &
                     computationalUBound=cub, &
                     farrayPtr=soilm_tot_ptr, rc=rc)
@@ -3266,13 +3277,15 @@
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR LIQUID SOIL MOISTURE."
- call ESMF_FieldGet(soilm_liq_target_grid, &
+!noahmp call ESMF_FieldGet(soilm_liq_target_grid, &
+ call ESMF_FieldGet(slcxy_target_grid, &
                     farrayPtr=soilm_liq_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR SOIL TEMPERATURE."
- call ESMF_FieldGet(soil_temp_target_grid, &
+!noahmp call ESMF_FieldGet(soil_temp_target_grid, &
+ call ESMF_FieldGet(stcxy_target_grid, &
                     farrayPtr=soil_temp_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldGet", rc)
@@ -3302,6 +3315,8 @@
 ! Check land points that are not permanent land ice.  
 !---------------------------------------------------------------------------------------------
 
+! for noahmp, I set liquid portion to zero at land ice prior to the call to this routine.
+! Therefore, don't overwrite the zero values here.
      if (landmask_ptr(i,j) == 1 .and. nint(veg_type_ptr(i,j)) /= veg_type_landice_target) then
 
        soil_type = nint(soil_type_ptr(i,j))
@@ -3559,7 +3574,8 @@
  print*,"- RESCALE SOIL MOISTURE FOR CHANGES IN SOIL TYPE."
 
  print*,"- CALL FieldGet FOR TOTAL SOIL MOISTURE."
- call ESMF_FieldGet(soilm_tot_target_grid, &
+!noahmp call ESMF_FieldGet(soilm_tot_target_grid, &
+ call ESMF_FieldGet(smcxy_target_grid, &
                     computationalLBound=clb, &
                     computationalUBound=cub, &
                     farrayPtr=soilm_tot_ptr, rc=rc)
@@ -3591,7 +3607,8 @@
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR SOIL TYPE FROM INPUT GRID."
- call ESMF_FieldGet(soil_type_from_input_grid, &
+!noahmp call ESMF_FieldGet(soil_type_from_input_grid, &
+ call ESMF_FieldGet(soiltypexy_from_input_grid, &
                     farrayPtr=soil_type_input_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldGet", rc)
@@ -3603,7 +3620,9 @@
 ! Check land points that are not permanent land ice.  
 !---------------------------------------------------------------------------------------------
 
-     if (landmask_ptr(i,j) == 1 .and. nint(veg_type_ptr(i,j)) /= veg_type_landice_target) then
+!  noahmp does not run with landice option.
+!noahmp     if (landmask_ptr(i,j) == 1 .and. nint(veg_type_ptr(i,j)) /= veg_type_landice_target) then
+     if (landmask_ptr(i,j) == 1) then
 
         soilt_target = nint(soil_type_target_ptr(i,j))
         soilt_input  = nint(soil_type_input_ptr(i,j))
@@ -3615,6 +3634,8 @@
 !---------------------------------------------------------------------------------------------
 
         if (soilt_target /= soilt_input) then
+
+           if (soilt_target == 14) print*,'water point at: ',i,j
 
 !---------------------------------------------------------------------------------------------
 ! Rescale top layer.  First, determine direct evaporation part:
@@ -4345,6 +4366,13 @@
  implicit none
 
  integer                     :: rc
+
+ print*,"- CALL FieldCreate FOR SOIL TYPE FROM INPUT GRID."
+ soiltypexy_from_input_grid= ESMF_FieldCreate(target_grid, &
+                                    typekind=ESMF_TYPEKIND_R8, &
+                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR TARGET GRID SNOWHXY."
  snowhxy_target_grid = ESMF_FieldCreate(target_grid, &
