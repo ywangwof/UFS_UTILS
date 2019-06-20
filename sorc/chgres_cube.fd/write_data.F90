@@ -1311,6 +1311,7 @@
  if (localpet < num_tiles_target_grid) then
    dum3d(:,:,:) = data_one_tile_3d(i_start:i_end,j_start:j_end,:)
    dum3d(:,:,1:lev_target) = dum3d(:,:,lev_target:1:-1)
+   print*, "BEFORE WRITE, MIN MAX T = ", minval(dum3d(:,:,lev_target)), maxval(dum3d(:,:,lev_target))
    error = nf90_put_var( ncid, id_t, dum3d)
    call netcdf_err(error, 'WRITING TEMPERTAURE RECORD' )
  endif
