@@ -2429,12 +2429,7 @@ module input_data
    call netcdf_err(error, 'reading field' )
    where(data_one_tile_3d < 1.0E-20 .and. data_one_tile_3d /= 0.0_esmf_kind_r8) data_one_tile_3d=1.0E-7
    
-   error=nf90_inq_varid(ncid, 'T00', id_var)
-   call netcdf_err(error, 'reading field id' )
-   error=nf90_get_var(ncid, id_var, value)
-   call netcdf_err(error, 'reading field' )
-   
-   tmp_3d = data_one_tile_3d + value
+   tmp_3d = data_one_tile_3d + 300.0_esmf_kind_r8
    
    data_one_tile_3d = tmp_3d * (p_3d/100000.0) ** (rocp) 
 	 print*, 'max, min T ', minval(data_one_tile_3d), maxval(data_one_tile_3d)
