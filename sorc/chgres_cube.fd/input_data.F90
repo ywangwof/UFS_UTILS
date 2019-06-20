@@ -3139,7 +3139,7 @@ module input_data
                                           trac_names_vmap(ntrac_max), &
                                           tracers_input_grib(num_tracers), tmpstr, & 
                                           method, tracers_input_vmap(num_tracers), &
-                                          tracers_default(ntrac_max)
+                                          tracers_default(ntrac_max), vname2
  character (len=500)                    :: metadata
 
  integer                               :: i, j, k, n, lvl_str_space_len
@@ -3170,7 +3170,7 @@ module input_data
  
  tracers(:) = "NULL"
  trac_names_grib = (/":SPFH:",":CLWMR:", "O3MR",":CICE:", ":RWMR:",":SNMR:",":GRLE:", &
-               ":TCDC:", ":NCCICE:",":SPNCR:", ":NCONCD:",":PMTC:",":PMTF:",":TKE:"/)
+               ":TCDC:", ":NCCICE:",":SPNCR:", ":NCONCD:",":PMTF:",":PMTC:",":TKE:"/)
  trac_names_vmap = (/"sphum", "liq_wat","o3mr","ice_wat", &
                       "rainwat", "snowwat", "graupel", "cld_amt", "ice_nc", &
                       "rain_nc","water_nc","liq_aero","ice_aero", &
@@ -3392,44 +3392,53 @@ module input_data
 
  do n = 1, num_tracers
 
-     if (localpet == 0) print*,"- READ ", trim(tracers_input_vmap(n))
-     vname = tracers_input_vmap(n)
-     call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
-                         this_field_var_name=tmpstr,loc=varnum)
-     if (localpet == 0) then
-     vname = trim(tracers_input_grib(n))
-     do vlev = 1, lev_input
-      iret = grb2_inq(the_file,inv_file,vname,slevs(vlev),data2=dummy2d)
-       
-      if (iret <= 0) then
-        call handle_grib_error(vname, slevs(vlev),method,value,varnum,iret,var=dummy2d)
-        if (iret==1) then ! missing_var_method == skip or no entry
-          if (trim(vname)==":SPFH:" .or. trim(vname) == ":RH:" .or.  &
-              trim(vname) == ":O3MR:") then
-            call error_handler("READING IN "//trim(vname)//" AT LEVEL "//trim(slevs(vlev))&
-                      //". SET A FILL VALUE IN THE VARMAP TABLE IF THIS ERROR IS NOT DESIRABLE.",iret)
-          else
-            exit
-          endif
-        endif
-      endif
-        
-      if (n==1 .and. .not. hasspfh) then 
-        nullify(tptr)
-        print*,"- CALL FieldGet TEMPERATURE." 
-        call ESMF_FieldGet(temp_input_grid, &
-                  computationalLBound=clb, &
-                  computationalUBound=cub, &
-                  farrayPtr=tptr, rc=rc)
-        if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-        call error_handler("IN FieldGet", rc) 
-        call rh2spfh(dummy2d,rlevs(vlev),tptr,vlev)
-      endif
+	 if (localpet == 0) print*,"- READ ", trim(tracers_input_vmap(n))
+	 vname = tracers_input_vmap(n)
+	 call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
+											 this_field_var_name=tmpstr,loc=varnum)
+	 if (localpet == 0) then
+		 vname = trim(tracers_input_grib(n))
+		 vname2 = "var"
+		 if (trim(vname) == ":PMTC:") then
+		   vname = "var0_"
+		   vname2 = "_13_192"
+		 elseif (trim(vname) == ":PMTF:") then
+		   vname = "var0_"
+		   vname2 = "_13_193"
+		 endif
+		 
+		 do vlev = 1, lev_input
+			iret = grb2_inq(the_file,inv_file,vname,slevs(vlev),vname2,data2=dummy2d)
+		 
+			if (iret <= 0) then
+				call handle_grib_error(vname, slevs(vlev),method,value,varnum,iret,var=dummy2d)
+				if (iret==1) then ! missing_var_method == skip or no entry
+					if (trim(vname)==":SPFH:" .or. trim(vname) == ":RH:" .or.  &
+							trim(vname) == ":O3MR:") then
+						call error_handler("READING IN "//trim(vname)//" AT LEVEL "//trim(slevs(vlev))&
+											//". SET A FILL VALUE IN THE VARMAP TABLE IF THIS ERROR IS NOT DESIRABLE.",iret)
+					else
+						exit
+					endif
+				endif
+			endif
+			
+			if (n==1 .and. .not. hasspfh) then 
+				nullify(tptr)
+				print*,"- CALL FieldGet TEMPERATURE." 
+				call ESMF_FieldGet(temp_input_grid, &
+									computationalLBound=clb, &
+									computationalUBound=cub, &
+									farrayPtr=tptr, rc=rc)
+				if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+				call error_handler("IN FieldGet", rc) 
+				call rh2spfh(dummy2d,rlevs(vlev),tptr,vlev)
+			endif
 
-       print*,'tracer ',vlev, maxval(dummy2d),minval(dummy2d)
-       dummy3d(:,:,vlev) = real(dummy2d,esmf_kind_r8)
-     enddo
-   endif
+			 print*,'tracer ',vlev, maxval(dummy2d),minval(dummy2d)
+			 dummy3d(:,:,vlev) = real(dummy2d,esmf_kind_r8)
+		 enddo
+	 endif
 
    if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT ", trim(tracers_input_grib(n))
    call ESMF_FieldScatter(tracers_input_grid(n), dummy3d, rootpet=0, rc=rc)
@@ -5010,18 +5019,20 @@ if (localpet == 0) then
    vname="var2_2"   
    rc= grb2_inq(the_file, inv_file, vname,"_0_198:",slev,' hour fcst:', data2=dummy2d)
    if (rc <= 0) then
-      if (.not. replace_vgtyp) then
-       call error_handler("COULD NOT FIND VEGETATION TYPE IN FILE. PLEASE SET REPLACE_VGTYP=.TRUE. . EXITING")
-      else
-				rc= grb2_inq(the_file, inv_file, vname,"_0_198:",slev,':anl:', data2=dummy2d)
-			
-				call handle_grib_error(vname, slev ,method,value,varnum,rc, var= dummy2d)
-				if (rc == 1) then ! missing_var_method == skip or no entry in varmap table
-					print*, "WARNING: "//trim(vname)//" NOT AVAILABLE IN FILE. WILL USE CLIMATOLOGY. "//&
-										 "CHANGE SETTING IN VARMAP TABLE IF THIS IS NOT DESIRABLE."
-				endif
-		 endif
-    endif
+	rc= grb2_inq(the_file, inv_file, vname,"_0_198:",slev,':anl:', data2=dummy2d)
+	
+			if (rc <= 0) then
+				if (.not. replace_vgtyp) then
+					call error_handler("COULD NOT FIND VEGETATION TYPE IN FILE. PLEASE SET REPLACE_VGTYP=.TRUE. . EXITING")
+				else
+					call handle_grib_error(vname, slev ,method,value,varnum,rc, var= dummy2d)
+					if (rc == 1) then ! missing_var_method == skip or no entry in varmap table
+						print*, "WARNING: "//trim(vname)//" NOT AVAILABLE IN FILE. WILL USE CLIMATOLOGY. "//&
+											 "CHANGE SETTING IN VARMAP TABLE IF THIS IS NOT DESIRABLE."
+					endif !skip or no entry
+				endif ! replace_vgtyp
+		  endif !not find :anl:
+    endif !not find hour fcst:
    
    print*,'vtype ',maxval(dummy2d),minval(dummy2d)
  endif

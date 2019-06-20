@@ -47,7 +47,7 @@
                                        latitude_w_target_grid,  &
                                        longitude_w_target_grid, &
                                        terrain_target_grid, &
-                                       landmask_target_grid
+                                       landmask_target_grid, i_target, j_target
 
  use program_setup, only             : vcoord_file_target_grid, &
                                        regional,                &
@@ -139,7 +139,7 @@
  real(esmf_kind_r8), parameter      :: exponent = rd*lapse/grav
  real(esmf_kind_r8), parameter      :: one_over_exponent = 1.0 / exponent
 
- real(esmf_kind_r8), pointer        :: psptr(:,:)
+ real(esmf_kind_r8), pointer        :: psptr(:,:), tmp(:,:,:)
 
 !-----------------------------------------------------------------------------------
 ! Read atmospheric fields on the input grid.
@@ -203,7 +203,12 @@
                        rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldRegrid", rc)
+    
 
+ call ESMF_FieldGet(temp_b4adj_target_grid,farrayPtr=tmp,rc=rc)
+ print*, "BF VERT INTERP, MIN MAX SFC T = ", minval(tmp(:,:,1)),maxval(tmp(:,:,1))
+
+ 
  print*,"- CALL Field_Regrid FOR PRESSURE."
  call ESMF_FieldRegrid(pres_input_grid, &
                        pres_b4adj_target_grid, &
@@ -1288,6 +1293,8 @@
                     farrayPtr=T2PTR, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
          call error_handler("IN FieldGet", rc)
+         
+ print*, "AFTER ADJ, T MIN, MAX = ", MINVAL(T2PTR(:,:,1)), MAXVAL(T2PTR(:,:,1))
 
  print*,"- CALL FieldGet FOR ADJUSTED VERTICAL VELOCITY."
  call ESMF_FieldGet(dzdt_target_grid, &
@@ -1317,6 +1324,8 @@
    ENDDO
    ENDDO
  ENDDO
+
+ print*, "AFTER ADJ BELOW, T MIN, MAX = ", MINVAL(T2PTR(:,:,1)), MAXVAL(T2PTR(:,:,1))
 
  DO II = 1, NUM_TRACERS
 
