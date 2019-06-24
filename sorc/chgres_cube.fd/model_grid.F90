@@ -1088,7 +1088,7 @@
  use netcdf
  use program_setup, only       : mosaic_file_target_grid, &
                                  orog_dir_target_grid,    &
-                                 orog_files_target_grid, phys_suite, &
+                                 orog_files_target_grid,  &
                                  numsoil_out
 
  implicit none
