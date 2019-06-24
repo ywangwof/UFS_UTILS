@@ -60,7 +60,7 @@
 ! Read program configuration namelist.
 !-------------------------------------------------------------------------
 
- call read_setup_namelist
+ call read_setup_namelist(localpet)
  
 !-------------------------------------------------------------------------
 ! Read variable mapping file
