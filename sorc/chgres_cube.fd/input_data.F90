@@ -565,7 +565,7 @@
 
  if (sighead%idvt == 0 .or. sighead%idvt == 21) then
    if (trim(tracers_input(1)) /= 'spfh'  .or.  &
-       trim(tracers_input(2)) /= 'o3mr'   .or.  &
+       trim(tracers_input(2)) /= 'o3mr'  .or.  &
        trim(tracers_input(3)) /= 'clwmr') then 
      call error_handler("TRACERS SELECTED DO NOT MATCH FILE CONTENTS.", 99)
    endif
@@ -843,6 +843,18 @@
 
  type(nemsio_gfile)                    :: gfile
 
+character(nemsio_charkind), allocatable :: recname(:)
+integer(nemsio_intkind) :: &
+! The elements of the array idate are yyyy, mm, dd, hh, mm, ssn, and 
+! ssd, where ssn is the numerator and ssd is the denominator of the 
+! fraction that represents seconds, i.e. the seconds are given by 
+! ssn/ssd.
+  idate(7), &
+  nfday, nfhour, nfminute, nfsecondn, nfsecondd, &
+  nrec, ntrac, nsoil, &
+  dimx, dimy, dimz
+
+
  the_file = trim(data_dir_input_grid) // "/" // trim(atm_files_input_grid(1))
 
  print*,"- READ ATMOS DATA FROM SPECTRAL GFS NEMSIO FILE: ", trim(the_file)
@@ -854,6 +866,74 @@
  print*,"- READ NUMBER OF VERTICAL LEVELS."
  call nemsio_getfilehead(gfile, iret=iret, dimz=lev_input)
  if (iret /= 0) call error_handler("READING NUMBER OF VERTICAL LEVLES.", iret)
+
+
+if (localpet == 0) then
+
+  print*, "AAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
+  call nemsio_getfilehead(gfile, idate=idate, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in idate.", iret)
+  print*, "  idate = ", idate
+
+  call nemsio_getfilehead(gfile, nfday=nfday, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in nfday.", iret)
+  print*, "  nfday = ", nfday
+
+  call nemsio_getfilehead(gfile, nfhour=nfhour, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in nfhour.", iret)
+  print*, "  nfhour = ", nfhour
+
+  call nemsio_getfilehead(gfile, nfminute=nfminute, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in nfminute.", iret)
+  print*, "  nfminute = ", nfminute
+
+  call nemsio_getfilehead(gfile, nfsecondn=nfsecondn, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in nfsecondn.", iret)
+  print*, "  nfsecondn = ", nfsecondn
+
+  call nemsio_getfilehead(gfile, nfsecondd=nfsecondd, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in nfsecondd.", iret)
+  print*, "  nfsecondd = ", nfsecondd
+
+  call nemsio_getfilehead(gfile, nrec=nrec, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in nrec.", iret)
+  print*, "  nrec = ", nrec
+
+  call nemsio_getfilehead(gfile, ntrac=ntrac, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in ntrac.", iret)
+  print*, "  ntrac = ", ntrac
+
+  call nemsio_getfilehead(gfile, nsoil=nsoil, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in nsoil.", iret)
+  print*, "  nsoil = ", nsoil
+
+  call nemsio_getfilehead(gfile, dimx=dimx, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in dimx.", iret)
+  print*, "  dimx = ", dimx
+
+  call nemsio_getfilehead(gfile, dimy=dimy, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in dimy.", iret)
+  print*, "  dimy = ", dimy
+
+  call nemsio_getfilehead(gfile, dimz=dimz, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in dimz.", iret)
+  print*, "  dimz = ", dimz
+
+!  allocate(character(?) :: recname(nrec))
+  allocate(recname(nrec))
+  call nemsio_getfilehead(gfile, recname=recname, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in recname.", iret)
+  print*
+  DO i=1, nrec
+    WRITE(*,710) "i = ", i, ";  recname(", i, ") = ", recname(i)
+  END DO
+710 FORMAT(A,I5,A,I5,A,A)
+
+  print*, "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+
+end if
+
 
  levp1_input = lev_input + 1
 
@@ -960,14 +1040,32 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
      call error_handler("IN FieldScatter", rc)
 
+ if (localpet == 0) then
+   WRITE(*,610) "===>>>  num_tracers = ", num_tracers
+   do n = 1, num_tracers
+     WRITE(*,620) "  n = ", n, ";  tracers_input(n) = ", """", trim(tracers_input(n)), """"
+   end do
+ endif
+610 FORMAT(A,I5)
+620 FORMAT(A,I5,4A)
+
  do n = 1, num_tracers
 
    if (localpet == 0) then
      print*,"- READ ", trim(tracers_input(n))
      vname = trim(tracers_input(n))
+WRITE(*,510) "vname = ", """", trim(vname), """"
+510 FORMAT(A,A,A,A)
+!540 FORMAT(3A, 10X, 2A)
      vlevtyp = "mid layer"
+WRITE(*,520) "vlevtyp = ", vlevtyp
+520 FORMAT(A,A)
      do vlev = 1, lev_input
-       call nemsio_readrecv(gfile, vname, vlevtyp, vlev, dummy, 0, iret)
+WRITE(*,530) "  vlev = ", vlev
+530 FORMAT(A,I5)
+       call nemsio_readrecv(gfile, trim(vname), vlevtyp, vlev, dummy, 0, iret)
+WRITE(*,530) "  iret = ", iret
+540 FORMAT(A,I5)
        if (iret /= 0) call error_handler("READING TRACER RECORD.", iret)
 !      print*,'tracer ',vlev, maxval(dummy),minval(dummy)
        dummy3d(:,:,vlev) = reshape(dummy, (/i_input,j_input/))
@@ -2899,9 +2997,9 @@
 
    i = maxloc(merge(1.,0.,trac_names_vmap == vname),dim=1)
 
-	 tracers_input_grib(n)=trac_names_grib(i)
-	 tracers_input_vmap(n)=trac_names_vmap(i)
-	 tracers(n)=tracers_default(n)
+   tracers_input_grib(n)=trac_names_grib(i)
+   tracers_input_vmap(n)=trac_names_vmap(i)
+   tracers(n)=tracers_default(n)
 
  enddo
  allocate(atm(num_tracers+4))
