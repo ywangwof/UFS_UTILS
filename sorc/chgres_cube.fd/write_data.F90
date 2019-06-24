@@ -1106,11 +1106,17 @@
  HEADER : if (localpet < num_tiles_target_grid) then
 
    tile = localpet + 1
+
+if (localpet == 0) then
+  WRITE(*,*) "GGGGGGGGGGGGGGGGGGGG"
+  WRITE(*,*) "  regional = ", regional
+end if
+
    if (regional > 0) then
-       outfile = "out.atm.tile7.nc"
-     else
-       WRITE(OUTFILE, '(A, I1, A)'), 'out.atm.tile', tile, '.nc'
-     endif
+     outfile = "out.atm.tile7.nc"
+   else
+     WRITE(OUTFILE, '(A, I1, A)'), 'out.atm.tile', tile, '.nc'
+   endif
 
 !--- open the file
    error = nf90_create(outfile, IOR(NF90_NETCDF4,NF90_CLASSIC_MODEL), &
@@ -1441,7 +1447,8 @@
                                    landmask_target_grid, &
                                    i_target, j_target, lsoil_target
 
- use program_setup, only         : convert_nst, halo=>halo_bndy
+ use program_setup, only         : convert_nst, halo=>halo_bndy, &
+                                   regional
 
  use surface, only               : canopy_mc_target_grid,  &
                                    f10m_target_grid, &
@@ -1583,7 +1590,14 @@
 
    LOCAL_PET : if (localpet == 0) then
 
-     WRITE(OUTFILE, '(A, I1, A)'), 'out.sfc.tile', tile, '.nc'
+WRITE(*,*) "HHHHHHHHHHHHHHHHHHHH"
+WRITE(*,*) "  regional = ", regional
+
+     if (regional > 0) then
+       outfile = "out.sfc.tile7.nc"
+     else
+       WRITE(OUTFILE, '(A, I1, A)'), 'out.sfc.tile', tile, '.nc'
+     endif
 
 !--- open the file
      error = nf90_create(outfile, IOR(NF90_NETCDF4,NF90_CLASSIC_MODEL), &
@@ -2739,6 +2753,9 @@
  TILE_LOOP : do tile = 1, num_tiles_target_grid
 
    LOCAL_PET : if (localpet == 0) then
+
+WRITE(*,*) "IIIIIIIIIIIIIIIIIIIIIIII"
+WRITE(*,*) "  regional = ", regional
 
      if (regional > 0) then
        outfile = "out.sfc.tile7.nc"

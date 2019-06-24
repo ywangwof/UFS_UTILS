@@ -1,9 +1,9 @@
     16  3  
-sphum,liq_wat,o3mr
+spfh,clwmr,o3mr
 dzdt                dzdt      set_to_fill   0
 delta_p             delp      skip          0
-sphum               sphum     set_to_fill   1E-7
-liq_wat             liq_wat   set_to_fill   0
+spfh                sphum     set_to_fill   1E-7
+clwmr               liq_wat   set_to_fill   0
 o3mr                o3mr      set_to_fill   1E-7
 vtype               vtype     skip          0
 sotype              stype     skip          0

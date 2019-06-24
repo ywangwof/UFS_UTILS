@@ -52,7 +52,8 @@
  use program_setup, only             : vcoord_file_target_grid, &
                                        regional,                &
                                        tracers, num_tracers,      &
-                                       atm_weight_file, phys_suite
+                                       atm_weight_file, phys_suite, &
+                                       tracers_input
 
  implicit none
 
@@ -318,7 +319,7 @@
 ! Compute height.
 !-----------------------------------------------------------------------------------
 
- call compute_zh
+ call compute_zh(localpet)
 
 !-----------------------------------------------------------------------------------
 ! Free up memory.
@@ -958,12 +959,21 @@
     
  if(localpet==0) then
    print*,'temp ',tptr(clb(1),clb(2),:)
+print*, "shape(tracers_b4adj_target_grid) = ", shape(tracers_b4adj_target_grid)
  endif
 ! Find specific humidity in the array of tracer fields.
 
+tracers = tracers_input
  do ii = 1, num_tracers
-   if (trim(tracers(ii)) == "sphum") exit
+   if(localpet==0) then
+     WRITE(*,*)
+     WRITE(*,*) "ii = ", ii, "; trim(tracers(ii)) = ", trim(tracers(ii)), &
+                " (num_tracers = ", num_tracers, ")"
+    endif
+!    if (trim(tracers(ii)) == "sphum") exit
+    if (trim(tracers(ii)) == "spfh") exit
  enddo
+
 
  print*,"- CALL FieldGet FOR SPECIFIC HUMIDITY"
  call ESMF_FieldGet(tracers_b4adj_target_grid(ii), &
@@ -1667,10 +1677,11 @@
                                                                         
  END SUBROUTINE RSEARCH 
 
- subroutine compute_zh
+ subroutine compute_zh(localpet)
 
  implicit none 
 
+ integer, intent(in) :: localpet
  integer                          :: i,ii, j,k, rc, clb(2), cub(2)
 
  real(esmf_kind_r8), allocatable  :: pe0(:), pn0(:)
@@ -1712,8 +1723,15 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
          call error_handler("IN FieldGet", rc)
 
+tracers = tracers_input
  do ii = 1, num_tracers
-   if (trim(tracers(ii)) == "sphum") exit
+   if(localpet==0) then
+     WRITE(*,*)
+     WRITE(*,*) "ii = ", ii, "; trim(tracers(ii)) = ", trim(tracers(ii)), &
+                " (num_tracers = ", num_tracers, ")"
+    endif
+!    if (trim(tracers(ii)) == "sphum") exit
+    if (trim(tracers(ii)) == "spfh") exit
  enddo
 
  print*,"- CALL FieldGet FOR SPECIFIC HUMIDITY"
