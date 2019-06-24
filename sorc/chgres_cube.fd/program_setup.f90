@@ -165,10 +165,11 @@
 
  contains
 
- subroutine read_setup_namelist
+ subroutine read_setup_namelist(localpet)
 
  implicit none
 
+ integer, intent(in)       :: localpet
  integer                     :: is, ie, ierr
 
 
@@ -244,6 +245,11 @@
    print*,"- PROCESSING A REGIONAL NEST WITH A BOUNDARY HALO OF ",halo_bndy
    print*,"- PROCESSING A REGIONAL NEST WITH A BLENDING HALO OF ",halo_blend
  endif
+
+if (localpet == 0) then
+WRITE(*,*)
+WRITE(*,*) "tracers = ", tracers
+end if
 
  num_tracers = 0
  do is = 1, max_tracers
