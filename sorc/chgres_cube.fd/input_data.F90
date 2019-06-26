@@ -141,8 +141,7 @@
  type(esmf_field), public        :: rechxy_input_grid
  type(esmf_field), public        :: rtmassxy_input_grid
  type(esmf_field), public        :: smcwtdxy_input_grid
- type(esmf_field), public        :: sneqvxy_input_grid
- type(esmf_field), public        :: sneqvoxy_input_grid
+ type(esmf_field), public        :: sneqv_input_grid
  type(esmf_field), public        :: snowxy_input_grid
  type(esmf_field), public        :: snowhxy_input_grid
  type(esmf_field), public        :: soiltypexy_input_grid
@@ -314,13 +313,6 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
    call error_handler("IN FieldCreate", rc)
 
- print*,"- CALL FieldCreate FOR INPUT GRID SNEQVOXY."
- sneqvoxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
-                                   typekind=ESMF_TYPEKIND_R8, &
-                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-   call error_handler("IN FieldCreate", rc)
-
  print*,"- CALL FieldCreate FOR INPUT GRID ALBOLDXY."
  alboldxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
@@ -454,8 +446,8 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
    call error_handler("IN FieldCreate", rc)
 
- print*,"- CALL FieldCreate FOR INPUT GRID SNEQVXY."
- sneqvxy_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
+ print*,"- CALL FieldCreate FOR INPUT GRID SNEQV."
+ sneqv_input_grid = ESMF_FieldCreate(input_noahmp_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
@@ -649,8 +641,8 @@
    print*,'sneqv ',maxval(dummy2d),minval(dummy2d)
  endif
 
- print*,"- CALL FieldScatter FOR SNEQVXY."
- call ESMF_FieldScatter(sneqvxy_input_grid, dummy2d, rootpet=0, rc=rc)
+ print*,"- CALL FieldScatter FOR SNEQV."
+ call ESMF_FieldScatter(sneqv_input_grid, dummy2d, rootpet=0, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldScatter", rc)
 
@@ -729,19 +721,6 @@
 
  print*,"- CALL FieldScatter FOR CHXY."
  call ESMF_FieldScatter(chxy_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldScatter", rc)
-
- if (localpet == 0) then
-   error=nf90_inq_varid(ncid, 'SNEQVOXY', id_var)
-   call netcdf_err(error, 'reading field id' )
-   error=nf90_get_var(ncid, id_var, dummy2d)
-   call netcdf_err(error, 'reading field' )
-   print*,'sneqvoxy ',maxval(dummy2d),minval(dummy2d)
- endif
-
- print*,"- CALL FieldScatter FOR SNEQVOXY."
- call ESMF_FieldScatter(sneqvoxy_input_grid, dummy2d, rootpet=0, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldScatter", rc)
 

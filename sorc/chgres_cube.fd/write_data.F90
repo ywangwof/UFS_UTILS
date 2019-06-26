@@ -1470,7 +1470,7 @@
                                    xzts_target_grid, &
                                    z_c_target_grid, &
                                    zm_target_grid, fwetxy_target_grid, &
-                                   sneqvoxy_target_grid, alboldxy_target_grid, &
+                                   alboldxy_target_grid, &
                                    qsnowxy_target_grid, &
                                    lfmassxy_target_grid, rtmassxy_target_grid, &
                                    stblcpxy_target_grid, fastcpxy_target_grid, &
@@ -1488,7 +1488,7 @@
                                    smcxy_target_grid, slcxy_target_grid, &
                                    stcxy_target_grid, zsnsoxy_target_grid, &
                                    xsaixy_target_grid, xlaixy_target_grid, &
-                                   smoiseq_target_grid, sneqvxy_target_grid, &
+                                   smoiseq_target_grid, sneqv_target_grid, &
                                    snowhxy_target_grid
 
  use static_data, only           : alvsf_target_grid,   &
@@ -1534,7 +1534,7 @@
  integer                        :: id_xz, id_zm, id_xtts, id_xzts
  integer                        :: id_d_conv, id_ifd, id_dt_cool
  integer                        :: id_qrain, id_fwetxy, id_xsaixy
- integer                        :: id_sneqvoxy, id_alboldxy, id_qsnowxy
+ integer                        :: id_alboldxy, id_qsnowxy, id_sneqvoxy
  integer                        :: id_xlaixy, id_stblcpxy, id_fastcpxy
  integer                        :: id_stmassxy, id_woodxy, id_lfmassxy
  integer                        :: id_rtmassxy, id_waxy, id_wtxy
@@ -2345,11 +2345,7 @@
    endif
 
    print*,"- CALL FieldGather FOR TARGET GRID SNOW LIQ EQUIV FOR TILE: ", tile
-   if (noahmp) then
-     call ESMF_FieldGather(sneqvxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   else
-     call ESMF_FieldGather(snow_liq_equiv_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   endif
+   call ESMF_FieldGather(snow_liq_equiv_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
    if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldGather", error)
 
@@ -2951,8 +2947,13 @@
        call netcdf_err(error, 'WRITING QSNOWXY RECORD' )
      endif
 
+! Note, there are two noah-mp snow liq eq variables - sneqv and sneqvoxy.  The latter is the
+! value at the last time step.  It is not used for coldstarting.  Instead a blend of sneqv
+! and sheleg (the noah snow liq eq) is used.  And that blend is written to the 'sneqvoxy'
+! record.  If you are confused you are not alone.
+
      print*,"- CALL FieldGather FOR TARGET SNEQVOXY FOR TILE: ", tile
-     call ESMF_FieldGather(sneqvoxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
+     call ESMF_FieldGather(sneqv_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
      if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
         call error_handler("IN FieldGather", error)
 

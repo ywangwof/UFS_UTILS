@@ -108,8 +108,7 @@
  type(esmf_field), public           :: smcxy_target_grid
  type(esmf_field), public           :: smcwtdxy_target_grid
  type(esmf_field), public           :: smoiseq_target_grid
- type(esmf_field), public           :: sneqvxy_target_grid
- type(esmf_field), public           :: sneqvoxy_target_grid
+ type(esmf_field), public           :: sneqv_target_grid
  type(esmf_field), public           :: snicexy_target_grid
  type(esmf_field), public           :: snliqxy_target_grid
  type(esmf_field), public           :: snowxy_target_grid
@@ -303,12 +302,12 @@
                                        tvxy_input_grid, tgxy_input_grid, &
                                        snowxy_input_grid, tsnoxy_input_grid, &
                                        snicexy_input_grid, snliqxy_input_grid, &
-                                       sneqvoxy_input_grid, alboldxy_input_grid, &
+                                       alboldxy_input_grid, &
                                        smcwtdxy_input_grid, qsnowxy_input_grid, &
                                        taussxy_input_grid, slcxy_input_grid, &
                                        smcxy_input_grid, stcxy_input_grid, &
                                        chxy_input_grid, cmxy_input_grid, &
-                                       snowhxy_input_grid, sneqvxy_input_grid, &
+                                       snowhxy_input_grid, sneqv_input_grid, &
                                        landsea_mask_input_noahmp_grid, &
                                        soiltypexy_input_grid
 
@@ -346,7 +345,7 @@
  real(esmf_kind_r8), pointer         :: lfmassxy_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: rechxy_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: rtmassxy_target_ptr(:,:)
- real(esmf_kind_r8), pointer         :: sneqvxy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: sneqv_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: snowhxy_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: stblcpxy_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: stmassxy_target_ptr(:,:)
@@ -1177,17 +1176,9 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldRegrid", rc)
 
- print*,"- CALL Field_Regrid for sneqvoxy."
- call ESMF_FieldRegrid(sneqvoxy_input_grid, &
-                       sneqvoxy_target_grid, &
-                       routehandle=regrid_neighbor, &
-                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldRegrid", rc)
-
- print*,"- CALL Field_Regrid for sneqvxy."
- call ESMF_FieldRegrid(sneqvxy_input_grid, &
-                       sneqvxy_target_grid, &
+ print*,"- CALL Field_Regrid for sneqv."
+ call ESMF_FieldRegrid(sneqv_input_grid, &
+                       sneqv_target_grid, &
                        routehandle=regrid_neighbor, &
                        termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
@@ -1327,9 +1318,9 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldGet", rc)
 
- print*,"- CALL FieldGet FOR TARGET sneqvxy."
- call ESMF_FieldGet(sneqvxy_target_grid, &
-                    farrayPtr=sneqvxy_target_ptr, rc=rc)
+ print*,"- CALL FieldGet FOR TARGET sneqv."
+ call ESMF_FieldGet(sneqv_target_grid, &
+                    farrayPtr=sneqv_target_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldGet", rc)
 
@@ -1354,7 +1345,7 @@
 
    if (nint(vegt_target_ptr(i,j)) == veg_type_landice_target) then
      snowhxy_target_ptr(i,j) = snow_depth_target_ptr(i,j)
-     sneqvxy_target_ptr(i,j) = snow_liq_equiv_target_ptr(i,j)
+     sneqv_target_ptr(i,j) = snow_liq_equiv_target_ptr(i,j)
      do k = clb(3), cub(3)
        slcxy_target_ptr(i,j,k) = 0.0
        stcxy_target_ptr(i,j,k) = soil_temp_target_ptr(i,j,k)
@@ -1364,7 +1355,7 @@
 ! Jiarui's data is land only.  Set snow at sea ice gfs/noah.
    if (landmask_target_ptr(i,j) == 2) then
      snowhxy_target_ptr(i,j) = snow_depth_target_ptr(i,j)
-     sneqvxy_target_ptr(i,j) = snow_liq_equiv_target_ptr(i,j)
+     sneqv_target_ptr(i,j) = snow_liq_equiv_target_ptr(i,j)
    endif
 
 ! field not used currently.  set to flag value - the soil moisture
@@ -4381,8 +4372,8 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldCreate", rc)
 
- print*,"- CALL FieldCreate FOR TARGET GRID SNEQVXY."
- sneqvxy_target_grid = ESMF_FieldCreate(target_grid, &
+ print*,"- CALL FieldCreate FOR TARGET GRID SNEQV."
+ sneqv_target_grid = ESMF_FieldCreate(target_grid, &
                                     typekind=ESMF_TYPEKIND_R8, &
                                     staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
@@ -4544,13 +4535,6 @@
 
  print*,"- CALL FieldCreate FOR TARGET GRID SMCWTDXY."
  smcwtdxy_target_grid = ESMF_FieldCreate(target_grid, &
-                                    typekind=ESMF_TYPEKIND_R8, &
-                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldCreate", rc)
-
- print*,"- CALL FieldCreate FOR TARGET GRID SNEQVOXY."
- sneqvoxy_target_grid = ESMF_FieldCreate(target_grid, &
                                     typekind=ESMF_TYPEKIND_R8, &
                                     staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
