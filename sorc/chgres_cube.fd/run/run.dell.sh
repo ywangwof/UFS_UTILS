@@ -9,7 +9,7 @@
 #BSUB -x                 # run not shared
 #BSUB -n 6               # total tasks
 #BSUB -R span[ptile=6]   # tasks per node
-#BSUB -R affinity[core(4):distribute=balance]
+#BSUB -R affinity[core(1):distribute=balance]
 
 set -x
 
@@ -26,12 +26,12 @@ module load NetCDF/4.5.0
 # equal to "affinity[core(n)".
 
 export OMP_STACKSIZE=1024M
-export OMP_NUM_THREADS=4
+export OMP_NUM_THREADS=1
 
-EXECDIR=/gpfs/dell2/emc/modeling/noscrub/George.Gayno/ufs_utils.git/UFS_UTILS/sorc/chgres_cube.fd/exec
-RUNDIR=/gpfs/dell2/emc/modeling/noscrub/George.Gayno/ufs_utils.git/UFS_UTILS/sorc/chgres_cube.fd/run
+EXECDIR=${LS_SUBCWD}/../../../exec
+RUNDIR=$LS_SUBCWD
 
-WORKDIR=/gpfs/dell1/stmp/George.Gayno/chgres.fv3
+WORKDIR=/gpfs/dell1/stmp/$LOGNAME/chgres.fv3
 rm -fr $WORKDIR
 mkdir -p $WORKDIR
 cd $WORKDIR
@@ -43,6 +43,6 @@ cd $WORKDIR
 cp $RUNDIR/config.noahmp.nml ./fort.41
 #cp $RUNDIR/config.C48.gfs.spectral.dell.nml  ./fort.41
 
-mpirun $EXECDIR/global_chgres.exe
+mpirun $EXECDIR/chgres_cube.exe
 
 exit
