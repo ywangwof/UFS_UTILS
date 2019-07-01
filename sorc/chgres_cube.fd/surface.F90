@@ -334,6 +334,10 @@
  real(esmf_kind_r8), pointer     :: landmask_input_ptr(:,:)
  integer(esmf_kind_i8), pointer     :: landmask_target_ptr(:,:)
 
+ integer                             :: lsnow
+ real                                :: percent_snow(3)
+ real                                :: tot_liq_equiv
+
  real(esmf_kind_r8), pointer         :: canicexy_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: canliqxy_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: chxy_target_ptr(:,:)
@@ -345,8 +349,11 @@
  real(esmf_kind_r8), pointer         :: lfmassxy_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: rechxy_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: rtmassxy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: snicexy_target_ptr(:,:,:)
+ real(esmf_kind_r8), pointer         :: snliqxy_target_ptr(:,:,:)
  real(esmf_kind_r8), pointer         :: sneqv_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: snowhxy_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: snowxy_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: stblcpxy_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: stmassxy_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: tahxy_target_ptr(:,:)
@@ -1336,6 +1343,24 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldGet", rc)
 
+ print*,"- CALL FieldGet FOR TARGET snliqxy."
+ call ESMF_FieldGet(snliqxy_target_grid, &
+                    farrayPtr=snliqxy_target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGet", rc)
+
+ print*,"- CALL FieldGet FOR TARGET snicexy."
+ call ESMF_FieldGet(snicexy_target_grid, &
+                    farrayPtr=snicexy_target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGet", rc)
+
+ print*,"- CALL FieldGet FOR TARGET snowxy."
+ call ESMF_FieldGet(snowxy_target_grid, &
+                    farrayPtr=snowxy_target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGet", rc)
+
 ! Per Helin, set snow at glacial points to GFS/NOAH and to Jiarui's data everywhere else.
 ! Set liquid portion of soil moisture to zero at glacial points.
 ! Use GFS/NOAH soil temps at glacial points.
@@ -1344,19 +1369,62 @@
  do i = clb(1), cub(1)
 
    if (nint(vegt_target_ptr(i,j)) == veg_type_landice_target) then
-     snowhxy_target_ptr(i,j) = snow_depth_target_ptr(i,j)
-     sneqv_target_ptr(i,j) = snow_liq_equiv_target_ptr(i,j)
      do k = clb(3), cub(3)
        slcxy_target_ptr(i,j,k) = 0.0
        stcxy_target_ptr(i,j,k) = soil_temp_target_ptr(i,j,k)
      enddo
-   endif
 
-! Jiarui's data is land only.  Set snow at sea ice gfs/noah.
-   if (landmask_target_ptr(i,j) == 2) then
-     snowhxy_target_ptr(i,j) = snow_depth_target_ptr(i,j)
+     lsnow = nint(snowxy_target_ptr(i,j))
+     lsnow = abs(lsnow)
+     tot_liq_equiv = 0.0
+     do k = 1, lsnow
+       tot_liq_equiv = tot_liq_equiv + snicexy_target_ptr(i,j,k) + snliqxy_target_ptr(i,j,k)
+     enddo
+
+     if (localpet == 10 .and. i == 130 .and. j == 96) then
+       print*,'%lsnow ',lsnow
+       print*,'%snicexy ', snicexy_target_ptr(i,j,:)
+       print*,'%snliqxy ', snliqxy_target_ptr(i,j,:)
+       print*,'%tot_liq_equiv ', tot_liq_equiv
+     endif
+
+     if (tot_liq_equiv > 500) then
+       print*,'large snow ',localpet,i,j,tot_liq_equiv
+     endif
+ 
+     percent_snow = 0.0
+     if (tot_liq_equiv > 0.0) then
+       do k = 1, lsnow
+         percent_snow(k) = (snliqxy_target_ptr(i,j,k) + snicexy_target_ptr(i,j,k)) / tot_liq_equiv
+       enddo
+     endif
+
+     if (localpet == 10 .and. i == 130 .and. j == 96) then
+       print*,'%percent_snow ',percent_snow(:)
+     endif
+
+     snliqxy_target_ptr(i,j,:) = 0.0  ! snow pack totally frozen at glacial points
+     snicexy_target_ptr(i,j,:) = 0.0
      sneqv_target_ptr(i,j) = snow_liq_equiv_target_ptr(i,j)
-   endif
+
+     do k = 1, lsnow
+       if(percent_snow(k) > 0.0) then
+         snicexy_target_ptr(i,j,k) = percent_snow(k) * snow_liq_equiv_target_ptr(i,j)
+       endif
+     enddo
+
+     if (localpet == 10 .and. i == 130 .and. j == 96) then
+       print*,'%noah snow ', snow_liq_equiv_target_ptr(i,j)
+       print*,'%snicexy after ', snicexy_target_ptr(i,j,:)
+     endif
+
+   endif  ! is point glacial ice?
+
+! Jiarui's data is land only.  Set snow at sea ice gfs/noah?
+!  if (landmask_target_ptr(i,j) == 2) then
+!    snowhxy_target_ptr(i,j) = snow_depth_target_ptr(i,j)
+!    sneqv_target_ptr(i,j) = snow_liq_equiv_target_ptr(i,j)
+!  endif
 
 ! field not used currently.  set to flag value - the soil moisture
 ! at layer 4.
