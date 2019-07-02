@@ -374,6 +374,7 @@
  real(esmf_kind_r8), pointer         :: soil_temp_target_ptr(:,:,:)
  real(esmf_kind_r8), pointer         :: snow_liq_equiv_target_ptr(:,:)
  real(esmf_kind_r8), pointer         :: snow_depth_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: zsnsoxy_target_ptr(:,:,:)
 
  integer(esmf_kind_i8), allocatable  :: mask_target_one_tile(:,:)
  real(esmf_kind_r8), allocatable    :: data_one_tile(:,:)
@@ -1361,6 +1362,12 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldGet", rc)
 
+ print*,"- CALL FieldGet FOR TARGET zsnsoxy."
+ call ESMF_FieldGet(zsnsoxy_target_grid, &
+                    farrayPtr=zsnsoxy_target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGet", rc)
+
 ! Per Helin, set snow at glacial points to GFS/NOAH and to Jiarui's data everywhere else.
 ! Set liquid portion of soil moisture to zero at glacial points.
 ! Use GFS/NOAH soil temps at glacial points.
@@ -1386,6 +1393,8 @@
        print*,'%snicexy ', snicexy_target_ptr(i,j,:)
        print*,'%snliqxy ', snliqxy_target_ptr(i,j,:)
        print*,'%tot_liq_equiv ', tot_liq_equiv
+       print*,'%noah depth ', snow_depth_target_ptr(i,j)
+       print*,'%noahmp depth ', snowhxy_target_ptr(i,j)
      endif
 
      if (tot_liq_equiv > 500) then
@@ -1410,12 +1419,26 @@
      do k = 1, lsnow
        if(percent_snow(k) > 0.0) then
          snicexy_target_ptr(i,j,k) = percent_snow(k) * snow_liq_equiv_target_ptr(i,j)
+         zsnsoxy_target_ptr(i,j,k) = percent_snow(k) * snow_depth_target_ptr(i,j) * 0.001
        endif
      enddo
 
      if (localpet == 10 .and. i == 130 .and. j == 96) then
+       print*,'%zsnsoxy before ', zsnsoxy_target_ptr(i,j,1:3)
+     endif
+
+     zsnsoxy_target_ptr(i,j,1) = -(zsnsoxy_target_ptr(i,j,1))
+     zsnsoxy_target_ptr(i,j,2) = zsnsoxy_target_ptr(i,j,1) - zsnsoxy_target_ptr(i,j,2)
+     zsnsoxy_target_ptr(i,j,3) = zsnsoxy_target_ptr(i,j,2) - zsnsoxy_target_ptr(i,j,3)
+     zsnsoxy_target_ptr(i,j,4) = zsnsoxy_target_ptr(i,j,3) - 0.1
+     zsnsoxy_target_ptr(i,j,5) = zsnsoxy_target_ptr(i,j,3) - 0.4
+     zsnsoxy_target_ptr(i,j,6) = zsnsoxy_target_ptr(i,j,3) - 1.0
+     zsnsoxy_target_ptr(i,j,7) = zsnsoxy_target_ptr(i,j,3) - 2.0
+
+     if (localpet == 10 .and. i == 130 .and. j == 96) then
        print*,'%noah snow ', snow_liq_equiv_target_ptr(i,j)
        print*,'%snicexy after ', snicexy_target_ptr(i,j,:)
+       print*,'%zsnsoxy after ', zsnsoxy_target_ptr(i,j,:)
      endif
 
    endif  ! is point glacial ice?

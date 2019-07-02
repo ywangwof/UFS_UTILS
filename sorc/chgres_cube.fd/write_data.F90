@@ -2396,6 +2396,7 @@
 
    if (localpet == 0) then
      dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+     if (noahmp) dum2d = -999.
      error = nf90_put_var( ncid, id_sheleg, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
      call netcdf_err(error, 'WRITING SNOW LIQ EQUIV RECORD' )
    endif
@@ -2411,6 +2412,7 @@
 
    if (localpet == 0) then
      dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+     if (noahmp) dum2d = -999.
      error = nf90_put_var( ncid, id_snwdph, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
      call netcdf_err(error, 'WRITING SNWDPH RECORD' )
    endif
@@ -2992,11 +2994,6 @@
        call netcdf_err(error, 'WRITING QSNOWXY RECORD' )
      endif
 
-! Note, there are two noah-mp snow liq eq variables - sneqv and sneqvoxy.  The latter is the
-! value at the last time step.  It is not used for coldstarting.  Instead a blend of sneqv
-! and sheleg (the noah snow liq eq) is used.  And that blend is written to the 'sneqvoxy'
-! record.  If you are confused you are not alone.
-
      print*,"- CALL FieldGather FOR TARGET SNEQVOXY FOR TILE: ", tile
      call ESMF_FieldGather(sneqv_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
      if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
@@ -3004,6 +3001,7 @@
 
      if (localpet == 0) then
        dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       dum2d = -999.
        error = nf90_put_var( ncid, id_sneqvoxy, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
        call netcdf_err(error, 'WRITING SNEQVOXY RECORD' )
      endif
