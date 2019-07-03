@@ -963,15 +963,15 @@ print*, "shape(tracers_b4adj_target_grid) = ", shape(tracers_b4adj_target_grid)
  endif
 ! Find specific humidity in the array of tracer fields.
 
-tracers = tracers_input
+!tracers = tracers_input
  do ii = 1, num_tracers
    if(localpet==0) then
      WRITE(*,*)
      WRITE(*,*) "ii = ", ii, "; trim(tracers(ii)) = ", trim(tracers(ii)), &
                 " (num_tracers = ", num_tracers, ")"
     endif
-!    if (trim(tracers(ii)) == "sphum") exit
-    if (trim(tracers(ii)) == "spfh") exit
+!    if (trim(tracers(ii)) == "spfh") exit
+    if (trim(tracers(ii)) == "sphum") exit
  enddo
 
 
@@ -1723,15 +1723,15 @@ tracers = tracers_input
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
          call error_handler("IN FieldGet", rc)
 
-tracers = tracers_input
+!tracers = tracers_input
  do ii = 1, num_tracers
    if(localpet==0) then
      WRITE(*,*)
      WRITE(*,*) "ii = ", ii, "; trim(tracers(ii)) = ", trim(tracers(ii)), &
                 " (num_tracers = ", num_tracers, ")"
     endif
-!    if (trim(tracers(ii)) == "sphum") exit
-    if (trim(tracers(ii)) == "spfh") exit
+!    if (trim(tracers(ii)) == "spfh") exit
+    if (trim(tracers(ii)) == "sphum") exit
  enddo
 
  print*,"- CALL FieldGet FOR SPECIFIC HUMIDITY"
