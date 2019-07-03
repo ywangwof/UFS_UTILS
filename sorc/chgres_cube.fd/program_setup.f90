@@ -169,8 +169,8 @@
 
  implicit none
 
- integer, intent(in)       :: localpet
- integer                     :: is, ie, ierr
+ integer, intent(in)         :: localpet
+ integer                     :: is, ie, ierr, n
 
 
  namelist /config/ base_install_dir, &
@@ -260,6 +260,20 @@ end if
    print*,"- WILL PROCESS TRACER ", trim(tracers(is))
  enddo
 
+if (localpet == 0) then
+  WRITE(*,*)
+  WRITE(*,*) "num_tracers = ", num_tracers
+  WRITE(*,*) &
+"The following values of the tracers_input(:) and tracers(:) arrays are " // &
+"BEFORE reading in the variable mapping file (they're the values obtained " // &
+"just from reading in the namelist file):"
+  do n = 1, num_tracers
+    WRITE(*,620) "  n = ", n, &
+                 ";  tracers_input(n) = ", """", trim(tracers_input(n)), """", &
+                 ";  tracers(n) = ", """", trim(tracers(n)), """"
+  end do
+  620 FORMAT(A,I5,8A)
+end if
 !-------------------------------------------------------------------------
 ! Ensure program recognizes the input data type.  
 !-------------------------------------------------------------------------
