@@ -1261,6 +1261,18 @@ WRITE(*,530) "  iret = ", iret
 
  type(nemsio_gfile)                    :: gfile
 
+character(nemsio_charkind), allocatable :: recname(:)
+integer(nemsio_intkind) :: &
+! The elements of the array idate are yyyy, mm, dd, hh, mm, ssn, and 
+! ssd, where ssn is the numerator and ssd is the denominator of the 
+! fraction that represents seconds, i.e. the seconds are given by 
+! ssn/ssd.
+  idate(7), &
+  nfday, nfhour, nfminute, nfsecondn, nfsecondd, &
+  nrec, ntrac, nsoil, &
+  dimx, dimy, dimz
+
+
  the_file = trim(data_dir_input_grid) // "/" // trim(atm_files_input_grid(1))
 
  print*,"- READ ATMOS DATA FROM GAUSSIAN NEMSIO FILE: ", trim(the_file)
@@ -1272,6 +1284,75 @@ WRITE(*,530) "  iret = ", iret
  print*,"- READ NUMBER OF VERTICAL LEVELS."
  call nemsio_getfilehead(gfile, iret=iret, dimz=lev_input)
  if (iret /= 0) call error_handler("READING NUMBER OF VERTICAL LEVLES.", iret)
+
+
+if (localpet == 0) then
+
+  print*, "AAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
+  call nemsio_getfilehead(gfile, idate=idate, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in idate.", iret)
+  print*, "  idate = ", idate
+
+  call nemsio_getfilehead(gfile, nfday=nfday, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in nfday.", iret)
+  print*, "  nfday = ", nfday
+
+  call nemsio_getfilehead(gfile, nfhour=nfhour, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in nfhour.", iret)
+  print*, "  nfhour = ", nfhour
+
+  call nemsio_getfilehead(gfile, nfminute=nfminute, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in nfminute.", iret)
+  print*, "  nfminute = ", nfminute
+
+  call nemsio_getfilehead(gfile, nfsecondn=nfsecondn, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in nfsecondn.", iret)
+  print*, "  nfsecondn = ", nfsecondn
+
+  call nemsio_getfilehead(gfile, nfsecondd=nfsecondd, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in nfsecondd.", iret)
+  print*, "  nfsecondd = ", nfsecondd
+
+  call nemsio_getfilehead(gfile, nrec=nrec, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in nrec.", iret)
+  print*, "  nrec = ", nrec
+
+  call nemsio_getfilehead(gfile, ntrac=ntrac, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in ntrac.", iret)
+  print*, "  ntrac = ", ntrac
+
+  call nemsio_getfilehead(gfile, nsoil=nsoil, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in nsoil.", iret)
+  print*, "  nsoil = ", nsoil
+
+  call nemsio_getfilehead(gfile, dimx=dimx, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in dimx.", iret)
+  print*, "  dimx = ", dimx
+
+  call nemsio_getfilehead(gfile, dimy=dimy, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in dimy.", iret)
+  print*, "  dimy = ", dimy
+
+  call nemsio_getfilehead(gfile, dimz=dimz, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in dimz.", iret)
+  print*, "  dimz = ", dimz
+
+!  allocate(character(?) :: recname(nrec))
+  allocate(recname(nrec))
+  call nemsio_getfilehead(gfile, recname=recname, iret=iret)
+  if (iret /= 0) call error_handler("GSK: Reading in recname.", iret)
+  print*
+  DO i=1, nrec
+    WRITE(*,710) "i = ", i, ";  recname(", i, ") = ", recname(i)
+  END DO
+710 FORMAT(A,I5,A,I5,A,A)
+
+  print*, "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+
+end if
+
+
 
  levp1_input = lev_input + 1
 
