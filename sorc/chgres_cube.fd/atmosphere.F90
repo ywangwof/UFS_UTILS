@@ -142,12 +142,12 @@
 
  real(esmf_kind_r8), pointer        :: psptr(:,:)
 
- character(len=1) :: nl_str = char(10)
- character(len=1000) :: msg_str
- integer :: k
- real(esmf_kind_r8), pointer :: &
-   liq_aero_ptr_input(:,:,:), ice_aero_ptr_input(:,:,:), &
-   liq_aero_ptr_target(:,:,:), ice_aero_ptr_target(:,:,:)
+! character(len=1) :: nl_str = char(10)
+! character(len=1000) :: msg_str
+! integer :: k
+! real(esmf_kind_r8), pointer :: &
+!   liq_aero_ptr_input(:,:,:), ice_aero_ptr_input(:,:,:), &
+!   liq_aero_ptr_target(:,:,:), ice_aero_ptr_target(:,:,:)
 
 !-----------------------------------------------------------------------------------
 ! Read atmospheric fields on the input grid.
