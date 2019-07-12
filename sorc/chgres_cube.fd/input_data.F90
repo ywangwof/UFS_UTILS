@@ -2972,7 +2972,13 @@ end if
 
  
  tracers(:) = "NULL"
- trac_names_grib = (/":SPFH:",":CLWMR:", "O3MR",":CICE:", ":RWMR:",":SNMR:",":GRLE:", &
+! IMPORTANT NOTE:
+! The values that the elements of trac_names_grib should be set to depend
+! on the version of wgrib2 that is being used!  For example, if using the
+! wgrib2/2.0.8 module, the cloudwater mixing ratio should be ":CLMR:", but
+! for earlier versions of wgrib2, it is apparently ":CLWMR:" (notice the
+! extra "W"!!).
+ trac_names_grib = (/":SPFH:",":CLMR:", "O3MR",":CICE:", ":RWMR:",":SNMR:",":GRLE:", &
                ":TCDC:", ":NCCICE:",":SPNCR:", ":NCONCD:",":PMTF:",":PMTC:",":TKE:"/)
  trac_names_vmap = (/"sphum", "liq_wat","o3mr","ice_wat", &
                       "rainwat", "snowwat", "graupel", "cld_amt", "ice_nc", &
@@ -3195,53 +3201,85 @@ end if
 
  do n = 1, num_tracers
 
-	 if (localpet == 0) print*,"- READ ", trim(tracers_input_vmap(n))
-	 vname = tracers_input_vmap(n)
-	 call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
-											 this_field_var_name=tmpstr,loc=varnum)
-	 if (localpet == 0) then
-		 vname = trim(tracers_input_grib(n))
-		 vname2 = "var"
-		 if (trim(vname) == ":PMTC:") then
-		   vname = "var0_"
-		   vname2 = "_13_192"
-		 elseif (trim(vname) == ":PMTF:") then
-		   vname = "var0_"
-		   vname2 = "_13_193"
-		 endif
-		 
-		 do vlev = 1, lev_input
-			iret = grb2_inq(the_file,inv_file,vname,slevs(vlev),vname2,data2=dummy2d)
-		 
-			if (iret <= 0) then
-				call handle_grib_error(vname, slevs(vlev),method,value,varnum,iret,var=dummy2d)
-				if (iret==1) then ! missing_var_method == skip or no entry
-					if (trim(vname)==":SPFH:" .or. trim(vname) == ":RH:" .or.  &
-							trim(vname) == ":O3MR:") then
-						call error_handler("READING IN "//trim(vname)//" AT LEVEL "//trim(slevs(vlev))&
-											//". SET A FILL VALUE IN THE VARMAP TABLE IF THIS ERROR IS NOT DESIRABLE.",iret)
-					else
-						exit
-					endif
-				endif
-			endif
-			
-			if (n==1 .and. .not. hasspfh) then 
-				nullify(tptr)
-				print*,"- CALL FieldGet TEMPERATURE." 
-				call ESMF_FieldGet(temp_input_grid, &
-									computationalLBound=clb, &
-									computationalUBound=cub, &
-									farrayPtr=tptr, rc=rc)
-				if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-				call error_handler("IN FieldGet", rc) 
-				call rh2spfh(dummy2d,rlevs(vlev),tptr,vlev)
-			endif
+   if (localpet == 0) print*,"- READ ", trim(tracers_input_vmap(n))
+   vname = tracers_input_vmap(n)
+   call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
+                     this_field_var_name=tmpstr,loc=varnum)
 
-			 print*,'tracer ',vlev, maxval(dummy2d),minval(dummy2d)
-			 dummy3d(:,:,vlev) = real(dummy2d,esmf_kind_r8)
-		 enddo
-	 endif
+   if (localpet == 0) then
+
+     vname = trim(tracers_input_grib(n))
+     vname2 = "var"
+     if (trim(vname) == ":PMTC:") then
+       vname = "var0_"
+       vname2 = "_13_192"
+     elseif (trim(vname) == ":PMTF:") then
+       vname = "var0_"
+       vname2 = "_13_193"
+     endif
+ 
+     do vlev = 1, lev_input
+!if (localpet == 0) then
+!  if (trim(tracers_input_grib(n)) == ":CLWMR:") then
+!  !if ((trim(tracers_input_grib(n)) == ":PMTF:") .or. &
+!   !   (trim(tracers_input_grib(n)) == ":PMTC:")) then
+!    WRITE(*,*) '----------------------------------------------------------'
+!    WRITE(*,*) 'the_file = "', the_file, '"'
+!    WRITE(*,*) 'inv_file = "', inv_file, '"'
+!    WRITE(*,*) "n = ", n
+!    WRITE(*,*) "trim(tracers_input_grib(n)) = ", trim(tracers_input_grib(n))
+!    WRITE(*,*) "vname = ", vname
+!    WRITE(*,*) "vname2 = ", vname2
+!    WRITE(*,*) "vlev = ", vlev
+!    WRITE(*,*) 'slevs(vlev) = "', slevs(vlev), '"'
+!  endif
+!endif
+       iret = grb2_inq(the_file,inv_file,vname,slevs(vlev),vname2,data2=dummy2d)
+!if (localpet == 0) then
+!  if (trim(tracers_input_grib(n)) == ":CLWMR:") then
+!  !if ((trim(tracers_input_grib(n)) == ":PMTC:") .or. &
+!     ! (trim(tracers_input_grib(n)) == ":PMTF:")) then
+!    WRITE(*,*) '========================================================='
+!    WRITE(*,*) 'minval(dummy2d) = ', minval(dummy2d)
+!    WRITE(*,*) 'maxval(dummy2d) = ', maxval(dummy2d)
+!    WRITE(*,*) 'iret = ', iret
+! endif
+!endif
+
+       if (iret <= 0) then
+
+         call handle_grib_error(vname, slevs(vlev),method,value,varnum,iret,var=dummy2d)
+         if (iret==1) then ! missing_var_method == skip or no entry
+           if (trim(vname) ==":SPFH:" .or. &
+               trim(vname) == ":RH:" .or. &
+               trim(vname) == ":O3MR:") then
+             call error_handler("READING IN "//trim(vname)//" AT LEVEL "//trim(slevs(vlev)) &
+                                //". SET A FILL VALUE IN THE VARMAP TABLE IF THIS ERROR IS NOT DESIRABLE.",iret)
+           else
+             exit
+           endif
+         endif
+
+       endif
+
+       if (n==1 .and. .not. hasspfh) then 
+         nullify(tptr)
+         print*,"- CALL FieldGet TEMPERATURE." 
+         call ESMF_FieldGet(temp_input_grid, &
+                            computationalLBound=clb, &
+                            computationalUBound=cub, &
+                            farrayPtr=tptr, rc=rc)
+         if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+           call error_handler("IN FieldGet", rc) 
+         call rh2spfh(dummy2d,rlevs(vlev),tptr,vlev)
+       endif
+ 
+       print*,'tracer ',vlev, maxval(dummy2d),minval(dummy2d)
+       dummy3d(:,:,vlev) = real(dummy2d,esmf_kind_r8)
+
+     enddo
+
+   endif
 
    if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT ", trim(tracers_input_grib(n))
    call ESMF_FieldScatter(tracers_input_grid(n), dummy3d, rootpet=0, rc=rc)
@@ -6045,13 +6083,13 @@ subroutine handle_grib_error(vname,lev,method,value,varnum, iret,var,var8,var3d)
     read_from_input(varnum) = .false.
     iret = 1
   elseif (trim(method) == "set_to_fill") then
-    print*, "WARNING: ,", trim(vname), " NOT AVILABLE AT LEVEL ", trim(lev), &
+    print*, "WARNING: ", trim(vname), " NOT AVAILABLE AT LEVEL ", trim(lev), &
            ". SETTING EQUAL TO FILL VALUE OF ", value
     if(present(var)) var(:,:) = value
     if(present(var8)) var8(:,:) = value
     if(present(var3d)) var3d(:,:,:) = value
   elseif (trim(method) == "set_to_NaN") then
-    print*, "WARNING: ,", trim(vname), " NOT AVILABLE AT LEVEL ", trim(lev), &
+    print*, "WARNING: ", trim(vname), " NOT AVAILABLE AT LEVEL ", trim(lev), &
            ". SETTING EQUAL TO NaNs"
     if(present(var)) var(:,:) = ieee_value(var,IEEE_QUIET_NAN)
     if(present(var8)) var8(:,:) = ieee_value(var8,IEEE_QUIET_NAN)

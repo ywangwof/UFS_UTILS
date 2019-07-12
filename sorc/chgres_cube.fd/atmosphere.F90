@@ -142,6 +142,13 @@
 
  real(esmf_kind_r8), pointer        :: psptr(:,:)
 
+ character(len=1) :: nl_str = char(10)
+ character(len=1000) :: msg_str
+ integer :: k
+ real(esmf_kind_r8), pointer :: &
+   liq_aero_ptr_input(:,:,:), ice_aero_ptr_input(:,:,:), &
+   liq_aero_ptr_target(:,:,:), ice_aero_ptr_target(:,:,:)
+
 !-----------------------------------------------------------------------------------
 ! Read atmospheric fields on the input grid.
 !-----------------------------------------------------------------------------------
@@ -222,6 +229,75 @@
                          termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
    if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldRegrid", rc)
+
+
+
+
+
+!   if (trim(tracers(n)) == "liq_aero") then
+!
+!     print*,"- AAAAAAAAAAAAAAAAA: CALL FieldGet FOR ", trim(tracers(n)), '  (n = ', n, ')'
+!     call ESMF_FieldGet(tracers_b4adj_target_grid(n), &
+!                        farrayPtr=liq_aero_ptr_target, rc=rc)
+!     if (ESMF_logFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__line__, file=__file__)) &
+!       call error_handler("CRAP CRAP CRAP IN FieldGet", rc)
+!
+!     print*,"- BBBBBBBBBBBBBBBBBB: CALL FieldGet FOR ", trim(tracers(n)), '  (n = ', n, ')'
+!     call ESMF_FieldGet(tracers_input_grid(n), &
+!                        farrayPtr=liq_aero_ptr_input, rc=rc)
+!     if (ESMF_logFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__line__, file=__file__)) &
+!       call error_handler("CRAP CRAP CRAP IN FieldGet", rc)
+!
+!     if(localpet==0) then
+!!       do k=1, lev_target
+!       do k=1, lev_input
+!         WRITE(msg_str,'((A,A),(A,I0,A),4(A,G15.5,A))') &
+!'CCCCCCCCCCCCCCCCCCCCCCCCCCCCC', nl_str, &
+!'k = ', k, nl_str, &
+!'minval(liq_aero_ptr_input) = ', minval(liq_aero_ptr_input(:,:,k)), nl_str, &
+!'minval(liq_aero_ptr_target) = ', minval(liq_aero_ptr_target(:,:,k)), nl_str, &
+!'maxval(liq_aero_ptr_input) = ', maxval(liq_aero_ptr_input(:,:,k)), nl_str, &
+!'maxval(liq_aero_ptr_target) = ', maxval(liq_aero_ptr_target(:,:,k)), nl_str
+!         WRITE(*,'(A)') trim(msg_str)
+!       enddo
+!     endif
+!
+!   endif
+!
+!
+!   if (trim(tracers(n)) == "ice_aero") then
+!
+!     print*,"- SSSSSSSSSSSSSSSS: CALL FieldGet FOR ", trim(tracers(n)), '  (n = ', n, ')'
+!     call ESMF_FieldGet(tracers_b4adj_target_grid(n), &
+!                        farrayPtr=ice_aero_ptr_target, rc=rc)
+!     if (ESMF_logFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__line__, file=__file__)) &
+!       call error_handler("CRAP CRAP CRAP IN FieldGet", rc)
+!
+!     print*,"- TTTTTTTTTTTTTTTT: CALL FieldGet FOR ", trim(tracers(n)), '  (n = ', n, ')'
+!     call ESMF_FieldGet(tracers_input_grid(n), &
+!                        farrayPtr=ice_aero_ptr_input, rc=rc)
+!     if (ESMF_logFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__line__, file=__file__)) &
+!       call error_handler("CRAP CRAP CRAP IN FieldGet", rc)
+!
+!     if(localpet==0) then
+!!       do k=1, lev_target
+!       do k=1, lev_input
+!         WRITE(msg_str,'((A,A),(A,I0,A),4(A,G15.5,A))') &
+!'UUUUUUUUUUUUUUUUUUUUUUUUUUU', nl_str, &
+!'k = ', k, nl_str, &
+!'minval(ice_aero_ptr_input) = ', minval(ice_aero_ptr_input(:,:,k)), nl_str, &
+!'minval(ice_aero_ptr_target) = ', minval(ice_aero_ptr_target(:,:,k)), nl_str, &
+!'maxval(ice_aero_ptr_input) = ', maxval(ice_aero_ptr_input(:,:,k)), nl_str, &
+!'maxval(ice_aero_ptr_target) = ', maxval(ice_aero_ptr_target(:,:,k)), nl_str
+!         WRITE(*,'(A)') trim(msg_str)
+!       enddo
+!     endif
+!
+!   endif
+
+
+
+
  enddo
 
  print*,"- CALL Field_Regrid FOR VERTICAL VELOCITY."
