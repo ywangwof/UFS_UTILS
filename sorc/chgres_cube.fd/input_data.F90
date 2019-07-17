@@ -2427,12 +2427,13 @@ module input_data
    call netcdf_err(error, 'reading field id' )
    error=nf90_get_var(ncid, id_var, data_one_tile_3d)
    call netcdf_err(error, 'reading field' )
-   where(data_one_tile_3d < 1.0E-20 .and. data_one_tile_3d /= 0.0_esmf_kind_r8) data_one_tile_3d=1.0E-7
+   !where(data_one_tile_3d < 1.0E-20 .and. data_one_tile_3d /= 0.0_esmf_kind_r8) data_one_tile_3d=1.0E-7
    
    tmp_3d = data_one_tile_3d + 300.0_esmf_kind_r8
-   
+   print*, 'after read max, min theta1', minval(tmp_3d(:,:,1)), maxval(tmp_3d(:,:,1))
    data_one_tile_3d = tmp_3d * (p_3d/100000.0) ** (rocp) 
-	 print*, 'max, min T ', minval(data_one_tile_3d), maxval(data_one_tile_3d)
+	 print*, 'after read max, min T1', minval(data_one_tile_3d(:,:,1)), maxval(data_one_tile_3d(:,:,1))
+
  endif
 
  print*,"- CALL FieldScatter FOR INPUT GRID TEMPERATURE."
@@ -5247,7 +5248,8 @@ if (localpet == 0) then
         dummy2d(:,:) = 0.0_esmf_kind_r4
       endif
     endif
-   dummy2d_8= real(dummy2d,esmf_kind_r8)
+   !dummy2d_8= real(dummy2d,esmf_kind_r8)
+   dummy2d_8(:,:) = 0.0_esmf_kind_r4
    print*,'cnwat ',maxval(dummy2d),minval(dummy2d)
  endif
 
