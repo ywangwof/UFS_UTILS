@@ -50,7 +50,7 @@
                                        landmask_target_grid
 
  use program_setup, only             : vcoord_file_target_grid, &
-                                       regional, input_type      &
+                                       regional, input_type,     &
                                        tracers, num_tracers,      &
                                        atm_weight_file, phys_suite
 
