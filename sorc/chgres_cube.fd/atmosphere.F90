@@ -50,10 +50,9 @@
                                        landmask_target_grid
 
  use program_setup, only             : vcoord_file_target_grid, &
-                                       regional,                &
+                                       regional, input_type      &
                                        tracers, num_tracers,      &
-                                       atm_weight_file, phys_suite, &
-                                       tracers_input
+                                       atm_weight_file, phys_suite
 
  implicit none
 
@@ -142,13 +141,6 @@
 
  real(esmf_kind_r8), pointer        :: psptr(:,:)
 
-! character(len=1) :: nl_str = char(10)
-! character(len=1000) :: msg_str
-! integer :: k
-! real(esmf_kind_r8), pointer :: &
-!   liq_aero_ptr_input(:,:,:), ice_aero_ptr_input(:,:,:), &
-!   liq_aero_ptr_target(:,:,:), ice_aero_ptr_target(:,:,:)
-
 !-----------------------------------------------------------------------------------
 ! Read atmospheric fields on the input grid.
 !-----------------------------------------------------------------------------------
@@ -229,75 +221,6 @@
                          termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
    if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldRegrid", rc)
-
-
-
-
-
-!   if (trim(tracers(n)) == "liq_aero") then
-!
-!     print*,"- AAAAAAAAAAAAAAAAA: CALL FieldGet FOR ", trim(tracers(n)), '  (n = ', n, ')'
-!     call ESMF_FieldGet(tracers_b4adj_target_grid(n), &
-!                        farrayPtr=liq_aero_ptr_target, rc=rc)
-!     if (ESMF_logFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__line__, file=__file__)) &
-!       call error_handler("CRAP CRAP CRAP IN FieldGet", rc)
-!
-!     print*,"- BBBBBBBBBBBBBBBBBB: CALL FieldGet FOR ", trim(tracers(n)), '  (n = ', n, ')'
-!     call ESMF_FieldGet(tracers_input_grid(n), &
-!                        farrayPtr=liq_aero_ptr_input, rc=rc)
-!     if (ESMF_logFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__line__, file=__file__)) &
-!       call error_handler("CRAP CRAP CRAP IN FieldGet", rc)
-!
-!     if(localpet==0) then
-!!       do k=1, lev_target
-!       do k=1, lev_input
-!         WRITE(msg_str,'((A,A),(A,I0,A),4(A,G15.5,A))') &
-!'CCCCCCCCCCCCCCCCCCCCCCCCCCCCC', nl_str, &
-!'k = ', k, nl_str, &
-!'minval(liq_aero_ptr_input) = ', minval(liq_aero_ptr_input(:,:,k)), nl_str, &
-!'minval(liq_aero_ptr_target) = ', minval(liq_aero_ptr_target(:,:,k)), nl_str, &
-!'maxval(liq_aero_ptr_input) = ', maxval(liq_aero_ptr_input(:,:,k)), nl_str, &
-!'maxval(liq_aero_ptr_target) = ', maxval(liq_aero_ptr_target(:,:,k)), nl_str
-!         WRITE(*,'(A)') trim(msg_str)
-!       enddo
-!     endif
-!
-!   endif
-!
-!
-!   if (trim(tracers(n)) == "ice_aero") then
-!
-!     print*,"- SSSSSSSSSSSSSSSS: CALL FieldGet FOR ", trim(tracers(n)), '  (n = ', n, ')'
-!     call ESMF_FieldGet(tracers_b4adj_target_grid(n), &
-!                        farrayPtr=ice_aero_ptr_target, rc=rc)
-!     if (ESMF_logFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__line__, file=__file__)) &
-!       call error_handler("CRAP CRAP CRAP IN FieldGet", rc)
-!
-!     print*,"- TTTTTTTTTTTTTTTT: CALL FieldGet FOR ", trim(tracers(n)), '  (n = ', n, ')'
-!     call ESMF_FieldGet(tracers_input_grid(n), &
-!                        farrayPtr=ice_aero_ptr_input, rc=rc)
-!     if (ESMF_logFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__line__, file=__file__)) &
-!       call error_handler("CRAP CRAP CRAP IN FieldGet", rc)
-!
-!     if(localpet==0) then
-!!       do k=1, lev_target
-!       do k=1, lev_input
-!         WRITE(msg_str,'((A,A),(A,I0,A),4(A,G15.5,A))') &
-!'UUUUUUUUUUUUUUUUUUUUUUUUUUU', nl_str, &
-!'k = ', k, nl_str, &
-!'minval(ice_aero_ptr_input) = ', minval(ice_aero_ptr_input(:,:,k)), nl_str, &
-!'minval(ice_aero_ptr_target) = ', minval(ice_aero_ptr_target(:,:,k)), nl_str, &
-!'maxval(ice_aero_ptr_input) = ', maxval(ice_aero_ptr_input(:,:,k)), nl_str, &
-!'maxval(ice_aero_ptr_target) = ', maxval(ice_aero_ptr_target(:,:,k)), nl_str
-!         WRITE(*,'(A)') trim(msg_str)
-!       enddo
-!     endif
-!
-!   endif
-
-
-
-
  enddo
 
  print*,"- CALL Field_Regrid FOR VERTICAL VELOCITY."
@@ -395,7 +318,7 @@
 ! Compute height.
 !-----------------------------------------------------------------------------------
 
- call compute_zh(localpet)
+ call compute_zh
 
 !-----------------------------------------------------------------------------------
 ! Free up memory.
@@ -476,7 +399,8 @@
 !.. both).
 !-----------------------------------------------------------------------------------
 
- if (trim(phys_suite)=="RAP" .or. trim(phys_suite)=="GSD") then
+ if ((trim(phys_suite)=="RAP" .or. trim(phys_suite)=="GSD") .and. & 
+       trim(input_type)=="grib2" ) then
    call create_number_concentrations
  endif
 
@@ -1035,21 +959,12 @@
     
  if(localpet==0) then
    print*,'temp ',tptr(clb(1),clb(2),:)
-print*, "shape(tracers_b4adj_target_grid) = ", shape(tracers_b4adj_target_grid)
  endif
 ! Find specific humidity in the array of tracer fields.
 
-!tracers = tracers_input
  do ii = 1, num_tracers
-   if(localpet==0) then
-     WRITE(*,*)
-     WRITE(*,*) "ii = ", ii, "; trim(tracers(ii)) = ", trim(tracers(ii)), &
-                " (num_tracers = ", num_tracers, ")"
-    endif
-!    if (trim(tracers(ii)) == "spfh") exit
-    if (trim(tracers(ii)) == "sphum") exit
+   if (trim(tracers(ii)) == "sphum") exit
  enddo
-
 
  print*,"- CALL FieldGet FOR SPECIFIC HUMIDITY"
  call ESMF_FieldGet(tracers_b4adj_target_grid(ii), &
@@ -1753,11 +1668,10 @@ print*, "shape(tracers_b4adj_target_grid) = ", shape(tracers_b4adj_target_grid)
                                                                         
  END SUBROUTINE RSEARCH 
 
- subroutine compute_zh(localpet)
+ subroutine compute_zh
 
  implicit none 
 
- integer, intent(in) :: localpet
  integer                          :: i,ii, j,k, rc, clb(2), cub(2)
 
  real(esmf_kind_r8), allocatable  :: pe0(:), pn0(:)
@@ -1799,15 +1713,8 @@ print*, "shape(tracers_b4adj_target_grid) = ", shape(tracers_b4adj_target_grid)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
          call error_handler("IN FieldGet", rc)
 
-!tracers = tracers_input
  do ii = 1, num_tracers
-   if(localpet==0) then
-     WRITE(*,*)
-     WRITE(*,*) "ii = ", ii, "; trim(tracers(ii)) = ", trim(tracers(ii)), &
-                " (num_tracers = ", num_tracers, ")"
-    endif
-!    if (trim(tracers(ii)) == "spfh") exit
-    if (trim(tracers(ii)) == "sphum") exit
+   if (trim(tracers(ii)) == "sphum") exit
  enddo
 
  print*,"- CALL FieldGet FOR SPECIFIC HUMIDITY"
