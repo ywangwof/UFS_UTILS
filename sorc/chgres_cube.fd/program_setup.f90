@@ -121,7 +121,7 @@
  character(len=1000), public     :: wgrib2_path="wgrib2"
 
  integer, parameter, public      :: max_tracers=100
- integer, public                 :: num_tracers
+ integer, public                 :: num_tracers, num_tracers_input
  
  logical, allocatable, public    :: read_from_input(:)
  
@@ -150,6 +150,7 @@
  logical, public                 :: replace_vgfrc = .true.
  logical, public                 :: tg3_from_soil = .false.
 
+
  real, allocatable, public       :: drysmc_input(:), drysmc_target(:)
  real, allocatable, public       :: maxsmc_input(:), maxsmc_target(:)
  real, allocatable, public       :: refsmc_input(:), refsmc_target(:)
@@ -165,12 +166,11 @@
 
  contains
 
- subroutine read_setup_namelist(localpet)
+ subroutine read_setup_namelist
 
  implicit none
 
- integer, intent(in)         :: localpet
- integer                     :: is, ie, ierr, n
+ integer                     :: is, ie, ierr
 
 
  namelist /config/ base_install_dir, &
@@ -240,18 +240,12 @@
 !-------------------------------------------------------------------------
 
  if (regional > 0) then
-   !halo_bndy = 4
-   !halo_blend = 0
    print*,"- PROCESSING A REGIONAL NEST WITH A BOUNDARY HALO OF ",halo_bndy
    print*,"- PROCESSING A REGIONAL NEST WITH A BLENDING HALO OF ",halo_blend
+ else
+   halo_bndy = 0
+   halo_blend = 0
  endif
-
-if (localpet == 0) then
-WRITE(*,*)
-WRITE(*,*) "tracers_input = ", tracers_input
-WRITE(*,*)
-WRITE(*,*) "tracers = ", tracers
-end if
 
  num_tracers = 0
  do is = 1, max_tracers
@@ -259,21 +253,14 @@ end if
    num_tracers = num_tracers + 1
    print*,"- WILL PROCESS TRACER ", trim(tracers(is))
  enddo
+ 
+ num_tracers_input = 0
+ do is = 1, max_tracers
+   if (trim(tracers_input(is)) == "NULL") exit
+   num_tracers_input = num_tracers_input + 1
+   print*,"- WILL PROCESS INPUT TRACER ", trim(tracers_input(is))
+ enddo
 
-if (localpet == 0) then
-  WRITE(*,*)
-  WRITE(*,*) "num_tracers = ", num_tracers
-  WRITE(*,*) &
-"The following values of the tracers_input(:) and tracers(:) arrays are " // &
-"BEFORE reading in the variable mapping file (they're the values obtained " // &
-"just from reading in the namelist file):"
-  do n = 1, num_tracers
-    WRITE(*,620) "  n = ", n, &
-                 ";  tracers_input(n) = ", """", trim(tracers_input(n)), """", &
-                 ";  tracers(n) = ", """", trim(tracers(n)), """"
-  end do
-  620 FORMAT(A,I5,8A)
-end if
 !-------------------------------------------------------------------------
 ! Ensure program recognizes the input data type.  
 !-------------------------------------------------------------------------
@@ -308,7 +295,8 @@ subroutine read_varmap
 
  if (trim(input_type) == "grib2") then 
    varmap_table_file = trim(base_install_dir) // "/" // trim(varmap_tables_dir) // "/" &
-                       // trim(phys_suite) // "phys_var_map.txt"
+                    // trim(phys_suite) // "phys_var_map.txt"
+ 
 
    print*,"OPEN VARIABLE MAPPING FILE: ", trim(varmap_table_file)
    open(14, file=trim(varmap_table_file), form='formatted', iostat=istat)
@@ -323,20 +311,24 @@ subroutine read_varmap
    if (istat /= 0) call error_handler("READING VARIABLE MAPPING FILE", istat)
    print*, 'TRACERS FROM VARMAP FILE = ', tracers_input(1:num_tracers)
 
+
    allocate(chgres_var_names(nvars))
    allocate(field_var_names(nvars))
    allocate(missing_var_methods(nvars))
    allocate(missing_var_values(nvars))
    allocate(read_from_input(nvars))
 
+ 
    read_from_input(:) = .true.
 
+ 
    do k = 1,nvars
      read(14, *, iostat=istat) chgres_var_names(k), field_var_names(k) , & 
-                               missing_var_methods(k), missing_var_values(k)
+                           missing_var_methods(k), missing_var_values(k)
    enddo
-
+ 
    if (istat /= 0) call error_handler("READING VARIABLE MAPPING FILE", istat)
+
 
    print*
    do k = 1, nvars
@@ -345,8 +337,7 @@ subroutine read_varmap
 
    close(14)
  endif
-
- end subroutine read_varmap
+end subroutine read_varmap
 
 ! ----------------------------------------------------------------------------------------
 ! Find conditions for handling missing variables from varmap arrays

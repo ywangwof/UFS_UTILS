@@ -39,6 +39,7 @@
                                     orog_dir_input_grid, &
                                     orog_files_input_grid, &
                                     tracers_input, num_tracers, &
+                                    num_tracers_input, &
                                     input_type, external_model, &
                                     get_var_cond, read_from_input, tracers, &
                                     convert_sfc  
@@ -559,13 +560,13 @@
  lev_input = sighead%levs
  levp1_input = lev_input + 1
 
- if (num_tracers /= sighead%ntrac) then
+ if (num_tracers_input /= sighead%ntrac) then
    call error_handler("WRONG NUMBER OF TRACERS EXPECTED.", 99)
  endif
 
  if (sighead%idvt == 0 .or. sighead%idvt == 21) then
    if (trim(tracers_input(1)) /= 'spfh'  .or.  &
-       trim(tracers_input(2)) /= 'o3mr'  .or.  &
+       trim(tracers_input(2)) /= 'o3mr'   .or.  &
        trim(tracers_input(3)) /= 'clwmr') then 
      call error_handler("TRACERS SELECTED DO NOT MATCH FILE CONTENTS.", 99)
    endif
@@ -600,6 +601,10 @@
  allocate(tracers_input_grid(num_tracers))
 
  do i = 1, num_tracers
+   if (trim(tracers(i)) == "spfh")    P_QV = i
+   if (trim(tracers(i)) == "clwmr")   P_QC = i
+   if (trim(tracers(i)) == "water_nc") P_QNC = i
+   
    print*,"- CALL FieldCreate FOR INPUT GRID TRACER ", trim(tracers_input(i))
    tracers_input_grid(i) = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
@@ -678,8 +683,7 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldScatter", rc)
 
- do k = 1, num_tracers
-
+ do k = 1, num_tracers_input
    if (localpet == 0) then
      call sptezm(0,sighead%jcap,4,i_input, j_input, lev_input, sigdata%q(:,:,k), dummy3d, 1)
      print*,trim(tracers_input(k)),maxval(dummy3d),minval(dummy3d)
@@ -843,18 +847,6 @@
 
  type(nemsio_gfile)                    :: gfile
 
-character(nemsio_charkind), allocatable :: recname(:)
-integer(nemsio_intkind) :: &
-! The elements of the array idate are yyyy, mm, dd, hh, mm, ssn, and 
-! ssd, where ssn is the numerator and ssd is the denominator of the 
-! fraction that represents seconds, i.e. the seconds are given by 
-! ssn/ssd.
-  idate(7), &
-  nfday, nfhour, nfminute, nfsecondn, nfsecondd, &
-  nrec, ntrac, nsoil, &
-  dimx, dimy, dimz
-
-
  the_file = trim(data_dir_input_grid) // "/" // trim(atm_files_input_grid(1))
 
  print*,"- READ ATMOS DATA FROM SPECTRAL GFS NEMSIO FILE: ", trim(the_file)
@@ -866,74 +858,6 @@ integer(nemsio_intkind) :: &
  print*,"- READ NUMBER OF VERTICAL LEVELS."
  call nemsio_getfilehead(gfile, iret=iret, dimz=lev_input)
  if (iret /= 0) call error_handler("READING NUMBER OF VERTICAL LEVLES.", iret)
-
-
-if (localpet == 0) then
-
-  print*, "AAAAAAAAAAAAAAAAAAAAAAAAAAA"
-
-  call nemsio_getfilehead(gfile, idate=idate, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in idate.", iret)
-  print*, "  idate = ", idate
-
-  call nemsio_getfilehead(gfile, nfday=nfday, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in nfday.", iret)
-  print*, "  nfday = ", nfday
-
-  call nemsio_getfilehead(gfile, nfhour=nfhour, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in nfhour.", iret)
-  print*, "  nfhour = ", nfhour
-
-  call nemsio_getfilehead(gfile, nfminute=nfminute, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in nfminute.", iret)
-  print*, "  nfminute = ", nfminute
-
-  call nemsio_getfilehead(gfile, nfsecondn=nfsecondn, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in nfsecondn.", iret)
-  print*, "  nfsecondn = ", nfsecondn
-
-  call nemsio_getfilehead(gfile, nfsecondd=nfsecondd, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in nfsecondd.", iret)
-  print*, "  nfsecondd = ", nfsecondd
-
-  call nemsio_getfilehead(gfile, nrec=nrec, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in nrec.", iret)
-  print*, "  nrec = ", nrec
-
-  call nemsio_getfilehead(gfile, ntrac=ntrac, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in ntrac.", iret)
-  print*, "  ntrac = ", ntrac
-
-  call nemsio_getfilehead(gfile, nsoil=nsoil, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in nsoil.", iret)
-  print*, "  nsoil = ", nsoil
-
-  call nemsio_getfilehead(gfile, dimx=dimx, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in dimx.", iret)
-  print*, "  dimx = ", dimx
-
-  call nemsio_getfilehead(gfile, dimy=dimy, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in dimy.", iret)
-  print*, "  dimy = ", dimy
-
-  call nemsio_getfilehead(gfile, dimz=dimz, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in dimz.", iret)
-  print*, "  dimz = ", dimz
-
-!  allocate(character(?) :: recname(nrec))
-  allocate(recname(nrec))
-  call nemsio_getfilehead(gfile, recname=recname, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in recname.", iret)
-  print*
-  DO i=1, nrec
-    WRITE(*,710) "i = ", i, ";  recname(", i, ") = ", recname(i)
-  END DO
-710 FORMAT(A,I5,A,I5,A,A)
-
-  print*, "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
-
-end if
-
 
  levp1_input = lev_input + 1
 
@@ -964,7 +888,11 @@ end if
  allocate(tracers_input_grid(num_tracers))
 
  do i = 1, num_tracers
+   
    print*,"- CALL FieldCreate FOR INPUT GRID TRACER ", trim(tracers_input(i))
+   if (trim(tracers(i)) == "spfh")  P_QV = i
+   if (trim(tracers(i)) == "clwmr") P_QC = i
+   if (trim(tracers(i)) == "water_nc") P_QNC = i
    tracers_input_grid(i) = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
@@ -1040,32 +968,14 @@ end if
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
      call error_handler("IN FieldScatter", rc)
 
- if (localpet == 0) then
-   WRITE(*,610) "===>>>  num_tracers = ", num_tracers
-   do n = 1, num_tracers
-     WRITE(*,620) "  n = ", n, ";  tracers_input(n) = ", """", trim(tracers_input(n)), """"
-   end do
- endif
-610 FORMAT(A,I5)
-620 FORMAT(A,I5,4A)
-
- do n = 1, num_tracers
+ do n = 1, num_tracers_input
 
    if (localpet == 0) then
      print*,"- READ ", trim(tracers_input(n))
      vname = trim(tracers_input(n))
-WRITE(*,510) "vname = ", """", trim(vname), """"
-510 FORMAT(A,A,A,A)
-!540 FORMAT(3A, 10X, 2A)
      vlevtyp = "mid layer"
-WRITE(*,520) "vlevtyp = ", vlevtyp
-520 FORMAT(A,A)
      do vlev = 1, lev_input
-WRITE(*,530) "  vlev = ", vlev
-530 FORMAT(A,I5)
-       call nemsio_readrecv(gfile, trim(vname), vlevtyp, vlev, dummy, 0, iret)
-WRITE(*,530) "  iret = ", iret
-540 FORMAT(A,I5)
+       call nemsio_readrecv(gfile, vname, vlevtyp, vlev, dummy, 0, iret)
        if (iret /= 0) call error_handler("READING TRACER RECORD.", iret)
 !      print*,'tracer ',vlev, maxval(dummy),minval(dummy)
        dummy3d(:,:,vlev) = reshape(dummy, (/i_input,j_input/))
@@ -1261,18 +1171,6 @@ WRITE(*,530) "  iret = ", iret
 
  type(nemsio_gfile)                    :: gfile
 
-character(nemsio_charkind), allocatable :: recname(:)
-integer(nemsio_intkind) :: &
-! The elements of the array idate are yyyy, mm, dd, hh, mm, ssn, and 
-! ssd, where ssn is the numerator and ssd is the denominator of the 
-! fraction that represents seconds, i.e. the seconds are given by 
-! ssn/ssd.
-  idate(7), &
-  nfday, nfhour, nfminute, nfsecondn, nfsecondd, &
-  nrec, ntrac, nsoil, &
-  dimx, dimy, dimz
-
-
  the_file = trim(data_dir_input_grid) // "/" // trim(atm_files_input_grid(1))
 
  print*,"- READ ATMOS DATA FROM GAUSSIAN NEMSIO FILE: ", trim(the_file)
@@ -1284,75 +1182,6 @@ integer(nemsio_intkind) :: &
  print*,"- READ NUMBER OF VERTICAL LEVELS."
  call nemsio_getfilehead(gfile, iret=iret, dimz=lev_input)
  if (iret /= 0) call error_handler("READING NUMBER OF VERTICAL LEVLES.", iret)
-
-
-if (localpet == 0) then
-
-  print*, "AAAAAAAAAAAAAAAAAAAAAAAAAAA"
-
-  call nemsio_getfilehead(gfile, idate=idate, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in idate.", iret)
-  print*, "  idate = ", idate
-
-  call nemsio_getfilehead(gfile, nfday=nfday, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in nfday.", iret)
-  print*, "  nfday = ", nfday
-
-  call nemsio_getfilehead(gfile, nfhour=nfhour, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in nfhour.", iret)
-  print*, "  nfhour = ", nfhour
-
-  call nemsio_getfilehead(gfile, nfminute=nfminute, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in nfminute.", iret)
-  print*, "  nfminute = ", nfminute
-
-  call nemsio_getfilehead(gfile, nfsecondn=nfsecondn, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in nfsecondn.", iret)
-  print*, "  nfsecondn = ", nfsecondn
-
-  call nemsio_getfilehead(gfile, nfsecondd=nfsecondd, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in nfsecondd.", iret)
-  print*, "  nfsecondd = ", nfsecondd
-
-  call nemsio_getfilehead(gfile, nrec=nrec, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in nrec.", iret)
-  print*, "  nrec = ", nrec
-
-  call nemsio_getfilehead(gfile, ntrac=ntrac, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in ntrac.", iret)
-  print*, "  ntrac = ", ntrac
-
-  call nemsio_getfilehead(gfile, nsoil=nsoil, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in nsoil.", iret)
-  print*, "  nsoil = ", nsoil
-
-  call nemsio_getfilehead(gfile, dimx=dimx, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in dimx.", iret)
-  print*, "  dimx = ", dimx
-
-  call nemsio_getfilehead(gfile, dimy=dimy, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in dimy.", iret)
-  print*, "  dimy = ", dimy
-
-  call nemsio_getfilehead(gfile, dimz=dimz, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in dimz.", iret)
-  print*, "  dimz = ", dimz
-
-!  allocate(character(?) :: recname(nrec))
-  allocate(recname(nrec))
-  call nemsio_getfilehead(gfile, recname=recname, iret=iret)
-  if (iret /= 0) call error_handler("GSK: Reading in recname.", iret)
-  print*
-  DO i=1, nrec
-    WRITE(*,710) "i = ", i, ";  recname(", i, ") = ", recname(i)
-  END DO
-710 FORMAT(A,I5,A,I5,A,A)
-
-  print*, "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
-
-end if
-
-
 
  levp1_input = lev_input + 1
 
@@ -1380,7 +1209,8 @@ end if
 
  allocate(tracers_input_grid(num_tracers))
 
- do i = 1, num_tracers
+ do i = 1, num_tracers_input
+ 
    print*,"- CALL FieldCreate FOR INPUT GRID TRACER ", trim(tracers_input(i))
    tracers_input_grid(i) = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
@@ -1466,7 +1296,7 @@ end if
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldScatter", rc)
 
- do n = 1, num_tracers
+ do n = 1, num_tracers_input
 
    if (localpet == 0) then
      print*,"- READ ", trim(tracers_input(n))
@@ -1768,8 +1598,7 @@ end if
 
  allocate(tracers_input_grid(num_tracers))
 
- do i = 1, num_tracers
-
+ do i = 1, num_tracers_input
    print*,"- CALL FieldCreate FOR INPUT GRID TRACER ", trim(tracers_input(i))
    tracers_input_grid(i) = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
@@ -1897,7 +1726,7 @@ end if
    call netcdf_err(error, 'opening: '//trim(tilefile) )
  endif
 
- do i = 1, num_tracers
+ do i = 1, num_tracers_input
 
    if (localpet < num_tiles_input_grid) then
      error=nf90_inq_varid(ncid, tracers_input(i), id_var)
@@ -2162,7 +1991,7 @@ end if
       call error_handler("IN FieldScatter", rc)
  enddo
 
- do n = 1, num_tracers
+ do n = 1, num_tracers_file
 
    if (localpet < num_tiles_input_grid) then
      print*,"- READ ", trim(tracers_input(n))
@@ -2972,13 +2801,7 @@ end if
 
  
  tracers(:) = "NULL"
-! IMPORTANT NOTE:
-! The values that the elements of trac_names_grib should be set to depend
-! on the version of wgrib2 that is being used!  For example, if using the
-! wgrib2/2.0.8 module, the cloudwater mixing ratio should be ":CLMR:", but
-! for earlier versions of wgrib2, it is apparently ":CLWMR:" (notice the
-! extra "W"!!).
- trac_names_grib = (/":SPFH:",":CLMR:", "O3MR",":CICE:", ":RWMR:",":SNMR:",":GRLE:", &
+ trac_names_grib = (/":SPFH:",":CLWMR:", "O3MR",":CICE:", ":RWMR:",":SNMR:",":GRLE:", &
                ":TCDC:", ":NCCICE:",":SPNCR:", ":NCONCD:",":PMTF:",":PMTC:",":TKE:"/)
  trac_names_vmap = (/"sphum", "liq_wat","o3mr","ice_wat", &
                       "rainwat", "snowwat", "graupel", "cld_amt", "ice_nc", &
@@ -3084,9 +2907,9 @@ end if
 
    i = maxloc(merge(1.,0.,trac_names_vmap == vname),dim=1)
 
-   tracers_input_grib(n)=trac_names_grib(i)
-   tracers_input_vmap(n)=trac_names_vmap(i)
-   tracers(n)=tracers_default(n)
+	 tracers_input_grib(n)=trac_names_grib(i)
+	 tracers_input_vmap(n)=trac_names_vmap(i)
+	 tracers(n)=tracers_default(n)
 
  enddo
  allocate(atm(num_tracers+4))
@@ -3112,14 +2935,6 @@ end if
 
  do i = 1,num_tracers
    if (localpet == 0) print*,"- CALL FieldCreate FOR INPUT GRID TRACER ", trim(tracers_input(i))
-   if (trim(tracers_input_vmap(i)) == "sphum")    P_QV = i
-   if (trim(tracers_input_vmap(i)) == "liq_wat")  P_QC = i
-   if (trim(tracers_input_vmap(i)) == "ice_wat")  P_QI = i
-   if (trim(tracers_input_vmap(i)) == "rainwat")  P_QR = i
-   if (trim(tracers_input_vmap(i)) == "ice_nc")   P_QNI = i
-   if (trim(tracers_input_vmap(i)) == "rain_nc")  P_QNR = i
-   if (trim(tracers_input_vmap(i)) == "water_nc") P_QNC = i
-   if (trim(tracers_input_vmap(i)) == "liq_aero") P_QNWFA = i
 
    tracers_input_grid(i) = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
@@ -3201,85 +3016,53 @@ end if
 
  do n = 1, num_tracers
 
-   if (localpet == 0) print*,"- READ ", trim(tracers_input_vmap(n))
-   vname = tracers_input_vmap(n)
-   call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
-                     this_field_var_name=tmpstr,loc=varnum)
+	 if (localpet == 0) print*,"- READ ", trim(tracers_input_vmap(n))
+	 vname = tracers_input_vmap(n)
+	 call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
+											 this_field_var_name=tmpstr,loc=varnum)
+	 if (localpet == 0) then
+		 vname = trim(tracers_input_grib(n))
+		 vname2 = "var"
+		 if (trim(vname) == ":PMTC:") then
+		   vname = "var0_"
+		   vname2 = "_13_192"
+		 elseif (trim(vname) == ":PMTF:") then
+		   vname = "var0_"
+		   vname2 = "_13_193"
+		 endif
+		 
+		 do vlev = 1, lev_input
+			iret = grb2_inq(the_file,inv_file,vname,slevs(vlev),vname2,data2=dummy2d)
+		 
+			if (iret <= 0) then
+				call handle_grib_error(vname, slevs(vlev),method,value,varnum,iret,var=dummy2d)
+				if (iret==1) then ! missing_var_method == skip or no entry
+					if (trim(vname)==":SPFH:" .or. trim(vname) == ":RH:" .or.  &
+							trim(vname) == ":O3MR:") then
+						call error_handler("READING IN "//trim(vname)//" AT LEVEL "//trim(slevs(vlev))&
+											//". SET A FILL VALUE IN THE VARMAP TABLE IF THIS ERROR IS NOT DESIRABLE.",iret)
+					else
+						exit
+					endif
+				endif
+			endif
+			
+			if (n==1 .and. .not. hasspfh) then 
+				nullify(tptr)
+				print*,"- CALL FieldGet TEMPERATURE." 
+				call ESMF_FieldGet(temp_input_grid, &
+									computationalLBound=clb, &
+									computationalUBound=cub, &
+									farrayPtr=tptr, rc=rc)
+				if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+				call error_handler("IN FieldGet", rc) 
+				call rh2spfh(dummy2d,rlevs(vlev),tptr,vlev)
+			endif
 
-   if (localpet == 0) then
-
-     vname = trim(tracers_input_grib(n))
-     vname2 = "var"
-     if (trim(vname) == ":PMTC:") then
-       vname = "var0_"
-       vname2 = "_13_192"
-     elseif (trim(vname) == ":PMTF:") then
-       vname = "var0_"
-       vname2 = "_13_193"
-     endif
- 
-     do vlev = 1, lev_input
-!if (localpet == 0) then
-!  if (trim(tracers_input_grib(n)) == ":CLWMR:") then
-!  !if ((trim(tracers_input_grib(n)) == ":PMTF:") .or. &
-!   !   (trim(tracers_input_grib(n)) == ":PMTC:")) then
-!    WRITE(*,*) '----------------------------------------------------------'
-!    WRITE(*,*) 'the_file = "', the_file, '"'
-!    WRITE(*,*) 'inv_file = "', inv_file, '"'
-!    WRITE(*,*) "n = ", n
-!    WRITE(*,*) "trim(tracers_input_grib(n)) = ", trim(tracers_input_grib(n))
-!    WRITE(*,*) "vname = ", vname
-!    WRITE(*,*) "vname2 = ", vname2
-!    WRITE(*,*) "vlev = ", vlev
-!    WRITE(*,*) 'slevs(vlev) = "', slevs(vlev), '"'
-!  endif
-!endif
-       iret = grb2_inq(the_file,inv_file,vname,slevs(vlev),vname2,data2=dummy2d)
-!if (localpet == 0) then
-!  if (trim(tracers_input_grib(n)) == ":CLWMR:") then
-!  !if ((trim(tracers_input_grib(n)) == ":PMTC:") .or. &
-!     ! (trim(tracers_input_grib(n)) == ":PMTF:")) then
-!    WRITE(*,*) '========================================================='
-!    WRITE(*,*) 'minval(dummy2d) = ', minval(dummy2d)
-!    WRITE(*,*) 'maxval(dummy2d) = ', maxval(dummy2d)
-!    WRITE(*,*) 'iret = ', iret
-! endif
-!endif
-
-       if (iret <= 0) then
-
-         call handle_grib_error(vname, slevs(vlev),method,value,varnum,iret,var=dummy2d)
-         if (iret==1) then ! missing_var_method == skip or no entry
-           if (trim(vname) ==":SPFH:" .or. &
-               trim(vname) == ":RH:" .or. &
-               trim(vname) == ":O3MR:") then
-             call error_handler("READING IN "//trim(vname)//" AT LEVEL "//trim(slevs(vlev)) &
-                                //". SET A FILL VALUE IN THE VARMAP TABLE IF THIS ERROR IS NOT DESIRABLE.",iret)
-           else
-             exit
-           endif
-         endif
-
-       endif
-
-       if (n==1 .and. .not. hasspfh) then 
-         nullify(tptr)
-         print*,"- CALL FieldGet TEMPERATURE." 
-         call ESMF_FieldGet(temp_input_grid, &
-                            computationalLBound=clb, &
-                            computationalUBound=cub, &
-                            farrayPtr=tptr, rc=rc)
-         if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-           call error_handler("IN FieldGet", rc) 
-         call rh2spfh(dummy2d,rlevs(vlev),tptr,vlev)
-       endif
- 
-       print*,'tracer ',vlev, maxval(dummy2d),minval(dummy2d)
-       dummy3d(:,:,vlev) = real(dummy2d,esmf_kind_r8)
-
-     enddo
-
-   endif
+			 print*,'tracer ',vlev, maxval(dummy2d),minval(dummy2d)
+			 dummy3d(:,:,vlev) = real(dummy2d,esmf_kind_r8)
+		 enddo
+	 endif
 
    if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT ", trim(tracers_input_grib(n))
    call ESMF_FieldScatter(tracers_input_grid(n), dummy3d, rootpet=0, rc=rc)
@@ -6083,13 +5866,13 @@ subroutine handle_grib_error(vname,lev,method,value,varnum, iret,var,var8,var3d)
     read_from_input(varnum) = .false.
     iret = 1
   elseif (trim(method) == "set_to_fill") then
-    print*, "WARNING: ", trim(vname), " NOT AVAILABLE AT LEVEL ", trim(lev), &
+    print*, "WARNING: ,", trim(vname), " NOT AVILABLE AT LEVEL ", trim(lev), &
            ". SETTING EQUAL TO FILL VALUE OF ", value
     if(present(var)) var(:,:) = value
     if(present(var8)) var8(:,:) = value
     if(present(var3d)) var3d(:,:,:) = value
   elseif (trim(method) == "set_to_NaN") then
-    print*, "WARNING: ", trim(vname), " NOT AVAILABLE AT LEVEL ", trim(lev), &
+    print*, "WARNING: ,", trim(vname), " NOT AVILABLE AT LEVEL ", trim(lev), &
            ". SETTING EQUAL TO NaNs"
     if(present(var)) var(:,:) = ieee_value(var,IEEE_QUIET_NAN)
     if(present(var8)) var8(:,:) = ieee_value(var8,IEEE_QUIET_NAN)
