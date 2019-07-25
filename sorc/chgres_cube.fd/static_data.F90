@@ -477,9 +477,6 @@
    enddo
    enddo
 
-  print*,"min of data_one_tile(i,j)", minval(data_one_tile)
-  print*,"max of data_one_tile(i,j)", maxval(data_one_tile)
-
    deallocate(days_since)
 
  else ! file contains only one time record

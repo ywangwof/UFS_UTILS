@@ -110,6 +110,7 @@
                                    v_s_target_grid, &
                                    u_w_target_grid, &
                                    v_w_target_grid, &
+                                   temp_target_grid, &
                                    zh_target_grid
 
  use model_grid, only            : i_target, ip1_target, j_target, jp1_target
@@ -137,6 +138,8 @@
  integer                        :: id_i_left, id_j_left
  integer                        :: id_ps_bottom, id_ps_top
  integer                        :: id_ps_right, id_ps_left
+ integer                        :: id_t_bottom, id_t_top
+ integer                        :: id_t_right, id_t_left
  integer                        :: id_w_bottom, id_w_top
  integer                        :: id_w_right, id_w_left
  integer                        :: id_zh_bottom, id_zh_top
@@ -266,6 +269,22 @@
    error = nf90_def_var(ncid, 'ps_left', NF90_FLOAT, &
                              (/dim_halo, dim_lat/), id_ps_left)
    call netcdf_err(error, 'DEFINING PS_LEFT')
+
+   error = nf90_def_var(ncid, 't_bottom', NF90_FLOAT, &
+                             (/dim_lon, dim_halo, dim_lev/), id_t_bottom)
+   call netcdf_err(error, 'DEFINING T_BOTTOM')
+
+   error = nf90_def_var(ncid, 't_top', NF90_FLOAT, &
+                             (/dim_lon, dim_halo, dim_lev/), id_t_top)
+   call netcdf_err(error, 'DEFINING T_TOP')
+
+   error = nf90_def_var(ncid, 't_right', NF90_FLOAT, &
+                             (/dim_halo, dim_lat, dim_lev/), id_t_right)
+   call netcdf_err(error, 'DEFINING T_RIGHT')
+
+   error = nf90_def_var(ncid, 't_left', NF90_FLOAT, &
+                             (/dim_halo, dim_lat, dim_lev/), id_t_left)
+   call netcdf_err(error, 'DEFINING T_LEFT')
 
    error = nf90_def_var(ncid, 'w_bottom', NF90_FLOAT, &
                              (/dim_lon, dim_halo, dim_lev/), id_w_bottom)
@@ -709,6 +728,32 @@
    call netcdf_err(error, 'WRITING W RIGHT' )
  endif
 
+! Temperature
+
+ print*,"- CALL FieldGather FOR TARGET GRID TEMPERATURE FOR TILE: ", tile
+ call ESMF_FieldGather(temp_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGather", error)
+
+ if (localpet == 0) then
+   dum3d_top(:,:,:) = data_one_tile_3d(i_start_top:i_end_top,j_start_top:j_end_top,:)
+   dum3d_top(:,:,1:lev_target) = dum3d_top(:,:,lev_target:1:-1) 
+   error = nf90_put_var( ncid, id_t_top, dum3d_top)
+   call netcdf_err(error, 'WRITING T TOP' )
+   dum3d_bottom(:,:,:) = data_one_tile_3d(i_start_bottom:i_end_bottom,j_start_bottom:j_end_bottom,:)
+   dum3d_bottom(:,:,1:lev_target) = dum3d_bottom(:,:,lev_target:1:-1) 
+   error = nf90_put_var( ncid, id_t_bottom, dum3d_bottom)
+   call netcdf_err(error, 'WRITING T BOTTOM' )
+   dum3d_left(:,:,:) = data_one_tile_3d(i_start_left:i_end_left,j_start_left:j_end_left,:)
+   dum3d_left(:,:,1:lev_target) = dum3d_left(:,:,lev_target:1:-1) 
+   error = nf90_put_var( ncid, id_t_left, dum3d_left)
+   call netcdf_err(error, 'WRITING T LEFT' )
+   dum3d_right(:,:,:) = data_one_tile_3d(i_start_right:i_end_right,j_start_right:j_end_right,:)
+   dum3d_right(:,:,1:lev_target) = dum3d_right(:,:,lev_target:1:-1) 
+   error = nf90_put_var( ncid, id_t_right, dum3d_right)
+   call netcdf_err(error, 'WRITING T RIGHT' )
+ endif
+
  deallocate(dum3d_top, dum3d_bottom, dum3d_left, dum3d_right, data_one_tile_3d)
 
 ! Set up bounds for staggered 'S' winds
@@ -1106,17 +1151,11 @@
  HEADER : if (localpet < num_tiles_target_grid) then
 
    tile = localpet + 1
-
-if (localpet == 0) then
-  WRITE(*,*) "GGGGGGGGGGGGGGGGGGGG"
-  WRITE(*,*) "  regional = ", regional
-end if
-
    if (regional > 0) then
-     outfile = "out.atm.tile7.nc"
-   else
-     WRITE(OUTFILE, '(A, I1, A)'), 'out.atm.tile', tile, '.nc'
-   endif
+       outfile = "out.atm.tile7.nc"
+     else
+       WRITE(OUTFILE, '(A, I1, A)'), 'out.atm.tile', tile, '.nc'
+     endif
 
 !--- open the file
    error = nf90_create(outfile, IOR(NF90_NETCDF4,NF90_CLASSIC_MODEL), &
@@ -1447,7 +1486,7 @@ end if
                                    landmask_target_grid, &
                                    i_target, j_target, lsoil_target
 
- use program_setup, only         : convert_nst, halo=>halo_bndy, regional
+ use program_setup, only         : convert_nst, halo=>halo_bndy
 
  use surface, only               : canopy_mc_target_grid,  &
                                    f10m_target_grid, &
@@ -1589,16 +1628,7 @@ end if
 
    LOCAL_PET : if (localpet == 0) then
 
-WRITE(*,*) "HHHHHHHHHHHHHHHHHHHHHHHHH"
-WRITE(*,*) "  regional = ", regional
-
-     if (regional > 0) then
-       outfile = "out.sfc.tile7.nc"
-     else
-       WRITE(OUTFILE, '(A, I1, A)'), 'out.sfc.tile', tile, '.nc'
-     endif
-
-!     WRITE(OUTFILE, '(A, I1, A)'), 'out.sfc.tile', tile, '.nc'
+     WRITE(OUTFILE, '(A, I1, A)'), 'out.sfc.tile', tile, '.nc'
 
 !--- open the file
      error = nf90_create(outfile, IOR(NF90_NETCDF4,NF90_CLASSIC_MODEL), &
@@ -2754,9 +2784,6 @@ WRITE(*,*) "  regional = ", regional
  TILE_LOOP : do tile = 1, num_tiles_target_grid
 
    LOCAL_PET : if (localpet == 0) then
-
-WRITE(*,*) "IIIIIIIIIIIIIIIIIIIIIIII"
-WRITE(*,*) "  regional = ", regional
 
      if (regional > 0) then
        outfile = "out.sfc.tile7.nc"
