@@ -40,6 +40,7 @@ module input_data
                                     orog_dir_input_grid, &
                                     orog_files_input_grid, &
                                     tracers_input, num_tracers, &
+                                    num_tracers_input, &
                                     input_type, external_model, &
                                     get_var_cond, read_from_input, tracers, &
                                     convert_sfc  
@@ -457,7 +458,7 @@ module input_data
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldCreate", rc)
 
- print*,"- CALL FieldCreate FOR INPUT SOIL TYPE."
+ print*,"- CALL FieldCreate FOR INPUT VEGETATION GREENNESS."
  veg_greenness_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
@@ -564,7 +565,7 @@ module input_data
  lev_input = sighead%levs
  levp1_input = lev_input + 1
 
- if (num_tracers /= sighead%ntrac) then
+ if (num_tracers_input /= sighead%ntrac) then
    call error_handler("WRONG NUMBER OF TRACERS EXPECTED.", 99)
  endif
 
@@ -605,6 +606,10 @@ module input_data
  allocate(tracers_input_grid(num_tracers))
 
  do i = 1, num_tracers
+   if (trim(tracers(i)) == "spfh")    P_QV = i
+   if (trim(tracers(i)) == "clwmr")   P_QC = i
+   if (trim(tracers(i)) == "water_nc") P_QNC = i
+   
    print*,"- CALL FieldCreate FOR INPUT GRID TRACER ", trim(tracers_input(i))
    tracers_input_grid(i) = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
@@ -683,8 +688,7 @@ module input_data
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldScatter", rc)
 
- do k = 1, num_tracers
-
+ do k = 1, num_tracers_input
    if (localpet == 0) then
      call sptezm(0,sighead%jcap,4,i_input, j_input, lev_input, sigdata%q(:,:,k), dummy3d, 1)
      print*,trim(tracers_input(k)),maxval(dummy3d),minval(dummy3d)
@@ -889,7 +893,11 @@ module input_data
  allocate(tracers_input_grid(num_tracers))
 
  do i = 1, num_tracers
+   
    print*,"- CALL FieldCreate FOR INPUT GRID TRACER ", trim(tracers_input(i))
+   if (trim(tracers(i)) == "spfh")  P_QV = i
+   if (trim(tracers(i)) == "clwmr") P_QC = i
+   if (trim(tracers(i)) == "water_nc") P_QNC = i
    tracers_input_grid(i) = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
@@ -965,7 +973,7 @@ module input_data
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
      call error_handler("IN FieldScatter", rc)
 
- do n = 1, num_tracers
+ do n = 1, num_tracers_input
 
    if (localpet == 0) then
      print*,"- READ ", trim(tracers_input(n))
@@ -1206,7 +1214,8 @@ module input_data
 
  allocate(tracers_input_grid(num_tracers))
 
- do i = 1, num_tracers
+ do i = 1, num_tracers_input
+ 
    print*,"- CALL FieldCreate FOR INPUT GRID TRACER ", trim(tracers_input(i))
    tracers_input_grid(i) = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
@@ -1292,7 +1301,7 @@ module input_data
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldScatter", rc)
 
- do n = 1, num_tracers
+ do n = 1, num_tracers_input
 
    if (localpet == 0) then
      print*,"- READ ", trim(tracers_input(n))
@@ -1594,8 +1603,7 @@ module input_data
 
  allocate(tracers_input_grid(num_tracers))
 
- do i = 1, num_tracers
-
+ do i = 1, num_tracers_input
    print*,"- CALL FieldCreate FOR INPUT GRID TRACER ", trim(tracers_input(i))
    tracers_input_grid(i) = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
@@ -1723,7 +1731,7 @@ module input_data
    call netcdf_err(error, 'opening: '//trim(tilefile) )
  endif
 
- do i = 1, num_tracers
+ do i = 1, num_tracers_input
 
    if (localpet < num_tiles_input_grid) then
      error=nf90_inq_varid(ncid, tracers_input(i), id_var)
@@ -1988,7 +1996,7 @@ module input_data
       call error_handler("IN FieldScatter", rc)
  enddo
 
- do n = 1, num_tracers
+ do n = 1, num_tracers_file
 
    if (localpet < num_tiles_input_grid) then
      print*,"- READ ", trim(tracers_input(n))
@@ -3124,7 +3132,8 @@ module input_data
 
  use wgrib2api
  
- use grib2_util, only                   : read_vcoord, iso2sig, rh2spfh, convert_omega
+ use grib2_util, only                   : read_vcoord, iso2sig, rh2spfh, convert_omega, &
+                                           countDigit
  use model_grid, only                   : file_is_converted
 
 
@@ -3192,95 +3201,97 @@ module input_data
  inquire(file=the_file,exist=iret)
  if (iret == 0) call error_handler("OPENING GRIB2 ATM FILE.", iret)
 
-   !print*,"- READ VERTICAL LEVELS."
-   iret = grb2_inq(the_file,inv_file,":UGRD:"," hybrid level:")
-   !if (iret < 0) call error_handler("COUNTING VERTICAL LEVELS.", iret)
-  
-    if (iret <= 0) then
-      if (localpet == 0) print*,"DATA IS ON ISOBARIC LEVELS, WILL NEED TO CONVERT AFTER READING"
-      lvl_str = "mb:" 
-      lvl_str_space = " mb:"
-      lvl_str_space_len = 4
-      isnative = 0
-      iret = grb2_inq(the_file,inv_file,":UGRD:",lvl_str_space)
-      lev_input=iret
-    else
-      if (localpet == 0) PRINT*, "DATA IS ON NATIVE SIGMA/HYBRID LEVELS"
-      lvl_str = "hybrid level:"
-      lvl_str_space = " hybrid level:"
-      lvl_str_space_len = 14
-      isnative = .true.
-      iret = grb2_inq(the_file,inv_file,":UGRD:",lvl_str_space)
-      if (iret < 0) call error_handler("READING VERTICAL LEVEL TYPE.", iret)
-      lev_input=iret
-    endif
- !endif
-    print*, "lev_input = ", lev_input
-    allocate(slevs(lev_input))
-    allocate(rlevs(lev_input))
-    levp1_input = lev_input + 1
-    
-    ! get the vertical levels, and search string by sequential reads
+ !print*,"- READ VERTICAL LEVELS."
+ iret = grb2_inq(the_file,inv_file,":UGRD:"," hybrid level:")
+ !if (iret < 0) call error_handler("COUNTING VERTICAL LEVELS.", iret)
 
-    do i = 1,lev_input
-      iret=grb2_inq(the_file,inv_file,':UGRD:',trim(lvl_str),sequential=i-1,desc=metadata)
-      if (iret.ne.1) call error_handler(" IN SEQUENTIAL FILE READ.", iret)
-    
-      j = index(metadata,':UGRD:') + len(':UGRD:')
-      k = index(metadata,trim(lvl_str_space)) + len(trim(lvl_str_space))-1
+	if (iret <= 0) then
+		if (localpet == 0) print*,"DATA IS ON ISOBARIC LEVELS, WILL NEED TO CONVERT AFTER READING"
+		lvl_str = "mb:" 
+		lvl_str_space = " mb:"
+		lvl_str_space_len = 4
+		isnative = 0
+		iret = grb2_inq(the_file,inv_file,":UGRD:",lvl_str_space)
+		lev_input=iret
+	else
+		if (localpet == 0) PRINT*, "DATA IS ON NATIVE SIGMA/HYBRID LEVELS"
+		lvl_str = "hybrid level:"
+		lvl_str_space = " hybrid level:"
+		lvl_str_space_len = 14
+		isnative = .true.
+		iret = grb2_inq(the_file,inv_file,":UGRD:",lvl_str_space)
+		if (iret < 0) call error_handler("READING VERTICAL LEVEL TYPE.", iret)
+		lev_input=iret
+	endif
+!endif
+	print*, "lev_input = ", lev_input
+	allocate(slevs(lev_input))
+	allocate(rlevs(lev_input))
+	levp1_input = lev_input + 1
+	
+	! get the vertical levels, and search string by sequential reads
 
-      read(metadata(j:k),*) rlevs(i)
-    
-      slevs(i) = metadata(j-1:k)
-      
-      if (.not. isnative) rlevs(i) = rlevs(i) * 100.0
-      if (localpet==0) print*, "LEVEL = ", slevs(i)
-    enddo
+	do i = 1,lev_input
+		iret=grb2_inq(the_file,inv_file,':UGRD:',trim(lvl_str),sequential=i-1,desc=metadata)
+		if (iret.ne.1) call error_handler(" IN SEQUENTIAL FILE READ.", iret)
+	
+		j = index(metadata,':UGRD:') + len(':UGRD:')
+		k = index(metadata,trim(lvl_str_space)) + len(trim(lvl_str_space))-1
 
-   allocate(vcoord(levp1_input,2))
-   if (localpet == 0) print*,"- READ VERTICAL COORDINATE INFO."
-   if (localpet == 0) print*, metadata
-   call read_vcoord(isnative,rlevs,vcoord,lev_input,levp1_input,pt,metadata,iret)
-   if (iret /= 0) call error_handler("READING VERTICAL COORDINATE INFO.", iret)
-   
-   !if (localpet==0) print*, "VCOORD(:,1) = ", vcoord(:,1)
+		read(metadata(j:k),*) rlevs(i)
+	
+		slevs(i) = metadata(j-1:k)
+		
+		if (.not. isnative) rlevs(i) = rlevs(i) * 100.0
+		if (localpet==0) print*, "LEVEL = ", slevs(i)
+	enddo
+
+ allocate(vcoord(levp1_input,2))
+ if (localpet == 0) print*,"- READ VERTICAL COORDINATE INFO."
+ call read_vcoord(isnative,rlevs,vcoord,lev_input,levp1_input,pt,metadata,iret)
+ if (iret /= 0) call error_handler("READING VERTICAL COORDINATE INFO.", iret)
  
-   if (localpet == 0) print*,"- FIND SPFH OR RH IN FILE"
-   iret = grb2_inq(the_file,inv_file,':SPFH:',lvl_str_space)
+ !if (localpet==0) print*, "VCOORD(:,1) = ", vcoord(:,1)
 
-   if (iret <= 0) then
-    iret = grb2_inq(the_file,inv_file,':RH:')
-    if (iret <= 0) call error_handler("READING ATMOSPHERIC WATER VAPOR VARIABLE.", iret)
-    hasspfh = .false.
-    trac_names_grib(1)=':RH:'
-   endif
-   
-   if (localpet == 0) print*,"- FIND CICE or CIMIXR"
-   iret = grb2_inq(the_file,inv_file,':CICE:',lvl_str_space)
+ if (localpet == 0) print*,"- FIND SPFH OR RH IN FILE"
+ iret = grb2_inq(the_file,inv_file,':SPFH:',lvl_str_space)
 
-   if (iret <= 0) then
-    iret = grb2_inq(the_file,inv_file,':CIMIXR:',lvl_str_space)
-    if (iret >= 1) trac_names_grib(4)=':CIMIXR:'
-    if (iret <= 0) then
-      iret = grb2_inq(the_file,inv_file,':ICMR:',lvl_str_space)
-      if (iret >= 1) trac_names_grib(4)=':ICMR:'
-    endif
-   endif
+ if (iret <= 0) then
+	iret = grb2_inq(the_file,inv_file,':RH:')
+	if (iret <= 0) call error_handler("READING ATMOSPHERIC WATER VAPOR VARIABLE.", iret)
+	hasspfh = .false.
+	trac_names_grib(1)=':RH:'
+ endif
+ 
+ if (localpet == 0) print*,"- FIND CICE or CIMIXR"
+ iret = grb2_inq(the_file,inv_file,':CICE:',lvl_str_space)
 
-  print*,"- COUNT NUMBER OF TRACERS TO BE READ IN BASED ON PHYSICS SUITE TABLE"
-  !um_tracers = 0
-  !tracers_input(:)=""
-  do n = 1, num_tracers
+ if (iret <= 0) then
+	iret = grb2_inq(the_file,inv_file,':CIMIXR:',lvl_str_space)
+	if (iret >= 1) trac_names_grib(4)=':CIMIXR:'
+	if (iret <= 0) then
+		iret = grb2_inq(the_file,inv_file,':ICMR:',lvl_str_space)
+		if (iret >= 1) trac_names_grib(4)=':ICMR:'
+	endif
+ endif
 
-   vname = tracers_input(n)
+ print*,"- COUNT NUMBER OF TRACERS TO BE READ IN BASED ON PHYSICS SUITE TABLE"
+ !um_tracers = 0
+ !tracers_input(:)=""
+ do n = 1, num_tracers
 
-   i = maxloc(merge(1.,0.,trac_names_vmap == vname),dim=1)
+	 vname = tracers_input(n)
+ 
+	 i = maxloc(merge(1.,0.,trac_names_vmap == vname),dim=1)
 
 	 tracers_input_grib(n)=trac_names_grib(i)
 	 tracers_input_vmap(n)=trac_names_vmap(i)
-	 tracers(n)=tracers_default(n)
-
+	 tracers(n)=tracers_default(i)
+	 tracers_input(n) = tracers_default(i)
  enddo
+
+ num_tracers_input = num_tracers
+ 
  allocate(atm(num_tracers+4))
  if (localpet==0) print*, "NUMBER OF TRACERS IN FILE = ", num_tracers
 
@@ -3304,14 +3315,6 @@ module input_data
 
  do i = 1,num_tracers
    if (localpet == 0) print*,"- CALL FieldCreate FOR INPUT GRID TRACER ", trim(tracers_input(i))
-   if (trim(tracers_input_vmap(i)) == "sphum")    P_QV = i
-   if (trim(tracers_input_vmap(i)) == "liq_wat")  P_QC = i
-   if (trim(tracers_input_vmap(i)) == "ice_wat")  P_QI = i
-   if (trim(tracers_input_vmap(i)) == "rainwat")  P_QR = i
-   if (trim(tracers_input_vmap(i)) == "ice_nc")   P_QNI = i
-   if (trim(tracers_input_vmap(i)) == "rain_nc")  P_QNR = i
-   if (trim(tracers_input_vmap(i)) == "water_nc") P_QNC = i
-   if (trim(tracers_input_vmap(i)) == "liq_aero") P_QNWFA = i
 
    tracers_input_grid(i) = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
@@ -3393,59 +3396,58 @@ module input_data
 
  do n = 1, num_tracers
 
-	 if (localpet == 0) print*,"- READ ", trim(tracers_input_vmap(n))
-	 vname = tracers_input_vmap(n)
-	 call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
-											 this_field_var_name=tmpstr,loc=varnum)
-	 if (localpet == 0) then
-		 vname = trim(tracers_input_grib(n))
-		 vname2 = "var"
-		 if (trim(vname) == ":PMTC:") then
-		   vname = "var0_"
-		   vname2 = "_13_192"
-		 elseif (trim(vname) == ":PMTF:") then
-		   vname = "var0_"
-		   vname2 = "_13_193"
-		 endif
-		 
-		 do vlev = 1, lev_input
-			iret = grb2_inq(the_file,inv_file,vname,slevs(vlev),vname2,data2=dummy2d)
-		 
-			if (iret <= 0) then
-				call handle_grib_error(vname, slevs(vlev),method,value,varnum,iret,var=dummy2d)
-				if (iret==1) then ! missing_var_method == skip or no entry
-					if (trim(vname)==":SPFH:" .or. trim(vname) == ":RH:" .or.  &
-							trim(vname) == ":O3MR:") then
-						call error_handler("READING IN "//trim(vname)//" AT LEVEL "//trim(slevs(vlev))&
-											//". SET A FILL VALUE IN THE VARMAP TABLE IF THIS ERROR IS NOT DESIRABLE.",iret)
-					else
-						exit
-					endif
-				endif
-			endif
-			
-			if (n==1 .and. .not. hasspfh) then 
-				nullify(tptr)
-				print*,"- CALL FieldGet TEMPERATURE." 
-				call ESMF_FieldGet(temp_input_grid, &
-									computationalLBound=clb, &
-									computationalUBound=cub, &
-									farrayPtr=tptr, rc=rc)
-				if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-				call error_handler("IN FieldGet", rc) 
-				call rh2spfh(dummy2d,rlevs(vlev),tptr,vlev)
-			endif
+   if (localpet == 0) print*,"- READ ", trim(tracers_input_vmap(n))
+   vname = tracers_input_vmap(n)
+   call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
+                       this_field_var_name=tmpstr,loc=varnum)
+   if (localpet == 0) then
+     vname = trim(tracers_input_grib(n))
+     vname2 = "var"
+     if (trim(vname) == ":PMTC:") then
+       vname = "var0_"
+       vname2 = "_13_192"
+     elseif (trim(vname) == ":PMTF:") then
+       vname = "var0_"
+       vname2 = "_13_193"
+     endif
+     
+     do vlev = 1, lev_input
+      iret = grb2_inq(the_file,inv_file,vname,slevs(vlev),vname2,data2=dummy2d)
+     
+      if (iret <= 0) then
+        call handle_grib_error(vname, slevs(vlev),method,value,varnum,iret,var=dummy2d)
+        if (iret==1) then ! missing_var_method == skip or no entry
+          if (trim(vname)==":SPFH:" .or. trim(vname) == ":RH:" .or.  &
+              trim(vname) == ":O3MR:") then
+            call error_handler("READING IN "//trim(vname)//" AT LEVEL "//trim(slevs(vlev))&
+                      //". SET A FILL VALUE IN THE VARMAP TABLE IF THIS ERROR IS NOT DESIRABLE.",iret)
+          else
+            exit
+          endif
+        endif
+      endif
+      
+      if (n==1 .and. .not. hasspfh) then 
+        nullify(tptr)
+        print*,"- CALL FieldGet TEMPERATURE." 
+        call ESMF_FieldGet(temp_input_grid, &
+                  computationalLBound=clb, &
+                  computationalUBound=cub, &
+                  farrayPtr=tptr, rc=rc)
+        if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGet", rc) 
+        call rh2spfh(dummy2d,rlevs(vlev),tptr,vlev)
+      endif
 
-			 print*,'tracer ',vlev, maxval(dummy2d),minval(dummy2d)
-			 dummy3d(:,:,vlev) = real(dummy2d,esmf_kind_r8)
-		 enddo
-	 endif
+       print*,'tracer ',vlev, maxval(dummy2d),minval(dummy2d)
+       dummy3d(:,:,vlev) = real(dummy2d,esmf_kind_r8)
+     enddo
+   endif
 
-   if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT ", trim(tracers_input_grib(n))
+   if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT ", trim(tracers(n))
    call ESMF_FieldScatter(tracers_input_grid(n), dummy3d, rootpet=0, rc=rc)
    if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", rc)
-
  enddo
  
  call read_winds(the_file,inv_file,u_tmp_3d,v_tmp_3d, localpet) 
@@ -4982,16 +4984,16 @@ if (localpet == 0) then
      if (.not. replace_sotyp) then
        call error_handler("COULD NOT FIND SOIL TYPE IN FILE. PLEASE SET REPLACE_SOTYP=.TRUE. . EXITING")
      else
-			 vname = "sotyp"
-			 call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
-													 loc=varnum)  
-			 call handle_grib_error(vname, slev ,method,value,varnum,rc, var= dummy2d)
-			 if (rc == 1) then ! missing_var_method == skip or no entry in varmap table
-					print*, "WARNING: "//trim(vname)//" NOT AVAILABLE IN FILE. WILL USE CLIMATOLOGY. "//&
-										 "CHANGE SETTING IN VARMAP TABLE IF THIS IS NOT DESIRABLE."
-					dummy2d(:,:) = -9999.9_esmf_kind_r4
-			 endif
-		 endif
+       vname = "sotyp"
+       call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
+                           loc=varnum)  
+       call handle_grib_error(vname, slev ,method,value,varnum,rc, var= dummy2d)
+       if (rc == 1) then ! missing_var_method == skip or no entry in varmap table
+          print*, "WARNING: "//trim(vname)//" NOT AVAILABLE IN FILE. WILL USE CLIMATOLOGY. "//&
+                     "CHANGE SETTING IN VARMAP TABLE IF THIS IS NOT DESIRABLE."
+          dummy2d(:,:) = -9999.9_esmf_kind_r4
+       endif
+     endif
    endif
    
    dummy2d_8 = real(dummy2d,esmf_kind_r8)
@@ -5020,19 +5022,19 @@ if (localpet == 0) then
    vname="var2_2"   
    rc= grb2_inq(the_file, inv_file, vname,"_0_198:",slev,' hour fcst:', data2=dummy2d)
    if (rc <= 0) then
-	rc= grb2_inq(the_file, inv_file, vname,"_0_198:",slev,':anl:', data2=dummy2d)
-	
-			if (rc <= 0) then
-				if (.not. replace_vgtyp) then
-					call error_handler("COULD NOT FIND VEGETATION TYPE IN FILE. PLEASE SET REPLACE_VGTYP=.TRUE. . EXITING")
-				else
-					call handle_grib_error(vname, slev ,method,value,varnum,rc, var= dummy2d)
-					if (rc == 1) then ! missing_var_method == skip or no entry in varmap table
-						print*, "WARNING: "//trim(vname)//" NOT AVAILABLE IN FILE. WILL USE CLIMATOLOGY. "//&
-											 "CHANGE SETTING IN VARMAP TABLE IF THIS IS NOT DESIRABLE."
-					endif !skip or no entry
-				endif ! replace_vgtyp
-		  endif !not find :anl:
+  rc= grb2_inq(the_file, inv_file, vname,"_0_198:",slev,':anl:', data2=dummy2d)
+  
+      if (rc <= 0) then
+        if (.not. replace_vgtyp) then
+          call error_handler("COULD NOT FIND VEGETATION TYPE IN FILE. PLEASE SET REPLACE_VGTYP=.TRUE. . EXITING")
+        else
+          call handle_grib_error(vname, slev ,method,value,varnum,rc, var= dummy2d)
+          if (rc == 1) then ! missing_var_method == skip or no entry in varmap table
+            print*, "WARNING: "//trim(vname)//" NOT AVAILABLE IN FILE. WILL USE CLIMATOLOGY. "//&
+                       "CHANGE SETTING IN VARMAP TABLE IF THIS IS NOT DESIRABLE."
+          endif !skip or no entry
+        endif ! replace_vgtyp
+      endif !not find :anl:
     endif !not find hour fcst:
    
    print*,'vtype ',maxval(dummy2d),minval(dummy2d)
@@ -5042,53 +5044,53 @@ if (localpet == 0) then
   call ESMF_FieldScatter(veg_type_input_grid,real(dummy2d,esmf_kind_r8), rootpet=0, rc=rc)
   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", rc)
-    
- if (localpet == 0) then
-   print*,"- READ VEG FRACTION."
-   vname="vfrac"
-   slev=":surface:" 
-   call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
-                         loc=varnum)                 
-   vname=":VFRAC:"
-   rc= grb2_inq(the_file, inv_file, vname,slev,' hour fcst:', data2=dummy2d)
-   if (rc <= 0 .and. trim(to_upper(external_model))=="HRRR") then 
+
+ if (.not. replace_vgfrc) then  
+   if (localpet == 0) then
+     print*,"- READ VEG FRACTION."
+     vname="vfrac"
+     slev=":surface:" 
+     call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
+               loc=varnum)                 
+     vname=":VFRAC:"
+     rc= grb2_inq(the_file, inv_file, vname,slev,' hour fcst:', data2=dummy2d)
+   
+     if (rc <= 0 .and. trim(to_upper(external_model))=="HRRR") then 
      print*, "OPEN GEOGRID FILE ", trim(geo_file)
      rc = nf90_open(geo_file,NF90_NOWRITE,ncid2d)
-    
-     if (rc == 0) then
-       print*, "INQUIRE ABOUT VEG FRACTION FROM GEOGRID FILE"
-       rc = nf90_inq_varid(ncid2d,"GREENFRAC",varid)
-       if (rc<0) print*, "ERROR FINDING GREENFRAC IN GEOGRID FILE"
-       if (rc == 0) then
-         print*, "READ VEG FRACTION FROM GEOGRID FILE "
-         rc = nf90_get_var(ncid2d,varid,dummy2d)
-         if (rc<0) print*, "ERROR READING GREENFRAC FROM FILE"
-         print*, "min max dummy2d = ", minval(dummy2d), maxval(dummy2d)
-       endif
-       print*, "CLOSE GEOGRID FILE "
-       iret = nf90_close(ncid2d)
-     endif
-   endif
-   if (rc < 0) then
-      if (.not. replace_vgfrc) then
-       call error_handler("COULD NOT FIND VEGETATION FRACTION IN FILE. PLEASE SET REPLACE_VGFRC=.TRUE. . EXITING")
-      else
-				call handle_grib_error(vname, slev ,method,value,varnum,rc, var= dummy2d)
-				if (rc == 1) then ! missing_var_method == skip or no entry in varmap table
-					print*, "WARNING: "//trim(vname)//" NOT AVAILABLE IN FILE. WILL USE CLIMATOLOGY. "//&
-										 "CHANGE SETTING IN VARMAP TABLE IF THIS IS NOT DESIRABLE."
-					dummy2d(:,:)=0.0
-				endif
-		  endif
-    endif
+  
+		 if (rc == 0) then
+		   print*, "INQUIRE ABOUT VEG FRACTION FROM GEOGRID FILE"
+		   rc = nf90_inq_varid(ncid2d,"GREENFRAC",varid)
+		   if (rc<0) print*, "ERROR FINDING GREENFRAC IN GEOGRID FILE"
+	 
+		   if (rc == 0) then
+			   print*, "READ VEG FRACTION FROM GEOGRID FILE "
+			   rc = nf90_get_var(ncid2d,varid,dummy2d)
+			   if (rc<0) print*, "ERROR READING GREENFRAC FROM FILE" 
+			   print*, "min max dummy2d = ", minval(dummy2d), maxval(dummy2d)
+		   endif
+	 
+		   print*, "CLOSE GEOGRID FILE "
+		   iret = nf90_close(ncid2d)
+		 endif
    
-   print*,'vfrac ',maxval(dummy2d),minval(dummy2d)
- endif
+     elseif (rc > 0) then
+		 rc = 0
+     endif
+
+     if (rc < 0) call error_handler("COULD NOT FIND VEGETATION FRACTION IN FILE.  &
+        PLEASE SET REPLACE_VGFRC=.TRUE. . EXITING")
+
+     print*,'vfrac ',maxval(dummy2d),minval(dummy2d)
+    
+   endif
  
-  print*,"- CALL FieldScatter FOR INPUT GRID VEG TYPE."
-  call ESMF_FieldScatter(veg_greenness_input_grid,real(dummy2d,esmf_kind_r8), rootpet=0, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   print*,"- CALL FieldScatter FOR INPUT GRID VEG GREENNESS."
+   call ESMF_FieldScatter(veg_greenness_input_grid,real(dummy2d,esmf_kind_r8), rootpet=0, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", rc)
+ endif
 
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!     
