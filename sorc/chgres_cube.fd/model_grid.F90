@@ -591,7 +591,7 @@
 
  num_tiles_input_grid = 1
 
- inv_file = "chgres.inv"
+ inv_file = "./chgres.inv"
  the_file = trim(data_dir_input_grid) // "/" // grib2_file_input_grid
  temp_file = trim(base_install_dir)//"/fix/fix_chgres/latlon_grid3.32769.nc" 
   

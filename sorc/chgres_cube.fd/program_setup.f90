@@ -298,7 +298,7 @@ subroutine read_varmap
  character(len=500)         :: varmap_table_file, line
  character(len=20),allocatable  :: var_type(:) 
 
- if (trim(input_type) == "grib2") then 
+ if (trim(input_type) == "grib2" .or. trim(input_type) == "wrf") then 
    varmap_table_file = trim(base_install_dir) // "/" // trim(varmap_tables_dir) // "/" &
                     // trim(phys_suite) // "phys_var_map.txt"
  

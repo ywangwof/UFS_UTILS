@@ -2255,21 +2255,22 @@ module input_data
  endif
     									
  print*,"- COUNT NUMBER OF TRACERS TO BE READ IN BASED ON PHYSICS SUITE TABLE"
-  do n = 1, num_tracers
-
-   vname = tracers_input(n)
-
-   i = maxloc(merge(1.,0.,trac_names_vmap == vname),dim=1)
+ do n = 1, num_tracers
+	 	vname = tracers_input(n)
+ 
+	 i = maxloc(merge(1.,0.,trac_names_vmap == vname),dim=1)
 
 	 tracers_input_nc(n)=trac_names_nc(i)
 	 tracers_input_vmap(n)=trac_names_vmap(i)
 	 tracers(n)=tracers_default(i)
+	 tracers_input(n) = tracers_default(i)
 
  enddo
 
  allocate(tracers_input_grid(num_tracers))
  print*,'- FILE HAS ', num_tracers, ' TRACERS.'
  print*, tracers_input_nc(1:num_tracers)
+ num_tracers_input = num_tracers
 
  do i = 1, num_tracers
  
@@ -5691,11 +5692,15 @@ if (localpet == 0) then
  endif
  
   print*,"- CALL FieldScatter FOR INPUT GRID VEG TYPE."
-  call ESMF_FieldScatter(veg_type_input_grid,real(dummy2di,esmf_kind_r8), rootpet=0, rc=rc)
+  call ESMF_FieldScatter(veg_type_input_grid,dummy2d, rootpet=0, rc=rc)
   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", rc)
+      
+ call ESMF_FieldGather(veg_type_input_grid, dummy2d, rootPet=0, tile=1, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", rc)
+  if (localpet ==0) print*, "MIN MAX VTYPE ON INPUT GRID = ", minval(dummy2d), maxval(dummy2d)
   
-    
  if (localpet == 0) then
    print*,"- READ VEG FRACTION."
    vname="vfrac"
@@ -5721,7 +5726,7 @@ if (localpet == 0) then
  endif
  
   print*,"- CALL FieldScatter FOR INPUT GRID VEG TYPE."
-  call ESMF_FieldScatter(veg_type_input_grid,dummy2d, rootpet=0, rc=rc)
+  call ESMF_FieldScatter(veg_greenness_input_grid,dummy2d, rootpet=0, rc=rc)
   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", rc)
 
