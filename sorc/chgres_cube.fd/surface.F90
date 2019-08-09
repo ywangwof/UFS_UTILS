@@ -331,6 +331,7 @@
  integer(esmf_kind_i4), pointer      :: unmapped_ptr(:)
  integer(esmf_kind_i4), pointer      :: mask_input_ptr(:,:)
  integer(esmf_kind_i4), pointer      :: mask_target_ptr(:,:)
+ real(esmf_kind_r8), pointer         :: soiltypexy_input_ptr(:,:)
  real(esmf_kind_r8), pointer     :: landmask_input_ptr(:,:)
  integer(esmf_kind_i8), pointer     :: landmask_target_ptr(:,:)
 
@@ -386,9 +387,9 @@
 
  call create_surface_noahmp_esmf_fields
 
- print*,"- CALL FieldGet FOR INPUT NOAHMP GRID LANDMASK."
- call ESMF_FieldGet(landsea_mask_input_noahmp_grid, &
-                    farrayPtr=landmask_input_ptr, rc=rc)
+ print*,"- CALL FieldGet FOR INPUT NOAHMP GRID SOIL TYPE."
+ call ESMF_FieldGet(soiltypexy_input_grid, &
+                    farrayPtr=soiltypexy_input_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldGet", rc)
 
@@ -407,8 +408,11 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN GridGetItem", rc)
 
- mask_input_ptr = 0
- where (nint(landmask_input_ptr) == 1) mask_input_ptr = 1
+! interpolate from land to land but do not include land ice.
+
+ mask_input_ptr = 1   ! land
+ where (nint(soiltypexy_input_ptr) == 14) mask_input_ptr = 0  ! water
+ where (nint(soiltypexy_input_ptr) == 16) mask_input_ptr = 0  ! land ice
 
  print*,"- CALL GridGetItem FOR TARGET GRID LANDMASK."
  nullify(mask_target_ptr)
@@ -424,13 +428,20 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldGet", rc)
 
+ print*,"- CALL FieldGet FOR TARGET vegtype."
+ call ESMF_FieldGet(veg_type_target_grid, &
+                    farrayPtr=vegt_target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+      call error_handler("IN FieldGet", rc)
+
  mask_target_ptr = 0 
  where(landmask_target_ptr == 1) mask_target_ptr=1
+ where(nint(vegt_target_ptr) == veg_type_landice_target) mask_target_ptr = 0   ! don't include land ice
 
- method=ESMF_REGRIDMETHOD_CONSERVE
+ method=ESMF_REGRIDMETHOD_NEAREST_STOD
  isrctermprocessing = 1
 
- print*,"- CALL FieldRegridStore for conservative land."
+ print*,"- CALL FieldRegridStore for noahmp land."
  call ESMF_FieldRegridStore(fwetxy_input_grid, &
                             fwetxy_target_grid, &
                             srcmaskvalues=(/0/), &
@@ -541,14 +552,6 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldRegrid", rc)
 
- print*,"- CALL Field_Regrid for zwtxy."
- call ESMF_FieldRegrid(zwtxy_input_grid, &
-                       zwtxy_target_grid, &
-                       routehandle=regrid_land, &
-                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldRegrid", rc)
-
  print*,"- CALL Field_Regrid for deeprechxy."
  call ESMF_FieldRegrid(deeprechxy_input_grid, &
                        deeprechxy_target_grid, &
@@ -576,6 +579,22 @@
  print*,"- CALL Field_Regrid for canliqxy."
  call ESMF_FieldRegrid(canliqxy_input_grid, &
                        canliqxy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for slcxy."
+ call ESMF_FieldRegrid(slcxy_input_grid, &
+                       slcxy_target_grid, &
+                       routehandle=regrid_land, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for smcxy."
+ call ESMF_FieldRegrid(smcxy_input_grid, &
+                       smcxy_target_grid, &
                        routehandle=regrid_land, &
                        termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
@@ -705,12 +724,6 @@
    if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
         call error_handler("IN FieldGet", rc)
 
-   print*,"- CALL FieldGet FOR TARGET zwtxy."
-   call ESMF_FieldGet(zwtxy_target_grid, &
-                    farrayPtr=zwtxy_target_ptr, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-        call error_handler("IN FieldGet", rc)
-
    do ij = l(1), u(1)
      call ij_to_i_j(unmapped_ptr(ij), i_target, j_target, i, j)
      stblcpxy_target_ptr(i,j) = -9999.9
@@ -723,7 +736,6 @@
      rtmassxy_target_ptr(i,j) = -9999.9
      waxy_target_ptr(i,j) = -9999.9
      wtxy_target_ptr(i,j) = -9999.9
-     zwtxy_target_ptr(i,j) = -9999.9
    enddo
 
    if (localpet == 0) then
@@ -881,47 +893,12 @@
      if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", rc)
 
-     print*,"- CALL FieldGather FOR TARGET GRID zwtxy: ", tile
-     call ESMF_FieldGather(zwtxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
-     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-      call error_handler("IN FieldGather", rc)
-
-     if (localpet == 0) then
-       call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 513)
-     endif
-
-     print*,"- CALL FieldScatter FOR TARGET GRID zwtxy: ", tile
-     call ESMF_FieldScatter(zwtxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
-     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-      call error_handler("IN FieldScatter", rc)
 
    enddo ! tile number
 
    deallocate(data_one_tile, mask_target_one_tile)
 
  endif ! fill in missing values
-
- print*,"- CALL FieldRegridRelease."
- call ESMF_FieldRegridRelease(routehandle=regrid_land, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldRegridRelease", rc)
-
- method=ESMF_REGRIDMETHOD_BILINEAR
- isrctermprocessing = 1
-
- print*,"- CALL FieldRegridStore for bilinear land."
- call ESMF_FieldRegridStore(tahxy_input_grid, &
-                            tahxy_target_grid, &
-                            srcmaskvalues=(/0/), &
-                            dstmaskvalues=(/0/), &
-                            polemethod=ESMF_POLEMETHOD_NONE, &
-                            srctermprocessing=isrctermprocessing, &
-                            unmappedaction=ESMF_UNMAPPEDACTION_IGNORE, &
-                            routehandle=regrid_land, &
-                            regridmethod=method, &
-                            unmappedDstList=unmapped_ptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldRegridStore", rc)
 
  print*,"- CALL Field_Regrid for tahxy."
  call ESMF_FieldRegrid(tahxy_input_grid, &
@@ -939,33 +916,9 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldRegrid", rc)
 
- print*,"- CALL Field_Regrid for tgxy."
- call ESMF_FieldRegrid(tgxy_input_grid, &
-                       tgxy_target_grid, &
-                       routehandle=regrid_land, &
-                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldRegrid", rc)
-
  print*,"- CALL Field_Regrid for tvxy."
  call ESMF_FieldRegrid(tvxy_input_grid, &
                        tvxy_target_grid, &
-                       routehandle=regrid_land, &
-                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldRegrid", rc)
-
- print*,"- CALL Field_Regrid for chxy."
- call ESMF_FieldRegrid(chxy_input_grid, &
-                       chxy_target_grid, &
-                       routehandle=regrid_land, &
-                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldRegrid", rc)
-
- print*,"- CALL Field_Regrid for cmxy."
- call ESMF_FieldRegrid(cmxy_input_grid, &
-                       cmxy_target_grid, &
                        routehandle=regrid_land, &
                        termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
@@ -990,27 +943,9 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldGet", rc)
 
- print*,"- CALL FieldGet FOR TARGET tgxy."
- call ESMF_FieldGet(tgxy_target_grid, &
-                    farrayPtr=tgxy_target_ptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-      call error_handler("IN FieldGet", rc)
-
  print*,"- CALL FieldGet FOR TARGET tvxy."
  call ESMF_FieldGet(tvxy_target_grid, &
                     farrayPtr=tvxy_target_ptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-      call error_handler("IN FieldGet", rc)
-
- print*,"- CALL FieldGet FOR TARGET chxy."
- call ESMF_FieldGet(chxy_target_grid, &
-                    farrayPtr=chxy_target_ptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-      call error_handler("IN FieldGet", rc)
-
- print*,"- CALL FieldGet FOR TARGET cmxy."
- call ESMF_FieldGet(cmxy_target_grid, &
-                    farrayPtr=cmxy_target_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldGet", rc)
 
@@ -1018,10 +953,7 @@
    call ij_to_i_j(unmapped_ptr(ij), i_target, j_target, i, j)
    eahxy_target_ptr(i,j) = -9999.9 
    tahxy_target_ptr(i,j) = -9999.9 
-   tgxy_target_ptr(i,j) = -9999.9 
    tvxy_target_ptr(i,j) = -9999.9 
-   chxy_target_ptr(i,j) = -9999.9 
-   cmxy_target_ptr(i,j) = -9999.9 
  enddo
 
  if (localpet == 0) then
@@ -1067,20 +999,6 @@
    if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", rc)
 
-   print*,"- CALL FieldGather FOR TARGET GRID TGXY: ", tile
-   call ESMF_FieldGather(tgxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-      call error_handler("IN FieldGather", rc)
-
-   if (localpet == 0) then
-     call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 85)
-   endif
-
-   print*,"- CALL FieldScatter FOR TARGET GRID TGXY: ", tile
-   call ESMF_FieldScatter(tgxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-      call error_handler("IN FieldScatter", rc)
-
    print*,"- CALL FieldGather FOR TARGET GRID TVXY: ", tile
    call ESMF_FieldGather(tvxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
    if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
@@ -1095,40 +1013,23 @@
    if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", rc)
 
-   print*,"- CALL FieldGather FOR TARGET GRID CHXY: ", tile
-   call ESMF_FieldGather(chxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-      call error_handler("IN FieldGather", rc)
-
-   if (localpet == 0) then
-     call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 501)
-   endif
-
-   print*,"- CALL FieldScatter FOR TARGET GRID CHXY: ", tile
-   call ESMF_FieldScatter(chxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-      call error_handler("IN FieldScatter", rc)
-
-   print*,"- CALL FieldGather FOR TARGET GRID CMXY: ", tile
-   call ESMF_FieldGather(cmxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-      call error_handler("IN FieldGather", rc)
-
-   if (localpet == 0) then
-     call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 502)
-   endif
-
-   print*,"- CALL FieldScatter FOR TARGET GRID CMXY: ", tile
-   call ESMF_FieldScatter(cmxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-      call error_handler("IN FieldScatter", rc)
-
  enddo
 
  print*,"- CALL FieldRegridRelease."
  call ESMF_FieldRegridRelease(routehandle=regrid_land, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldRegridRelease", rc)
+
+
+!--------------------------------------------------
+! all land to all land, including land ice
+!--------------------------------------------------
+
+ mask_input_ptr = 1   ! land
+ where (nint(soiltypexy_input_ptr) == 14) mask_input_ptr = 0  ! water
+
+ mask_target_ptr = 0 
+ where(landmask_target_ptr == 1) mask_target_ptr=1
 
  method=ESMF_REGRIDMETHOD_NEAREST_STOD
  isrctermprocessing = 1
@@ -1176,9 +1077,41 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldRegrid", rc)
 
+ print*,"- CALL Field_Regrid for zwtxy."
+ call ESMF_FieldRegrid(zwtxy_input_grid, &
+                       zwtxy_target_grid, &
+                       routehandle=regrid_neighbor, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for chxy."
+ call ESMF_FieldRegrid(chxy_input_grid, &
+                       chxy_target_grid, &
+                       routehandle=regrid_neighbor, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for cmxy."
+ call ESMF_FieldRegrid(cmxy_input_grid, &
+                       cmxy_target_grid, &
+                       routehandle=regrid_neighbor, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
  print*,"- CALL Field_Regrid for snowxy."
  call ESMF_FieldRegrid(snowxy_input_grid, &
                        snowxy_target_grid, &
+                       routehandle=regrid_neighbor, &
+                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldRegrid", rc)
+
+ print*,"- CALL Field_Regrid for tgxy."
+ call ESMF_FieldRegrid(tgxy_input_grid, &
+                       tgxy_target_grid, &
                        routehandle=regrid_neighbor, &
                        termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
@@ -1256,21 +1189,21 @@
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldRegrid", rc)
 
- print*,"- CALL Field_Regrid for slcxy."
- call ESMF_FieldRegrid(slcxy_input_grid, &
-                       slcxy_target_grid, &
-                       routehandle=regrid_neighbor, &
-                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldRegrid", rc)
+! print*,"- CALL Field_Regrid for slcxy."
+! call ESMF_FieldRegrid(slcxy_input_grid, &
+!                       slcxy_target_grid, &
+!                       routehandle=regrid_neighbor, &
+!                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+! if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+!    call error_handler("IN FieldRegrid", rc)
 
- print*,"- CALL Field_Regrid for smcxy."
- call ESMF_FieldRegrid(smcxy_input_grid, &
-                       smcxy_target_grid, &
-                       routehandle=regrid_neighbor, &
-                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldRegrid", rc)
+! print*,"- CALL Field_Regrid for smcxy."
+! call ESMF_FieldRegrid(smcxy_input_grid, &
+!                       smcxy_target_grid, &
+!                       routehandle=regrid_neighbor, &
+!                       termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+! if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+!    call error_handler("IN FieldRegrid", rc)
 
  print*,"- CALL Field_Regrid for stcxy."
  call ESMF_FieldRegrid(stcxy_input_grid, &
@@ -1376,70 +1309,67 @@
  do i = clb(1), cub(1)
 
    if (nint(vegt_target_ptr(i,j)) == veg_type_landice_target) then
+
      do k = clb(3), cub(3)
        slcxy_target_ptr(i,j,k) = 0.0
-       stcxy_target_ptr(i,j,k) = soil_temp_target_ptr(i,j,k)
+       smcxy_target_ptr(i,j,k) = 0.4   ! Rongqians data runs with landice
+! for jiaruis data       stcxy_target_ptr(i,j,k) = soil_temp_target_ptr(i,j,k)
      enddo
 
-     lsnow = nint(snowxy_target_ptr(i,j))
-     lsnow = abs(lsnow)
-     tot_liq_equiv = 0.0
-     do k = 1, lsnow
-       tot_liq_equiv = tot_liq_equiv + snicexy_target_ptr(i,j,k) + snliqxy_target_ptr(i,j,k)
-     enddo
 
-     if (localpet == 10 .and. i == 130 .and. j == 96) then
-       print*,'%lsnow ',lsnow
-       print*,'%snicexy ', snicexy_target_ptr(i,j,:)
-       print*,'%snliqxy ', snliqxy_target_ptr(i,j,:)
-       print*,'%tot_liq_equiv ', tot_liq_equiv
-       print*,'%noah depth ', snow_depth_target_ptr(i,j)
-       print*,'%noahmp depth ', snowhxy_target_ptr(i,j)
-     endif
-
-     if (tot_liq_equiv > 500) then
-       print*,'large snow ',localpet,i,j,tot_liq_equiv
-     endif
- 
-     percent_snow = 0.0
-     if (tot_liq_equiv > 0.0) then
-       do k = 1, lsnow
-         percent_snow(k) = (snliqxy_target_ptr(i,j,k) + snicexy_target_ptr(i,j,k)) / tot_liq_equiv
-       enddo
-     endif
-
-     if (localpet == 10 .and. i == 130 .and. j == 96) then
-       print*,'%percent_snow ',percent_snow(:)
-     endif
-
-     snliqxy_target_ptr(i,j,:) = 0.0  ! snow pack totally frozen at glacial points
-     snicexy_target_ptr(i,j,:) = 0.0
-     sneqv_target_ptr(i,j) = snow_liq_equiv_target_ptr(i,j)
-
-     do k = 1, lsnow
-       if(percent_snow(k) > 0.0) then
-         snicexy_target_ptr(i,j,k) = percent_snow(k) * snow_liq_equiv_target_ptr(i,j)
-         zsnsoxy_target_ptr(i,j,k) = percent_snow(k) * snow_depth_target_ptr(i,j) * 0.001
-       endif
-     enddo
-
-     if (localpet == 10 .and. i == 130 .and. j == 96) then
-       print*,'%zsnsoxy before ', zsnsoxy_target_ptr(i,j,1:3)
-     endif
-
-     zsnsoxy_target_ptr(i,j,1) = -(zsnsoxy_target_ptr(i,j,1))
-     zsnsoxy_target_ptr(i,j,2) = zsnsoxy_target_ptr(i,j,1) - zsnsoxy_target_ptr(i,j,2)
-     zsnsoxy_target_ptr(i,j,3) = zsnsoxy_target_ptr(i,j,2) - zsnsoxy_target_ptr(i,j,3)
-     zsnsoxy_target_ptr(i,j,4) = zsnsoxy_target_ptr(i,j,3) - 0.1
-     zsnsoxy_target_ptr(i,j,5) = zsnsoxy_target_ptr(i,j,3) - 0.4
-     zsnsoxy_target_ptr(i,j,6) = zsnsoxy_target_ptr(i,j,3) - 1.0
-     zsnsoxy_target_ptr(i,j,7) = zsnsoxy_target_ptr(i,j,3) - 2.0
-
-     if (localpet == 10 .and. i == 130 .and. j == 96) then
-       print*,'%noah snow ', snow_liq_equiv_target_ptr(i,j)
-       print*,'%snicexy after ', snicexy_target_ptr(i,j,:)
-       print*,'%zsnsoxy after ', zsnsoxy_target_ptr(i,j,:)
-     endif
+!***************************************************************************
+! START of logic to replace the snow at land ice with noah snow.
+!***************************************************************************
+!     lsnow = nint(snowxy_target_ptr(i,j))
+!     lsnow = abs(lsnow)
+!     tot_liq_equiv = 0.0
+!     do k = 1, lsnow
+!       tot_liq_equiv = tot_liq_equiv + snicexy_target_ptr(i,j,k) + snliqxy_target_ptr(i,j,k)
+!     enddo
+!     if (localpet == 10 .and. i == 130 .and. j == 96) then
+!       print*,'%lsnow ',lsnow
+!       print*,'%snicexy ', snicexy_target_ptr(i,j,:)
+!       print*,'%snliqxy ', snliqxy_target_ptr(i,j,:)
+!       print*,'%tot_liq_equiv ', tot_liq_equiv
+!       print*,'%noah depth ', snow_depth_target_ptr(i,j)
+!       print*,'%noahmp depth ', snowhxy_target_ptr(i,j)
+!     endif
+!     percent_snow = 0.0
+!     if (tot_liq_equiv > 0.0) then
+!       do k = 1, lsnow
+!         percent_snow(k) = (snliqxy_target_ptr(i,j,k) + snicexy_target_ptr(i,j,k)) / tot_liq_equiv
+!       enddo
+!     endif
+!     if (localpet == 10 .and. i == 130 .and. j == 96) then
+!       print*,'%percent_snow ',percent_snow(:)
+!     endif
+!     snliqxy_target_ptr(i,j,:) = 0.0  ! snow pack totally frozen at glacial points
+!     snicexy_target_ptr(i,j,:) = 0.0
+!     sneqv_target_ptr(i,j) = snow_liq_equiv_target_ptr(i,j)
+!     do k = 1, lsnow
+!       if(percent_snow(k) > 0.0) then
+!         snicexy_target_ptr(i,j,k) = percent_snow(k) * snow_liq_equiv_target_ptr(i,j)
+!         zsnsoxy_target_ptr(i,j,k) = percent_snow(k) * snow_depth_target_ptr(i,j) * 0.001
+!       endif
+!     enddo
+!     if (localpet == 10 .and. i == 130 .and. j == 96) then
+!       print*,'%zsnsoxy before ', zsnsoxy_target_ptr(i,j,1:3)
+!     endif
+!     zsnsoxy_target_ptr(i,j,1) = -(zsnsoxy_target_ptr(i,j,1))
+!     zsnsoxy_target_ptr(i,j,2) = zsnsoxy_target_ptr(i,j,1) - zsnsoxy_target_ptr(i,j,2)
+!     zsnsoxy_target_ptr(i,j,3) = zsnsoxy_target_ptr(i,j,2) - zsnsoxy_target_ptr(i,j,3)
+!     zsnsoxy_target_ptr(i,j,4) = zsnsoxy_target_ptr(i,j,3) - 0.1
+!     zsnsoxy_target_ptr(i,j,5) = zsnsoxy_target_ptr(i,j,3) - 0.4
+!     zsnsoxy_target_ptr(i,j,6) = zsnsoxy_target_ptr(i,j,3) - 1.0
+!     zsnsoxy_target_ptr(i,j,7) = zsnsoxy_target_ptr(i,j,3) - 2.0
+!     if (localpet == 10 .and. i == 130 .and. j == 96) then
+!       print*,'%noah snow ', snow_liq_equiv_target_ptr(i,j)
+!       print*,'%snicexy after ', snicexy_target_ptr(i,j,:)
+!       print*,'%zsnsoxy after ', zsnsoxy_target_ptr(i,j,:)
+!     endif
+!***************************************************************************
+!  END of logic to replace snow at glacial ice with noah snow.
+!***************************************************************************
 
    endif  ! is point glacial ice?
 
@@ -1457,7 +1387,15 @@
    else
      smoiseq_target_ptr(i,j,:) = 0.0
    endif
-     
+
+! at this point, soil_temp_target_ptr contains noah data, including at sea ice.
+! replace the land values with noah mp.  the rest of the code will use the
+! noah variable.
+ 
+   if (landmask_target_ptr(i,j) == 1) then
+     soil_temp_target_ptr(i,j,:) = stcxy_target_ptr(i,j,:)
+   endif
+
  enddo
  enddo
 
@@ -3366,8 +3304,7 @@
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR SOIL TEMPERATURE."
-!noahmp call ESMF_FieldGet(soil_temp_target_grid, &
- call ESMF_FieldGet(stcxy_target_grid, &
+ call ESMF_FieldGet(soil_temp_target_grid, &
                     farrayPtr=soil_temp_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldGet", rc)

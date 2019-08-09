@@ -2731,11 +2731,7 @@
 ! soil temperature 
 
    print*,"- CALL FieldGather FOR TARGET GRID SOIL TEMPERATURE FOR TILE: ", tile
-   if (noahmp) then
-     call ESMF_FieldGather(stcxy_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
-   else
-     call ESMF_FieldGather(soil_temp_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
-   endif
+   call ESMF_FieldGather(soil_temp_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
    if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldGather", error)
 

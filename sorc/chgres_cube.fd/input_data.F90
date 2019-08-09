@@ -223,9 +223,9 @@
 
  integer, intent(in)             :: localpet
 
- integer                         :: id_var, error, ncid, rc, i, j
+ integer                         :: id_var, error, ncid, rc, i, j, n
 
- real(esmf_kind_r8), allocatable :: dummy2d(:,:), dummy3d(:,:,:)
+ real(esmf_kind_r8), allocatable :: dummy2d(:,:), dummy3d(:,:,:), dummy3d2(:,:,:)
 
  print*,"- READ INPUT GRID NOAHMP DATA."
 
@@ -527,11 +527,17 @@
  endif
 
  print*,"- READ NOAHMP SOIL TYPE DATA"
- error=nf90_open("/scratch4/NCEPDEV/da/noscrub/George.Gayno/noah_mp/SOILTYPE_LIS-NOAHMP.nc",nf90_nowrite,ncid)
+! Use this for Jiarui's data
+! error=nf90_open("/scratch4/NCEPDEV/da/noscrub/George.Gayno/noah_mp/SOILTYPE_LIS-NOAHMP.nc",nf90_nowrite,ncid)
+! Use this for Rongqians data
+ error=nf90_open("/scratch4/NCEPDEV/land/noscrub/Rongqian.Yang/HRLDAS/hrldas.git/hrldas/output/nowater1.nc",nf90_nowrite,ncid)
  call netcdf_err(error, 'opening noahmp soiltype file')
 
  if (localpet == 0) then
-   error=nf90_inq_varid(ncid, 'SOILTYPE', id_var)
+! Use this for Jairui's data
+!   error=nf90_inq_varid(ncid, 'SOILTYPE', id_var)
+! Use this for Rongqian's data.
+   error=nf90_inq_varid(ncid, 'ISLTYP', id_var)
    call netcdf_err(error, 'reading field id' )
    error=nf90_get_var(ncid, id_var, dummy2d)
    call netcdf_err(error, 'reading field' )
@@ -540,6 +546,23 @@
 
  print*,"- CALL FieldScatter FOR NOAHMP SOIL TYPE."
  call ESMF_FieldScatter(soiltypexy_input_grid, dummy2d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   do j= 1, j_input_noahmp
+   do i= 1, i_input_noahmp
+     if (nint(dummy2d(i,j)) == 14) then
+       dummy2d(i,j) = 0.0  ! not land
+     else
+       dummy2d(i,j) = 1.0  ! land
+     endif
+   enddo
+   enddo
+ endif
+
+ print*,"- CALL FieldScatter FOR NOAHMP LANDMASK."
+ call ESMF_FieldScatter(landsea_mask_input_noahmp_grid, dummy2d, rootpet=0, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldScatter", rc)
 
@@ -559,23 +582,6 @@
 
  print*,"- CALL FieldScatter FOR FWETXY."
  call ESMF_FieldScatter(fwetxy_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldScatter", rc)
-
- if (localpet == 0) then
-   do j= 1, j_input_noahmp
-   do i= 1, i_input_noahmp
-     if (dummy2d(i,j) < -999.) then
-       dummy2d(i,j) = 0.0  ! not land
-     else
-       dummy2d(i,j) = 1.0  ! land
-     endif
-   enddo
-   enddo
- endif
-
- print*,"- CALL FieldScatter FOR NOAHMP LANDMASK."
- call ESMF_FieldScatter(landsea_mask_input_noahmp_grid, dummy2d, rootpet=0, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldScatter", rc)
 
@@ -961,13 +967,15 @@
  deallocate(dummy2d)
 
 !------------------
-! 3-d soil fields
+! 3-d soil fields.  Jiarui's data stored as xyz.  Rongqian's data stored as xzy.
 !------------------
 
  if (localpet == 0) then
-   allocate(dummy3d(i_input_noahmp,j_input_noahmp,lsoil_input_noahmp))
+   allocate(dummy3d(i_input_noahmp,lsoil_input_noahmp,j_input_noahmp))
+   allocate(dummy3d2(i_input_noahmp,j_input_noahmp,lsoil_input_noahmp))
  else
    allocate(dummy3d(0,0,0))
+   allocate(dummy3d2(0,0,0))
  endif
 
  if (localpet == 0) then
@@ -976,10 +984,17 @@
    error=nf90_get_var(ncid, id_var, dummy3d)
    call netcdf_err(error, 'reading field' )
    print*,'smcxy ',maxval(dummy3d),minval(dummy3d)
+   do i = 1, i_input_noahmp
+   do j = 1, j_input_noahmp
+   do n = 1, lsoil_input_noahmp
+     dummy3d2(i,j,n) = dummy3d(i,n,j)
+   enddo
+   enddo
+   enddo
  endif
 
  print*,"- CALL FieldScatter FOR SMCXY."
- call ESMF_FieldScatter(smcxy_input_grid, dummy3d, rootpet=0, rc=rc)
+ call ESMF_FieldScatter(smcxy_input_grid, dummy3d2, rootpet=0, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldScatter", rc)
 
@@ -989,44 +1004,67 @@
    error=nf90_get_var(ncid, id_var, dummy3d)
    call netcdf_err(error, 'reading field' )
    print*,'slcxy ',maxval(dummy3d),minval(dummy3d)
+   do i = 1, i_input_noahmp
+   do j = 1, j_input_noahmp
+   do n = 1, lsoil_input_noahmp
+     dummy3d2(i,j,n) = dummy3d(i,n,j)
+   enddo
+   enddo
+   enddo
  endif
 
  print*,"- CALL FieldScatter FOR SLCXY."
- call ESMF_FieldScatter(slcxy_input_grid, dummy3d, rootpet=0, rc=rc)
+ call ESMF_FieldScatter(slcxy_input_grid, dummy3d2, rootpet=0, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
-   error=nf90_inq_varid(ncid, 'SSTC', id_var)
+   error=nf90_inq_varid(ncid, 'SOIL_T', id_var)
    call netcdf_err(error, 'reading field id' )
-   error=nf90_get_var(ncid, id_var, dummy3d, start=(/1,1,lsnow_input_noahmp+1/),count=(/i_input_noahmp,j_input_noahmp,lsoil_input_noahmp/))
+   error=nf90_get_var(ncid, id_var, dummy3d)
    call netcdf_err(error, 'reading field' )
    print*,'stcxy ',maxval(dummy3d),minval(dummy3d)
+   do i = 1, i_input_noahmp
+   do j = 1, j_input_noahmp
+   do n = 1, lsoil_input_noahmp
+     dummy3d2(i,j,n) = dummy3d(i,n,j)
+   enddo
+   enddo
+   enddo
  endif
 
  print*,"- CALL FieldScatter FOR STCXY."
- call ESMF_FieldScatter(stcxy_input_grid, dummy3d, rootpet=0, rc=rc)
+ call ESMF_FieldScatter(stcxy_input_grid, dummy3d2, rootpet=0, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldScatter", rc)
 
- deallocate(dummy3d)
+ deallocate(dummy3d, dummy3d2)
 
  if (localpet == 0) then
-   allocate(dummy3d(i_input_noahmp,j_input_noahmp,lsnow_input_noahmp))
+   allocate(dummy3d(i_input_noahmp,lsnow_input_noahmp,j_input_noahmp))
+   allocate(dummy3d2(i_input_noahmp,j_input_noahmp,lsnow_input_noahmp))
  else
    allocate(dummy3d(0,0,0))
+   allocate(dummy3d2(0,0,0))
  endif
 
  if (localpet == 0) then
-   error=nf90_inq_varid(ncid, 'SSTC', id_var)
+   error=nf90_inq_varid(ncid, 'SNOW_T', id_var)
    call netcdf_err(error, 'reading field id' )
-   error=nf90_get_var(ncid, id_var, dummy3d, start=(/1,1,1/),count=(/i_input_noahmp,j_input_noahmp,lsnow_input_noahmp/))
+   error=nf90_get_var(ncid, id_var, dummy3d)
    call netcdf_err(error, 'reading field' )
    print*,'tsnoxy ',maxval(dummy3d),minval(dummy3d)
+   do i = 1, i_input_noahmp
+   do j = 1, j_input_noahmp
+   do n = 1, lsnow_input_noahmp
+     dummy3d2(i,j,n) = dummy3d(i,n,j)
+   enddo
+   enddo
+   enddo
  endif
 
  print*,"- CALL FieldScatter FOR TSNOXY."
- call ESMF_FieldScatter(tsnoxy_input_grid, dummy3d, rootpet=0, rc=rc)
+ call ESMF_FieldScatter(tsnoxy_input_grid, dummy3d2, rootpet=0, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldScatter", rc)
 
@@ -1036,10 +1074,17 @@
    error=nf90_get_var(ncid, id_var, dummy3d)
    call netcdf_err(error, 'reading field' )
    print*,'snicexy ',maxval(dummy3d),minval(dummy3d)
+   do i = 1, i_input_noahmp
+   do j = 1, j_input_noahmp
+   do n = 1, lsnow_input_noahmp
+     dummy3d2(i,j,n) = dummy3d(i,n,j)
+   enddo
+   enddo
+   enddo
  endif
 
  print*,"- CALL FieldScatter FOR SNICEXY."
- call ESMF_FieldScatter(snicexy_input_grid, dummy3d, rootpet=0, rc=rc)
+ call ESMF_FieldScatter(snicexy_input_grid, dummy3d2, rootpet=0, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldScatter", rc)
 
@@ -1049,38 +1094,53 @@
    error=nf90_get_var(ncid, id_var, dummy3d)
    call netcdf_err(error, 'reading field' )
    print*,'snliqxy ',maxval(dummy3d),minval(dummy3d)
+   do i = 1, i_input_noahmp
+   do j = 1, j_input_noahmp
+   do n = 1, lsnow_input_noahmp
+     dummy3d2(i,j,n) = dummy3d(i,n,j)
+   enddo
+   enddo
+   enddo
  endif
 
  print*,"- CALL FieldScatter FOR SNLIQXY."
- call ESMF_FieldScatter(snliqxy_input_grid, dummy3d, rootpet=0, rc=rc)
+ call ESMF_FieldScatter(snliqxy_input_grid, dummy3d2, rootpet=0, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldScatter", rc)
 
- deallocate(dummy3d)
+ deallocate(dummy3d, dummy3d2)
 
  if (localpet == 0) then
-   allocate(dummy3d(i_input_noahmp,j_input_noahmp,levels_input_noahmp))
+   allocate(dummy3d(i_input_noahmp,levels_input_noahmp,j_input_noahmp))
+   allocate(dummy3d2(i_input_noahmp,j_input_noahmp,levels_input_noahmp))
  else
    allocate(dummy3d(0,0,0))
+   allocate(dummy3d2(0,0,0))
  endif
 
  if (localpet == 0) then
    error=nf90_inq_varid(ncid, 'ZSNSOXY', id_var)
    call netcdf_err(error, 'reading field id' )
-   error=nf90_get_var(ncid, id_var, dummy3d, start=(/1,1,1/),count=(/i_input_noahmp,j_input_noahmp,levels_input_noahmp/))
+   error=nf90_get_var(ncid, id_var, dummy3d)
    call netcdf_err(error, 'reading field' )
    print*,'zsnsoxy ',maxval(dummy3d),minval(dummy3d)
+   do i = 1, i_input_noahmp
+   do j = 1, j_input_noahmp
+   do n = 1, levels_input_noahmp
+     dummy3d2(i,j,n) = dummy3d(i,n,j)
+   enddo
+   enddo
+   enddo
  endif
 
  print*,"- CALL FieldScatter FOR ZSNSOXY."
- call ESMF_FieldScatter(zsnsoxy_input_grid, dummy3d, rootpet=0, rc=rc)
+ call ESMF_FieldScatter(zsnsoxy_input_grid, dummy3d2, rootpet=0, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldScatter", rc)
 
  error = nf90_close(ncid)
 
-
- deallocate(dummy3d)
+ deallocate(dummy3d, dummy3d2)
 
  end subroutine read_input_noahmp_data
 
