@@ -217,7 +217,8 @@
 
  subroutine read_input_noahmp_data(localpet)
 
- use program_setup, only  : noahmp_file_input_grid
+ use program_setup, only  : noahmp_file_input_grid, noahmp_soil_type_file, &
+                            noahmp_lis, noahmp_hrldas
 
  implicit none
 
@@ -527,17 +528,15 @@
  endif
 
  print*,"- READ NOAHMP SOIL TYPE DATA"
-! Use this for Jiarui's data
-! error=nf90_open("/scratch4/NCEPDEV/da/noscrub/George.Gayno/noah_mp/SOILTYPE_LIS-NOAHMP.nc",nf90_nowrite,ncid)
-! Use this for Rongqians data
- error=nf90_open("/scratch4/NCEPDEV/land/noscrub/Rongqian.Yang/HRLDAS/hrldas.git/hrldas/output/nowater1.nc",nf90_nowrite,ncid)
+ error=nf90_open(trim(noahmp_soil_type_file),nf90_nowrite,ncid)
  call netcdf_err(error, 'opening noahmp soiltype file')
 
  if (localpet == 0) then
-! Use this for Jairui's data
-!   error=nf90_inq_varid(ncid, 'SOILTYPE', id_var)
-! Use this for Rongqian's data.
-   error=nf90_inq_varid(ncid, 'ISLTYP', id_var)
+   if (noahmp_lis) then
+     error=nf90_inq_varid(ncid, 'SOILTYPE', id_var)
+   elseif (noahmp_hrldas) then
+     error=nf90_inq_varid(ncid, 'ISLTYP', id_var)
+   endif
    call netcdf_err(error, 'reading field id' )
    error=nf90_get_var(ncid, id_var, dummy2d)
    call netcdf_err(error, 'reading field' )
@@ -981,16 +980,22 @@
  if (localpet == 0) then
    error=nf90_inq_varid(ncid, 'SMC', id_var)
    call netcdf_err(error, 'reading field id' )
-   error=nf90_get_var(ncid, id_var, dummy3d)
-   call netcdf_err(error, 'reading field' )
-   print*,'smcxy ',maxval(dummy3d),minval(dummy3d)
-   do i = 1, i_input_noahmp
-   do j = 1, j_input_noahmp
-   do n = 1, lsoil_input_noahmp
-     dummy3d2(i,j,n) = dummy3d(i,n,j)
-   enddo
-   enddo
-   enddo
+   if (noahmp_lis) then
+     error=nf90_get_var(ncid, id_var, dummy3d2)
+     call netcdf_err(error, 'reading field' )
+     print*,'smcxy ',maxval(dummy3d2),minval(dummy3d2)
+   else
+     error=nf90_get_var(ncid, id_var, dummy3d)
+     call netcdf_err(error, 'reading field' )
+     print*,'smcxy ',maxval(dummy3d),minval(dummy3d)
+     do i = 1, i_input_noahmp
+     do j = 1, j_input_noahmp
+     do n = 1, lsoil_input_noahmp
+       dummy3d2(i,j,n) = dummy3d(i,n,j)
+     enddo
+     enddo
+     enddo
+   endif
  endif
 
  print*,"- CALL FieldScatter FOR SMCXY."
@@ -1001,16 +1006,22 @@
  if (localpet == 0) then
    error=nf90_inq_varid(ncid, 'SH2O', id_var)
    call netcdf_err(error, 'reading field id' )
-   error=nf90_get_var(ncid, id_var, dummy3d)
-   call netcdf_err(error, 'reading field' )
-   print*,'slcxy ',maxval(dummy3d),minval(dummy3d)
-   do i = 1, i_input_noahmp
-   do j = 1, j_input_noahmp
-   do n = 1, lsoil_input_noahmp
-     dummy3d2(i,j,n) = dummy3d(i,n,j)
-   enddo
-   enddo
-   enddo
+   if (noahmp_lis) then
+     error=nf90_get_var(ncid, id_var, dummy3d2)
+     call netcdf_err(error, 'reading field' )
+     print*,'slcxy ',maxval(dummy3d2),minval(dummy3d2)
+   else
+     error=nf90_get_var(ncid, id_var, dummy3d)
+     call netcdf_err(error, 'reading field' )
+     print*,'slcxy ',maxval(dummy3d),minval(dummy3d)
+     do i = 1, i_input_noahmp
+     do j = 1, j_input_noahmp
+     do n = 1, lsoil_input_noahmp
+       dummy3d2(i,j,n) = dummy3d(i,n,j)
+     enddo
+     enddo
+     enddo
+   endif
  endif
 
  print*,"- CALL FieldScatter FOR SLCXY."
@@ -1019,18 +1030,27 @@
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
-   error=nf90_inq_varid(ncid, 'SOIL_T', id_var)
-   call netcdf_err(error, 'reading field id' )
-   error=nf90_get_var(ncid, id_var, dummy3d)
-   call netcdf_err(error, 'reading field' )
-   print*,'stcxy ',maxval(dummy3d),minval(dummy3d)
-   do i = 1, i_input_noahmp
-   do j = 1, j_input_noahmp
-   do n = 1, lsoil_input_noahmp
-     dummy3d2(i,j,n) = dummy3d(i,n,j)
-   enddo
-   enddo
-   enddo
+   if (noahmp_lis) then
+     error=nf90_inq_varid(ncid, 'SSTC', id_var)
+     call netcdf_err(error, 'reading field id' )
+     error=nf90_get_var(ncid, id_var, dummy3d2, start=(/1,1,lsnow_input_noahmp+1/), &
+                                                count=(/i_input_noahmp,j_input_noahmp,lsoil_input_noahmp/))
+     call netcdf_err(error, 'reading field' )
+     print*,'stcxy ',maxval(dummy3d2),minval(dummy3d2)
+   else
+     error=nf90_inq_varid(ncid, 'SOIL_T', id_var)
+     call netcdf_err(error, 'reading field id' )
+     error=nf90_get_var(ncid, id_var, dummy3d)
+     call netcdf_err(error, 'reading field' )
+     print*,'stcxy ',maxval(dummy3d),minval(dummy3d)
+     do i = 1, i_input_noahmp
+     do j = 1, j_input_noahmp
+     do n = 1, lsoil_input_noahmp
+       dummy3d2(i,j,n) = dummy3d(i,n,j)
+     enddo
+     enddo
+     enddo
+   endif
  endif
 
  print*,"- CALL FieldScatter FOR STCXY."
@@ -1049,18 +1069,27 @@
  endif
 
  if (localpet == 0) then
-   error=nf90_inq_varid(ncid, 'SNOW_T', id_var)
-   call netcdf_err(error, 'reading field id' )
-   error=nf90_get_var(ncid, id_var, dummy3d)
-   call netcdf_err(error, 'reading field' )
-   print*,'tsnoxy ',maxval(dummy3d),minval(dummy3d)
-   do i = 1, i_input_noahmp
-   do j = 1, j_input_noahmp
-   do n = 1, lsnow_input_noahmp
-     dummy3d2(i,j,n) = dummy3d(i,n,j)
-   enddo
-   enddo
-   enddo
+   if (noahmp_lis) then
+     error=nf90_inq_varid(ncid, 'SSTC', id_var)
+     call netcdf_err(error, 'reading field id' )
+     error=nf90_get_var(ncid, id_var, dummy3d2, start=(/1,1,1/), &
+                                                count=(/i_input_noahmp,j_input_noahmp, lsnow_input_noahmp/))
+     call netcdf_err(error, 'reading field' )
+     print*,'tsnoxy ',maxval(dummy3d2),minval(dummy3d2)
+   else
+     error=nf90_inq_varid(ncid, 'SNOW_T', id_var)
+     call netcdf_err(error, 'reading field id' )
+     error=nf90_get_var(ncid, id_var, dummy3d)
+     call netcdf_err(error, 'reading field' )
+     print*,'tsnoxy ',maxval(dummy3d),minval(dummy3d)
+     do i = 1, i_input_noahmp
+     do j = 1, j_input_noahmp
+     do n = 1, lsnow_input_noahmp
+       dummy3d2(i,j,n) = dummy3d(i,n,j)
+     enddo
+     enddo
+     enddo
+   endif
  endif
 
  print*,"- CALL FieldScatter FOR TSNOXY."
@@ -1071,16 +1100,22 @@
  if (localpet == 0) then
    error=nf90_inq_varid(ncid, 'SNICEXY', id_var)
    call netcdf_err(error, 'reading field id' )
-   error=nf90_get_var(ncid, id_var, dummy3d)
-   call netcdf_err(error, 'reading field' )
-   print*,'snicexy ',maxval(dummy3d),minval(dummy3d)
-   do i = 1, i_input_noahmp
-   do j = 1, j_input_noahmp
-   do n = 1, lsnow_input_noahmp
-     dummy3d2(i,j,n) = dummy3d(i,n,j)
-   enddo
-   enddo
-   enddo
+   if (noahmp_lis) then
+     error=nf90_get_var(ncid, id_var, dummy3d2)
+     call netcdf_err(error, 'reading field' )
+     print*,'snicexy ',maxval(dummy3d2),minval(dummy3d2)
+   else
+     error=nf90_get_var(ncid, id_var, dummy3d)
+     call netcdf_err(error, 'reading field' )
+     print*,'snicexy ',maxval(dummy3d),minval(dummy3d)
+     do i = 1, i_input_noahmp
+     do j = 1, j_input_noahmp
+     do n = 1, lsnow_input_noahmp
+       dummy3d2(i,j,n) = dummy3d(i,n,j)
+     enddo
+     enddo
+     enddo
+   endif
  endif
 
  print*,"- CALL FieldScatter FOR SNICEXY."
@@ -1091,16 +1126,22 @@
  if (localpet == 0) then
    error=nf90_inq_varid(ncid, 'SNLIQXY', id_var)
    call netcdf_err(error, 'reading field id' )
-   error=nf90_get_var(ncid, id_var, dummy3d)
-   call netcdf_err(error, 'reading field' )
-   print*,'snliqxy ',maxval(dummy3d),minval(dummy3d)
-   do i = 1, i_input_noahmp
-   do j = 1, j_input_noahmp
-   do n = 1, lsnow_input_noahmp
-     dummy3d2(i,j,n) = dummy3d(i,n,j)
-   enddo
-   enddo
-   enddo
+   if (noahmp_lis) then
+     error=nf90_get_var(ncid, id_var, dummy3d2)
+     call netcdf_err(error, 'reading field' )
+     print*,'snliqxy ',maxval(dummy3d2),minval(dummy3d2)
+   else
+     error=nf90_get_var(ncid, id_var, dummy3d)
+     call netcdf_err(error, 'reading field' )
+     print*,'snliqxy ',maxval(dummy3d),minval(dummy3d)
+     do i = 1, i_input_noahmp
+     do j = 1, j_input_noahmp
+     do n = 1, lsnow_input_noahmp
+       dummy3d2(i,j,n) = dummy3d(i,n,j)
+     enddo
+     enddo
+     enddo
+   endif
  endif
 
  print*,"- CALL FieldScatter FOR SNLIQXY."
@@ -1121,16 +1162,23 @@
  if (localpet == 0) then
    error=nf90_inq_varid(ncid, 'ZSNSOXY', id_var)
    call netcdf_err(error, 'reading field id' )
-   error=nf90_get_var(ncid, id_var, dummy3d)
-   call netcdf_err(error, 'reading field' )
-   print*,'zsnsoxy ',maxval(dummy3d),minval(dummy3d)
-   do i = 1, i_input_noahmp
-   do j = 1, j_input_noahmp
-   do n = 1, levels_input_noahmp
-     dummy3d2(i,j,n) = dummy3d(i,n,j)
-   enddo
-   enddo
-   enddo
+   if (noahmp_lis) then
+     error=nf90_get_var(ncid, id_var, dummy3d2, start=(/1,1,1/), &
+                                               count=(/i_input_noahmp, j_input_noahmp, levels_input_noahmp/))
+     call netcdf_err(error, 'reading field' )
+     print*,'zsnsoxy ',maxval(dummy3d2),minval(dummy3d2)
+   else
+     error=nf90_get_var(ncid, id_var, dummy3d)
+     call netcdf_err(error, 'reading field' )
+     print*,'zsnsoxy ',maxval(dummy3d),minval(dummy3d)
+     do i = 1, i_input_noahmp
+     do j = 1, j_input_noahmp
+     do n = 1, levels_input_noahmp
+       dummy3d2(i,j,n) = dummy3d(i,n,j)
+     enddo
+     enddo
+     enddo
+   endif
  endif
 
  print*,"- CALL FieldScatter FOR ZSNSOXY."

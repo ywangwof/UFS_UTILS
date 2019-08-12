@@ -1477,7 +1477,9 @@
                                    i_target, j_target, lsoil_target, &
                                    lsnow_target_noahmp, levels_target_noahmp
 
- use program_setup, only         : convert_nst, halo=>halo_bndy
+ use program_setup, only         : convert_nst, halo=>halo_bndy, &
+                                   noahmp_lis, noahmp_hrldas
+
 
  use surface, only               : canopy_mc_target_grid,  &
                                    f10m_target_grid, &
@@ -1594,8 +1596,6 @@
 
  integer(esmf_kind_i8), allocatable :: idata_one_tile(:,:)
 
- logical :: noahmp
-
  real(kind=4), allocatable       :: lsoil_data(:), x_data(:), y_data(:)
  real(kind=4), allocatable       :: lsnow_data(:), levels_data(:)
  real(kind=8), allocatable       :: dum2d(:,:), dum3d(:,:,:), dum3dsnow(:,:,:)
@@ -1605,8 +1605,6 @@
  real(esmf_kind_r8), allocatable :: data_one_tile_3d(:,:,:)
  real(esmf_kind_r8), allocatable :: data_one_tile_3dsnow(:,:,:)
  real(esmf_kind_r8), allocatable :: data_one_tile_3dall(:,:,:)
-
-     noahmp=.true.
 
 ! Remove any halo region.
 
@@ -1690,7 +1688,7 @@
      error = nf90_def_dim(ncid, 'zaxis_1', lsoil_target, dim_lsoil)
      call netcdf_err(error, 'DEFINING ZAXIS DIMENSION' )
 ! noahmp only !!!
-     if (noahmp) then
+     if (noahmp_lis .or. noahmp_hrldas) then
        error = nf90_def_dim(ncid, 'zaxis_2', lsnow_target_noahmp, dim_lsnow)
        call netcdf_err(error, 'DEFINING ZAXIS_2 DIMENSION' )
        error = nf90_def_dim(ncid, 'zaxis_3', levels_target_noahmp, dim_levels)
@@ -1736,7 +1734,7 @@
      error = nf90_put_att(ncid, id_lsnow, "cartesian_axis", "Z")
      call netcdf_err(error, 'WRITING ZAXIS_2 FIELD' )
 
-     if (noahmp) then
+     if (noahmp_lis .or. noahmp_hrldas) then
        error = nf90_def_var(ncid, 'zaxis_3', NF90_FLOAT, (/dim_levels/), id_levels)
        call netcdf_err(error, 'DEFINING ZAXIS_3 FIELD' )
        error = nf90_put_att(ncid, id_levels, "long_name", "zaxis_3")
@@ -2124,7 +2122,7 @@
 
      endif  ! nsst records
 
-     if (noahmp) then
+     if (noahmp_lis .or. noahmp_hrldas) then
 
        error = nf90_def_var(ncid, 'snowxy', NF90_DOUBLE, (/dim_x,dim_y,dim_time/), id_snowxy)
        call netcdf_err(error, 'DEFINING SNOWXY' )
@@ -2374,7 +2372,7 @@
    if (localpet == 0) then
      error = nf90_put_var( ncid, id_lsoil, lsoil_data)
      call netcdf_err(error, 'WRITING ZAXIS_1 RECORD' )
-     if (noahmp) then
+     if (noahmp_lis .or. noahmp_hrldas) then
        error = nf90_put_var( ncid, id_lsnow, lsnow_data)
        call netcdf_err(error, 'WRITING ZAXIS_2 RECORD' )
        error = nf90_put_var( ncid, id_levels, levels_data)
@@ -2396,13 +2394,13 @@
 
    if (localpet == 0) then
      dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
-     if (noahmp) dum2d = 9.99E+20
+     if (noahmp_lis .or. noahmp_hrldas) dum2d = 9.99E+20
      error = nf90_put_var( ncid, id_sheleg, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
      call netcdf_err(error, 'WRITING SNOW LIQ EQUIV RECORD' )
    endif
 
    print*,"- CALL FieldGather FOR TARGET GRID SNOW DEPTH FOR TILE: ", tile
-   if (noahmp) then
+   if (noahmp_lis .or. noahmp_hrldas) then
      call ESMF_FieldGather(snowhxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
    else
      call ESMF_FieldGather(snow_depth_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
@@ -2412,7 +2410,7 @@
 
    if (localpet == 0) then
      dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
-     if (noahmp) dum2d = 9.99E+20
+     if (noahmp_lis .or. noahmp_hrldas) dum2d = 9.99E+20
      error = nf90_put_var( ncid, id_snwdph, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
      call netcdf_err(error, 'WRITING SNWDPH RECORD' )
    endif
@@ -2744,7 +2742,7 @@
 ! soil moisture (total)
 
    print*,"- CALL FieldGather FOR TARGET GRID TOTAL SOIL MOISTURE FOR TILE: ", tile
-   if (noahmp) then
+   if (noahmp_lis .or. noahmp_hrldas) then
      call ESMF_FieldGather(smcxy_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
    else
      call ESMF_FieldGather(soilm_tot_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
@@ -2761,7 +2759,7 @@
 ! soil moisture (liquid)
 
    print*,"- CALL FieldGather FOR TARGET GRID LIQUID SOIL MOISTURE FOR TILE: ", tile
-   if (noahmp) then
+   if (noahmp_lis .or. noahmp_hrldas) then
      call ESMF_FieldGather(slcxy_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
    else
      call ESMF_FieldGather(soilm_liq_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
@@ -2977,7 +2975,7 @@
 
    endif ! convert nst
 
-   if (noahmp) then
+   if (noahmp_lis .or. noahmp_hrldas) then
 
      print*,"- CALL FieldGather FOR TARGET QSNOWXY FOR TILE: ", tile
      call ESMF_FieldGather(qsnowxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
@@ -3365,7 +3363,7 @@
 
  deallocate(lsoil_data, x_data, y_data)
  deallocate(data_one_tile, data_one_tile_3d, idata_one_tile, dum2d, dum3d)
- if (noahmp) deallocate(data_one_tile_3dsnow, dum3dsnow, data_one_tile_3dall, dum3dall, lsnow_data, levels_data)
+ if (noahmp_lis .or. noahmp_hrldas) deallocate(data_one_tile_3dsnow, dum3dsnow, data_one_tile_3dall, dum3dall, lsnow_data, levels_data)
 
  return
 

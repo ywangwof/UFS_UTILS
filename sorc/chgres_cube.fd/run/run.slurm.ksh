@@ -8,8 +8,8 @@
 # Invoke as: sbatch $script
 #-----------------------------------------------------------
 
-####SBATCH --ntasks=12 --nodes=2
-#SBATCH --ntasks=6 --nodes=1
+#SBATCH --ntasks=12 --nodes=2
+##SBATCH --ntasks=6 --nodes=1
 #SBATCH -t 0:15:00
 #SBATCH -A fv3-cpu
 #SBATCH -q debug
@@ -35,8 +35,10 @@ rm -fr $WORKDIR
 mkdir -p $WORKDIR
 cd $WORKDIR
 
-#ln -fs ${SLURM_SUBMIT_DIR}/test.nml ./fort.41
-ln -fs ${SLURM_SUBMIT_DIR}/config.noahmp.theia.nml ./fort.41
+#ln -fs ${SLURM_SUBMIT_DIR}/config.noahmp.lis.C768.theia.nml ./fort.41
+#ln -fs ${SLURM_SUBMIT_DIR}/config.noahmp.lis.C192.theia.nml ./fort.41
+ln -fs ${SLURM_SUBMIT_DIR}/config.noahmp.hrldas.C768.theia.nml ./fort.41
+#ln -fs ${SLURM_SUBMIT_DIR}/config.noahmp.hrldas.C192.theia.nml ./fort.41
 #ln -fs ${SLURM_SUBMIT_DIR}/config.C48.gaussian.theia.nml ./fort.41
 #ln -fs ${SLURM_SUBMIT_DIR}/config.C48.gfs.gaussian.theia.nml ./fort.41
 #ln -fs ${SLURM_SUBMIT_DIR}/config.C48.gfs.spectral.theia.nml ./fort.41

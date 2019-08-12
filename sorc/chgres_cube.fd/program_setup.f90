@@ -110,6 +110,7 @@
  character(len=500), public      :: sfc_files_input_grid(6) = "NULL"
  character(len=500), public      :: vcoord_file_target_grid = "NULL"
  character(len=500), public      :: noahmp_file_input_grid = "NULL"
+ character(len=500), public      :: noahmp_soil_type_file = "NULL"
  character(len=6),   public      :: cres_target_grid = "      "
  character(len=500), public      :: atm_weight_file="NULL"
  character(len=20),  public      :: input_type="restart"
@@ -129,6 +130,9 @@
  logical, public                 :: convert_atm = .false.
  logical, public                 :: convert_nst = .false.
  logical, public                 :: convert_sfc = .false.
+
+ logical, public :: noahmp_lis = .false.
+ logical, public :: noahmp_hrldas = .false.
 
  real, allocatable, public       :: drysmc_input(:), drysmc_target(:)
  real, allocatable, public       :: maxsmc_input(:), maxsmc_target(:)
@@ -160,6 +164,7 @@
                    atm_core_files_input_grid,    &
                    atm_tracer_files_input_grid,    &
                    noahmp_file_input_grid, &
+                   noahmp_soil_type_file, &
                    data_dir_input_grid,     &
                    vcoord_file_target_grid, &
                    cycle_mon, cycle_day,    &
@@ -238,6 +243,14 @@
    case default
      call error_handler("UNRECOGNIZED INPUT DATA TYPE.", 1)
  end select
+
+ if (index (noahmp_soil_type_file, "nowater1.nc") > 0) then
+   noahmp_hrldas = .true.
+   print*,'process noahmp hrldas data'
+ elseif (index (noahmp_soil_type_file, "LIS") > 0) then
+   noahmp_lis = .true.
+   print*,'process noahmp lis data'
+ endif
 
  return
 
