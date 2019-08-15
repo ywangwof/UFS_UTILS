@@ -2394,23 +2394,17 @@
 
    if (localpet == 0) then
      dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
-     if (noahmp_lis .or. noahmp_hrldas) dum2d = 9.99E+20
      error = nf90_put_var( ncid, id_sheleg, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
      call netcdf_err(error, 'WRITING SNOW LIQ EQUIV RECORD' )
    endif
 
    print*,"- CALL FieldGather FOR TARGET GRID SNOW DEPTH FOR TILE: ", tile
-   if (noahmp_lis .or. noahmp_hrldas) then
-     call ESMF_FieldGather(snowhxy_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   else
-     call ESMF_FieldGather(snow_depth_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   endif
+   call ESMF_FieldGather(snow_depth_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
    if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
      dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
-     if (noahmp_lis .or. noahmp_hrldas) dum2d = 9.99E+20
      error = nf90_put_var( ncid, id_snwdph, dum2d, start=(/1,1,1/), count=(/i_target_out,j_target_out,1/))
      call netcdf_err(error, 'WRITING SNWDPH RECORD' )
    endif

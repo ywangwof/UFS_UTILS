@@ -6,6 +6,7 @@
  orog_files_target_grid="C192_oro_data.tile1.nc","C192_oro_data.tile2.nc","C192_oro_data.tile3.nc","C192_oro_data.tile4.nc","C192_oro_data.tile5.nc","C192_oro_data.tile6.nc"
  data_dir_input_grid="/scratch4/NCEPDEV/da/noscrub/George.Gayno/noah_mp/gdas.2017101600"
  sfc_files_input_grid="gdas.t00z.sfcf000.nemsio"
+ nst_files_input_grid="gdas.t00z.nstf000.nemsio"
  noahmp_file_input_grid="/scratch4/NCEPDEV/land/noscrub/Rongqian.Yang/HRLDAS/hrldas.git/hrldas/output/RESTART.2017101600_DOMAIN1"
  noahmp_soil_type_file="/scratch4/NCEPDEV/land/noscrub/Rongqian.Yang/HRLDAS/hrldas.git/hrldas/output/nowater1.nc"
  vcoord_file_target_grid="/gpfs/dell2/emc/modeling/noscrub/George.Gayno/fv3gfs.git/global-workflow/fix/fix_am/global_hyblev.l64.txt"
@@ -14,7 +15,7 @@
  cycle_hour=0
  convert_atm=.false.
  convert_sfc=.true.
- convert_nst=.false.
+ convert_nst=.true.
  tracers="sphum","liq_wat","o3mr"
  tracers_input="spfh","clwmr","o3mr"
  input_type="gfs_gaussian"

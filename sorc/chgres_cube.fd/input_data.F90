@@ -787,6 +787,11 @@
    error=nf90_get_var(ncid, id_var, dummy2d)
    call netcdf_err(error, 'reading field' )
    print*,'waxy ',maxval(dummy2d),minval(dummy2d)
+! lis data has bad values in polar regions.  reset to nominal values (mm)
+   if (noahmp_lis) then
+     where (dummy2d < 4500.) dummy2d = 4500.
+     where (dummy2d > 5500.) dummy2d = 5500.
+   endif
  endif
 
  print*,"- CALL FieldScatter FOR WAXY."
@@ -800,6 +805,11 @@
    error=nf90_get_var(ncid, id_var, dummy2d)
    call netcdf_err(error, 'reading field' )
    print*,'wtxy ',maxval(dummy2d),minval(dummy2d)
+! lis data has bad values in polar regions.  reset to nominal values (mm)
+   if (noahmp_lis) then
+     where (dummy2d < 4500.) dummy2d = 4500.
+     where (dummy2d > 5500.) dummy2d = 5500.
+   endif
  endif
 
  print*,"- CALL FieldScatter FOR WTXY."
