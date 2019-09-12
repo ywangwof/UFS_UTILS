@@ -28,10 +28,19 @@ if [[ -d /lfs3 ]] ; then
     target=jet
     module purge
     module use /mnt/lfs3/projects/hfv3gfs/nwprod/lib/modulefiles
-elif [[ -d /scratch3 ]] ; then
-    # We are on NOAA Theia
+elif [[ -d /scratch2/BMC/det ]] ; then
+    # We are on NOAA Hera
     if ( ! eval module help > /dev/null 2>&1 ) ; then
 	echo load the module command 1>&2
+        source /apps/lmod/lmod/init/$__ms_shell
+    fi
+    target=hera
+    module purge
+    module use /scratch2/NCEPDEV/nwprod/NCEPLIBS/modulefiles
+elif [[ ! -d /scratch3 ]] ; then
+    # We are on NOAA Theia
+    if ( ! eval module help > /dev/null 2>&1 ) ; then
+        echo load the module command 1>&2
         source /apps/lmod/lmod/init/$__ms_shell
     fi
     target=theia
