@@ -290,16 +290,6 @@
  end select
  
 !-------------------------------------------------------------------------
-! Grib2 support is currently not available for surface conversion  
-!-------------------------------------------------------------------------
-
- if (trim(input_type) == "grib2" .and. convert_sfc) then
-   print*, "WARNING: PROCESSING OF SURFACE GRIB2 DATA IS NOT CURRENTLY SUPORTED. SETTING &
-            convert_sfc TO FALSE."
-   convert_sfc = .false.
- endif
- 
-!-------------------------------------------------------------------------
 ! Ensure proper file variable provided for grib2 input  
 !-------------------------------------------------------------------------
 
