@@ -1885,7 +1885,7 @@ call rem_negative_tracers(localpet)
              endif
              
              if (P_QNI.gt.1) then
-               if qniptr(i,j,k) < 0) qniptr(i,j,k) = 0
+               if (qniptr(i,j,k) < 0) qniptr(i,j,k) = 0
              endif
              !..Produce a sensible rain number concentration
 
