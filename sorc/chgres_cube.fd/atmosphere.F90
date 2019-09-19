@@ -1866,13 +1866,14 @@ call rem_negative_tracers(localpet)
                   else
                    qncptr(i,j,k) = make_DropletNumber (cloudptr(i,j,k)*temp_rho,       &
    &                           0.0, real(landptr(i,j)))
-   						
                  endif
                  qncptr(i,j,k) = qncptr(i,j,k) / temp_rho
                endif
              endif
              
-             if (P_QNC.gt.1 .AND. qncptr(i,j,k) < 0) qncptr(i,j,k) = 0
+             if (P_QNC.gt.1) then
+               if (qncptr(i,j,k) < 0) qncptr(i,j,k) = 0
+             endif
              !..Produce a sensible cloud ice number concentration
 
              if (P_QNI.gt.1 .AND. P_QI .gt. 1) then
@@ -1883,7 +1884,9 @@ call rem_negative_tracers(localpet)
                endif
              endif
              
-             if (P_QNI.gt.1 .AND. qniptr(i,j,k) < 0) qniptr(i,j,k) = 0
+             if (P_QNI.gt.1) then
+               if qniptr(i,j,k) < 0) qniptr(i,j,k) = 0
+             endif
              !..Produce a sensible rain number concentration
 
              if (P_QNR.gt.1 .AND. P_QR .gt. 1) then
@@ -1892,7 +1895,9 @@ call rem_negative_tracers(localpet)
                  qnrptr(i,j,k)  = qnrptr(i,j,k)  / temp_rho
                endif
              endif
-             if (P_QNR.gt.1 .AND. qnrptr(i,j,k) < 0) qnrptr(i,j,k) = 0
+             if (P_QNR.gt.1) then
+               if (qnrptr(i,j,k) < 0) qnrptr(i,j,k) = 0
+             endif
           enddo
 
        enddo
