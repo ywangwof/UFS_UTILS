@@ -1869,7 +1869,7 @@ call rem_negative_tracers(localpet)
                 qncptr(i,j,k) = qncptr(i,j,k) / temp_rho
                 
              endif
-             if (qncptr(i,j,k) < 0) qncptr(i,j,k) = 0
+             if (P_QNC.gt.1 .AND. qncptr(i,j,k) < 0) qncptr(i,j,k) = 0
              !..Produce a sensible cloud ice number concentration
 
              if (P_QNI.gt.1 .AND. iceptr(i,j,k).gt.0.0 .AND. qniptr(i,j,k).le.0.0) then
@@ -1877,14 +1877,14 @@ call rem_negative_tracers(localpet)
                 qniptr(i,j,k) = qniptr(i,j,k)  / temp_rho
                
              endif
-             if (qniptr(i,j,k) < 0) qniptr(i,j,k) = 0
+             if (P_QNI.gt.1 .AND. qniptr(i,j,k) < 0) qniptr(i,j,k) = 0
              !..Produce a sensible rain number concentration
 
              if (P_QNR.gt.1 .AND. rainptr(i,j,k).gt.0.0 .AND. qnrptr(i,j,k).le.0.0) then
                 qnrptr(i,j,k)  = make_RainNumber (rainptr(i,j,k)*temp_rho, tempptr(i,j,k))
                 qnrptr(i,j,k)  = qnrptr(i,j,k)  / temp_rho
              endif
-             if (qnrptr(i,j,k) < 0) qnrptr(i,j,k) = 0
+             if (P_QNR.gt.1 .AND. qnrptr(i,j,k) < 0) qnrptr(i,j,k) = 0
           enddo
 
        enddo
