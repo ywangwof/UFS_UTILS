@@ -2340,6 +2340,9 @@
    tracers(n)=tracers_default(i)
 
  enddo
+
+ num_tracers_input = num_tracers
+
  allocate(atm(num_tracers+5))
  if (localpet==0) print*, "NUMBER OF TRACERS IN FILE = ", num_tracers
 
@@ -2463,6 +2466,9 @@
      elseif (trim(vname) == ":PMTF:") then
        vname = "var0_"
        vname2 = "_13_193"
+     elseif (trim(vname) == ":CLWMR:") then
+       vname = "var0_"
+       vname2 = "_1_22"
      endif
      
      do vlev = 1, lev_input
