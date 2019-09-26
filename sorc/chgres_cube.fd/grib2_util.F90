@@ -17,7 +17,7 @@ module grib2_util
 use esmf
 use netcdf
 
-use program_setup, only   : tracers_input,num_tracers, external_model, base_install_dir
+use program_setup, only   : tracers_input, external_model, base_install_dir
 
 use model_grid, only      : i_input,j_input, ip1_input, jp1_input
 

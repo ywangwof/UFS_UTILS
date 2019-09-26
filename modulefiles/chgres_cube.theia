@@ -19,6 +19,12 @@ module load bacio/v2.0.2      # Binary I/O library.
 module load sp/v2.0.2         # Spectral transform library.
 module load sfcio/v1.0.0      # API for performing I/O on the surface restart file of the global spectral model.
 module load sigio/v2.0.1      # API for performing I/O on the sigma restart file of the global spectral model.
+
+export FCOMP=mpiifort
+#export FFLAGS="-O3 -fp-model precise -g -traceback -r8 -i4 -qopenmp -convert big_endian -assume byterecl"
+# for debugging
+export FFLAGS="-O0 -g -traceback -r8 -i4 -qopenmp -convert big_endian -check bounds -warn unused -assume byterecl"
+
 #
 # The following should be (but are not) set when the command
 #
