@@ -1,19 +1,23 @@
 #! /usr/bin/env bash
 set -eux
 
-source ./machine-setup.sh > /dev/null 2>&1
+source ./machine-setup.sh
 cwd=`pwd`
 
 USE_PREINST_LIBS=${USE_PREINST_LIBS:-"false"}
 if [ $USE_PREINST_LIBS = true ]; then
-  export MOD_PATH=/scratch3/NCEPDEV/nwprod/lib/modulefiles
-  source ../modulefiles/chgres_cube.${target}           > /dev/null 2>&1
+  if [ $target = macosx || $target = linux ]; then
+    :
+  else
+    export MOD_PATH=/scratch3/NCEPDEV/nwprod/lib/modulefiles
+  fi
+  source ../modulefiles/chgres_cube.$target
 else
   export MOD_PATH=${cwd}/lib/modulefiles
   if [ $target = wcoss_cray ]; then
     source ../modulefiles/chgres_cube.${target}_userlib > /dev/null 2>&1
   else
-    source ../modulefiles/chgres_cube.${target}         > /dev/null 2>&1
+    source ../modulefiles/chgres_cube.$target
   fi
 fi
 #

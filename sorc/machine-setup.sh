@@ -28,7 +28,7 @@ if [[ -d /lfs3 ]] ; then
     target=jet
     module purge
     module use /mnt/lfs3/projects/hfv3gfs/nwprod/lib/modulefiles
-elif [[ -d /scratch2/BMC/det ]] ; then
+elif [[ -d /scratch1 && ! -d /scratch ]] ; then
     # We are on NOAA Hera
     if ( ! eval module help > /dev/null 2>&1 ) ; then
 	echo load the module command 1>&2
@@ -37,7 +37,7 @@ elif [[ -d /scratch2/BMC/det ]] ; then
     target=hera
     module purge
     module use /scratch2/NCEPDEV/nwprod/NCEPLIBS/modulefiles
-elif [[ ! -d /scratch3 ]] ; then
+elif [[ -d /scratch3 && -d /scratch ]] ; then
     # We are on NOAA Theia
     if ( ! eval module help > /dev/null 2>&1 ) ; then
         echo load the module command 1>&2
@@ -119,6 +119,26 @@ elif [[ -d /lustre && -d /ncrc ]] ; then
     fi
     target=gaea
     module purge
+elif [[ -d /Applications ]] ; then
+    # We are on a MacOSX system, nothing to do
+    echo "Platform: MacOSX"
+    target=macosx
+elif [[ -e /etc/redhat-release ]] ; then
+    if grep -iq centos "/etc/redhat-release" ; then
+        # We are on CentOS Linux, nothing to do
+        echo "Platform: CentOS Linux"
+        target=linux
+    else
+        echo WARNING: UNKNOWN PLATFORM 1>&2
+    fi
+elif [[ -e /etc/issue ]] ; then
+    if grep -iq ubuntu "/etc/issue" ; then
+        # We are on Ubuntu Linux, nothing to do
+        echo "Platform: Ubuntu Linux"
+        target=linux
+    else
+        echo WARNING: UNKNOWN PLATFORM 1>&2
+    fi
 else
     echo WARNING: UNKNOWN PLATFORM 1>&2
 fi
