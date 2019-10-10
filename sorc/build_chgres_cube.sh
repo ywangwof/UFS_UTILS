@@ -6,12 +6,8 @@ cwd=`pwd`
 
 USE_PREINST_LIBS=${USE_PREINST_LIBS:-"false"}
 if [ $USE_PREINST_LIBS = true ]; then
-  if [ $target = macosx || $target = linux ]; then
-    :
-  else
-    export MOD_PATH=/scratch3/NCEPDEV/nwprod/lib/modulefiles
-  fi
-  source ../modulefiles/chgres_cube.$target
+  export MOD_PATH
+  source ../modulefiles/chgres_cube.$target             > /dev/null 2>&1
 else
   export MOD_PATH=${cwd}/lib/modulefiles
   if [ $target = wcoss_cray ]; then
