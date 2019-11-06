@@ -48,9 +48,16 @@ F_UFMTENDIAN=big
 if [ $system_site = "cray" ]; then
   HDF5=${HDF5_DIR}
   NETCDF=${NETCDF_DIR}
+elif [ $system_site = "cheyenne" ]; then
+  NETCDF_DIR=$NETCDF
+  HDF5_DIR=$NETCDF        #HDF5 resides with NETCDF on Cheyenne
+  export HDF5=$NETCDF     #HDF5 used in Makefile_cheyenne
 fi
 
-alias make="make HDF5_HOME=${HDF5}  NETCDF_HOME=${NETCDF} NC_BLKSZ=64K SITE=${system_site} -f fre-nctools.mk"
+#
+# Create alias for "make".
+#
+alias make="make HDF5_HOME=${HDF5} NETCDF_HOME=${NETCDF} NC_BLKSZ=64K SITE=${system_site} -f fre-nctools.mk"
 
 set +x
 echo "////////////////////////////////////////////////////////////////////////////////"
