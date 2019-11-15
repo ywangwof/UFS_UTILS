@@ -149,6 +149,8 @@
  logical, public                 :: replace_sotyp = .true.
  logical, public                 :: replace_vgfrc = .true.
  logical, public                 :: tg3_from_soil = .false.
+ logical, public                 :: internal_GSD = .false.
+ logical, public                 :: interp_lai = .false.
 
 
 
@@ -203,7 +205,7 @@
                    replace_vgtyp, replace_sotyp, replace_vgfrc, &
                    replace_clwmr, phys_suite, wgrib2_path, &
                    halo_bndy, halo_blend, numsoil_out, &
-                   tg3_from_soil
+                   tg3_from_soil, internal_GSD
 
  print*,"- READ SETUP NAMELIST"
 
@@ -320,6 +322,19 @@
    endif
  endif
  return
+
+!------------------------------------------------------------------------------
+! For if internal_GSD=.true., check that data is HRRR and warn user of specific
+! use
+!------------------------------------------------------------------------------
+ if ( internal_GSD) then
+   if (trim(external_model) /= "HRRR") then
+     call error_handler("internal_GSD = .true. is only valid for HRRRR input data")
+   endif
+   print*, "WARNING: THE internal_GSD OPTION IS INTENDED ONLY FOR INTERNAL &
+   OPERATIONAL USE AT GSD WITH SPECIFIC HRRR FILES. UNINTENDED RESULTS ARE POSSIBLE &
+    OTHERWISE."
+ endif
 
  end subroutine read_setup_namelist
 

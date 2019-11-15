@@ -2689,7 +2689,8 @@
                                    landmask_target_grid, &
                                    i_target, j_target, lsoil_target
 
- use program_setup, only         : halo=>halo_bndy, regional
+ use program_setup, only         : halo=>halo_bndy, regional, &
+                                   internal_GSD
 
  use surface, only               : canopy_mc_target_grid,  &
                                    f10m_target_grid, &
@@ -2708,7 +2709,8 @@
                                    t2m_target_grid,   &
                                    tprcp_target_grid, &
                                    ustar_target_grid, &
-                                   z0_target_grid
+                                   z0_target_grid, &
+                                   lai_target_grid
 
 
  use static_data, only           : alvsf_target_grid,   &
@@ -2747,7 +2749,7 @@
  integer                        :: id_fice, id_tisfc, id_tprcp
  integer                        :: id_srflag, id_snwdph, id_shdmin
  integer                        :: id_shdmax, id_slope, id_snoalb
- integer                        :: id_stc, id_smc, id_slc
+ integer                        :: id_stc, id_smc, id_slc, id_lai
  integer                        :: i_target_out, j_target_out
  integer                        :: istart, iend, jstart, jend
 
@@ -3258,6 +3260,26 @@
        call netcdf_err(error, 'WRITING MAX VEGETATION GREENNESS RECORD' )
      endif
 
+     if (internal_GSD) then
+     ! LEAF AREA INDEX
+
+     print*,"- CALL FieldGather FOR TARGET GRID LEAF AREA INDEX FOR TILE: ", tile
+     call ESMF_FieldGather(lai_target_grid, data_one_tile,rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__))&
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       error = nf90_def_var(ncid, 'lai', NF90_DOUBLE,(/dim_x,dim_y,dim_time/), id_lai)
+       call netcdf_err(error, 'DEFINING LAI' )
+       error = nf90_put_att(ncid, id_lai, "long_name", "leaf area index")
+       call netcdf_err(error, 'DEFINING LAI LONG NAME' )
+       error = nf90_put_att(ncid, id_shdmax, "units", "none")
+       call netcdf_err(error, 'DEFINING LAI UNITS' )
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_lai, dum2d, start=(/1,1,1/),count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING LEAF AREA INDEX RECORD' )
+     endif
+     endif
      ! SLOPE TYPE
      
      print*,"- CALL FieldGather FOR TARGET GRID SLOPE TYPE FOR TILE: ", tile

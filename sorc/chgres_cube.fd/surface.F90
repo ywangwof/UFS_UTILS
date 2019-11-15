@@ -68,6 +68,8 @@
                                        ! friction velocity
  type(esmf_field), public           :: z0_target_grid
                                        ! roughness length
+ type(esmf_field), public           :: lai_target_grid
+                                       ! leaf area index
 
 ! nst fields
  type(esmf_field), public           :: c_d_target_grid
@@ -311,7 +313,11 @@ call check_smois_water
                                        z_c_input_grid, &
                                        zm_input_grid, terrain_input_grid, &
                                        veg_type_landice_input, &
-                                       veg_greenness_input_grid
+                                       veg_greenness_input_grid, &
+                                       max_veg_greenness_input_grid, &
+                                       min_veg_greenness_input_grid, &
+                                       lai_input_grid
+             
 
  use model_grid, only                : input_grid, target_grid, &
                                        i_target, j_target, &
@@ -322,10 +328,12 @@ call check_smois_water
                                        latitude_target_grid, i_input, j_input
 
  use program_setup, only             : convert_nst, replace_vgtyp, replace_sotyp, &
-                                       replace_vgfrc, tg3_from_soil
+                                       replace_vgfrc,tg3_from_soil,internal_GSD, &
+                                       interp_lai
 
  use static_data, only               : veg_type_target_grid, soil_type_target_grid, &
-                                       veg_greenness_target_grid, substrate_temp_target_grid
+                                       veg_greenness_target_grid, substrate_temp_target_grid,&
+                                       min_veg_greenness_target_grid,max_veg_greenness_target_grid
 
  use search_util
 
@@ -388,7 +396,10 @@ call check_smois_water
  real(esmf_kind_r8), pointer        :: landmask_input_ptr(:,:)
  real(esmf_kind_r8), pointer        :: veg_type_input_ptr(:,:)
  real(esmf_kind_r8), pointer        :: veg_greenness_target_ptr(:,:)
+ real(esmf_kind_r8), pointer        :: min_veg_greenness_target_ptr(:,:)
+ real(esmf_kind_r8), pointer        :: max_veg_greenness_target_ptr(:,:)
  real(esmf_kind_r8), allocatable    :: veg_type_target_one_tile(:,:)
+  real(esmf_kind_r8), pointer       :: lai_target_ptr(:,:)
 
  type(esmf_regridmethod_flag)       :: method
  type(esmf_routehandle)             :: regrid_bl_no_mask
@@ -2140,7 +2151,7 @@ call check_smois_water
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldRegrid", rc)
     
- if (.not. replace_vgfrc) then
+ if (internal_GSD) then
     print*,"- CALL Field_Regrid for veg greenness over land."
    call ESMF_FieldRegrid(veg_greenness_input_grid, &
                veg_greenness_target_grid, &
@@ -2148,6 +2159,31 @@ call check_smois_water
                termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
    if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldRegrid", rc)
+
+    print*,"- CALL Field_Regrid for max veg greenness over land."
+   call ESMF_FieldRegrid(max_veg_greenness_input_grid, &
+               max_veg_greenness_target_grid, &
+               routehandle=regrid_land, &
+               termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__))&
+    call error_handler("IN FieldRegrid", rc)
+
+   print*,"- CALL Field_Regrid for min veg greenness over land."
+   call ESMF_FieldRegrid(min_veg_greenness_input_grid, &
+               min_veg_greenness_target_grid, &
+               routehandle=regrid_land, &
+               termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__))&
+    call error_handler("IN FieldRegrid", rc)
+
+    print*,"- CALL Field_Regrid for leaf area index over land."
+   call ESMF_FieldRegrid(lai_input_grid, &
+               lai_target_grid, &
+               routehandle=regrid_land, &
+               termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__))&
+    call error_handler("IN FieldRegrid", rc)
+
  endif
 
  print*,"- CALL FieldGet FOR TARGET grid total soil moisture over land."
@@ -2180,13 +2216,33 @@ call check_smois_water
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
     
- if (.not. replace_vgfrc) then
-	 print*,"- CALL FieldGet FOR TARGET veg greenness."
-	 call ESMF_FieldGet(veg_greenness_target_grid, &
-						farrayPtr=veg_greenness_target_ptr, rc=rc)
-	 if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-		call error_handler("IN FieldGet", rc)
+ if (.not. replace_vgfrc .and. internal_GSD) then
+   print*,"- CALL FieldGet FOR TARGET veg greenness."
+   call ESMF_FieldGet(veg_greenness_target_grid, &
+         farrayPtr=veg_greenness_target_ptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+         call error_handler("IN FieldGet", rc)
+
+    print*,"- CALL FieldGet FOR TARGET max veg greenness."
+   call ESMF_FieldGet(max_veg_greenness_target_grid, &
+         farrayPtr=max_veg_greenness_target_ptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__))&
+         call error_handler("IN FieldGet", rc)
+
+    print*,"- CALL FieldGet FOR TARGET min veg greenness."
+   call ESMF_FieldGet(min_veg_greenness_target_grid, &
+         farrayPtr=min_veg_greenness_target_ptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__))&
+         call error_handler("IN FieldGet", rc)
   endif  
+
+  if (interp_lai .and. internal_GSD) then
+   print*,"- CALL FieldGet FOR TARGET lai."
+   call ESMF_FieldGet(lai_target_grid, &
+         farrayPtr=lai_target_ptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__))&
+         call error_handler("IN FieldGet", rc)
+  endif
 
  l = lbound(unmapped_ptr)
  u = ubound(unmapped_ptr)
@@ -2198,7 +2254,13 @@ call check_smois_water
    skin_temp_target_ptr(i,j) = -9999.9 
    terrain_from_input_ptr(i,j) = -9999.9 
    soil_type_from_input_ptr(i,j) = -9999.9
-   if (.not. replace_vgfrc) veg_greenness_target_ptr(i,j) = -9999.9  
+   if ( internal_GSD) then 
+     veg_greenness_target_ptr(i,j) = -9999.9  
+     max_veg_greenness_target_ptr(i,j) = -9999.9
+     min_veg_greenness_target_ptr(i,j) = -9999.9
+     lai_target_ptr(i,j) = -9999.9
+   endif
+  
  enddo
 
  if (localpet == 0) then
@@ -2287,7 +2349,7 @@ call check_smois_water
    if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldScatter", rc)
       
-   if (.not. replace_vgfrc) then
+   if (internal_GSD) then
    
      print*,"- CALL FieldGather FOR TARGET GRID VEG GREENNESS, TILE: ", tile
      call ESMF_FieldGather(veg_greenness_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
@@ -2298,13 +2360,55 @@ call check_smois_water
        call search(data_one_tile, mask_target_one_tile, i_target, j_target, tile, 226)
      endif
      
-     if (.not. replace_vgfrc) then
-		 print*,"- CALL FieldScatter FOR VEG GREENNESS TARGET GRID, TILE: ", tile
-		 call ESMF_FieldScatter(veg_greenness_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
-		 if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-			call error_handler("IN FieldScatter", rc)
+     print*,"- CALL FieldScatter FOR VEG GREENNESS TARGET GRID, TILE: ", tile
+     call ESMF_FieldScatter(veg_greenness_target_grid, data_one_tile, rootPet=0, tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+         call error_handler("IN FieldScatter", rc)
+
+    print*,"- CALL FieldGather FOR TARGET GRID MAX VEG GREENNESS, TILE: ", tile
+     call ESMF_FieldGather(max_veg_greenness_target_grid, data_one_tile, rootPet=0,tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__))&
+        call error_handler("IN FieldGather", rc)
+
+     if (localpet == 0 .and. maxval(data_one_tile) > 0.0) then
+       call search(data_one_tile, mask_target_one_tile, i_target, j_target,tile, 227)
      endif
-   endif
+
+     print*,"- CALL FieldScatter FOR MAX VEG GREENNESS TARGET GRID, TILE: ", tile
+     call ESMF_FieldScatter(max_veg_greenness_target_grid, data_one_tile, rootPet=0,tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__))&
+         call error_handler("IN FieldScatter", rc)
+
+    print*,"- CALL FieldGather FOR TARGET GRID MIN VEG GREENNESS, TILE: ", tile
+     call ESMF_FieldGather(min_veg_greenness_target_grid, data_one_tile,rootPet=0,tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__))&
+        call error_handler("IN FieldGather", rc)
+
+     if (localpet == 0 .and. maxval(data_one_tile) > 0.0) then
+       call search(data_one_tile, mask_target_one_tile, i_target, j_target,tile,228)
+     endif
+
+
+     print*,"- CALL FieldScatter FOR MIN VEG GREENNESS TARGET GRID, TILE: ",tile
+     call ESMF_FieldScatter(min_veg_greenness_target_grid, data_one_tile,rootPet=0,tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__))&
+         call error_handler("IN FieldScatter", rc)
+     
+
+     print*,"- CALL FieldGather FOR TARGET GRID LAI, TILE: ", tile
+     call ESMF_FieldGather(lai_target_grid, data_one_tile, rootPet=0,tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__))&
+        call error_handler("IN FieldGather", rc)
+
+     if (localpet == 0 .and. maxval(data_one_tile) > 0.0) then
+       call search(data_one_tile, mask_target_one_tile, i_target, j_target,tile, 229)
+     endif
+
+     print*,"- CALL FieldScatter FOR VEG GREENNESS TARGET GRID, TILE: ", tile
+     call ESMF_FieldScatter(lai_target_grid, data_one_tile, rootPet=0,tile=tile, rc=rc)
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__))&
+         call error_handler("IN FieldScatter", rc)
+  endif
 
   deallocate(data_one_tile2)
 
@@ -4220,6 +4324,13 @@ end subroutine replace_land_sfcparams
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldCreate", rc)
+
+  print*,"- CALL FieldCreate FOR INTERPOLATED TARGET GRID LEAF AREA INDEX."
+  lai_target_grid = ESMF_FieldCreate(target_grid, &
+                                     typekind=ESMF_TYPEKIND_R8, &
+                                     staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__))&
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR TARGET GRID SOIL TEMPERATURE."
