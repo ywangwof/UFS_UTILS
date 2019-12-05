@@ -95,7 +95,7 @@
  slope_type_target_grid = ESMF_FieldCreate(target_grid, &
                                            typekind=ESMF_TYPEKIND_R8, &
                                            staggerloc=ESMF_STAGGERLOC_CENTER, rc=error)
- if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldCreate", error)
 
  do tile = 1, num_tiles_target_grid
@@ -104,7 +104,7 @@
    endif
    print*,"- CALL FieldScatter FOR TARGET GRID SLOPE TYPE."
    call ESMF_FieldScatter(slope_type_target_grid, data_one_tile, rootpet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", error)
  enddo
 
@@ -116,7 +116,7 @@
  mxsno_albedo_target_grid = ESMF_FieldCreate(target_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=error)
- if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldCreate", error)
 
  do tile = 1, num_tiles_target_grid
@@ -125,7 +125,7 @@
    endif
    print*,"- CALL FieldScatter FOR TARGET GRID MAXIMUM SNOW ALBEDO."
    call ESMF_FieldScatter(mxsno_albedo_target_grid, data_one_tile, rootpet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", error)
  enddo
 
@@ -137,7 +137,7 @@
  soil_type_target_grid = ESMF_FieldCreate(target_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=error)
- if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldCreate", error)
 
  do tile = 1, num_tiles_target_grid
@@ -147,7 +147,7 @@
    endif
    print*,"- CALL FieldScatter FOR TARGET GRID SOIL TYPE."
    call ESMF_FieldScatter(soil_type_target_grid, data_one_tile, rootpet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", error)
  enddo
 
@@ -159,7 +159,7 @@
  veg_type_target_grid = ESMF_FieldCreate(target_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=error)
- if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldCreate", error)
 
  do tile = 1, num_tiles_target_grid
@@ -168,7 +168,7 @@
    endif
    print*,"- CALL FieldScatter FOR TARGET GRID VEGETATION TYPE."
    call ESMF_FieldScatter(veg_type_target_grid, data_one_tile, rootpet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", error)
  enddo
 
@@ -180,21 +180,21 @@
  veg_greenness_target_grid = ESMF_FieldCreate(target_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=error)
- if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldCreate", error)
 
  print*,"- CALL FieldCreate FOR TARGET GRID MAXIMUM VEGETATION GREENNESS."
  max_veg_greenness_target_grid = ESMF_FieldCreate(target_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=error)
- if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldCreate", error)
 
  print*,"- CALL FieldCreate FOR TARGET GRID MINIMUM VEGETATION GREENNESS."
  min_veg_greenness_target_grid = ESMF_FieldCreate(target_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=error)
- if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldCreate", error)
 
  if (localpet == 0) then
@@ -212,15 +212,15 @@
    endif
    print*,"- CALL FieldScatter FOR TARGET GRID VEGETATION GREENNESS."
    call ESMF_FieldScatter(veg_greenness_target_grid, data_one_tile, rootpet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", error)
    print*,"- CALL FieldScatter FOR TARGET GRID MAXIMUM VEGETATION GREENNESS."
    call ESMF_FieldScatter(max_veg_greenness_target_grid, max_data_one_tile, rootpet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", error)
    print*,"- CALL FieldScatter FOR TARGET GRID MINIMUM VEGETATION GREENNESS."
    call ESMF_FieldScatter(min_veg_greenness_target_grid, min_data_one_tile, rootpet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", error)
  enddo
 
@@ -234,7 +234,7 @@
  substrate_temp_target_grid = ESMF_FieldCreate(target_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=error)
- if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldCreate", error)
 
  do tile = 1, num_tiles_target_grid
@@ -243,7 +243,7 @@
    endif
    print*,"- CALL FieldScatter FOR TARGET GRID SUBSTRATE TEMPERATURE."
    call ESMF_FieldScatter(substrate_temp_target_grid, data_one_tile, rootpet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", error)
  enddo
 
@@ -255,7 +255,7 @@
  alvsf_target_grid = ESMF_FieldCreate(target_grid, &
                                       typekind=ESMF_TYPEKIND_R8, &
                                       staggerloc=ESMF_STAGGERLOC_CENTER, rc=error)
- if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldCreate", error)
 
  do tile = 1, num_tiles_target_grid
@@ -264,7 +264,7 @@
    endif
    print*,"- CALL FieldScatter FOR TARGET GRID ALVSF."
    call ESMF_FieldScatter(alvsf_target_grid, data_one_tile, rootpet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", error)
  enddo
 
@@ -272,7 +272,7 @@
  alvwf_target_grid = ESMF_FieldCreate(target_grid, &
                                       typekind=ESMF_TYPEKIND_R8, &
                                       staggerloc=ESMF_STAGGERLOC_CENTER, rc=error)
- if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldCreate", error)
 
  do tile = 1, num_tiles_target_grid
@@ -281,7 +281,7 @@
    endif
    print*,"- CALL FieldScatter FOR TARGET GRID ALVWF."
    call ESMF_FieldScatter(alvwf_target_grid, data_one_tile, rootpet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", error)
  enddo
 
@@ -289,7 +289,7 @@
  alnsf_target_grid = ESMF_FieldCreate(target_grid, &
                                       typekind=ESMF_TYPEKIND_R8, &
                                       staggerloc=ESMF_STAGGERLOC_CENTER, rc=error)
- if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldCreate", error)
 
  do tile = 1, num_tiles_target_grid
@@ -298,7 +298,7 @@
    endif
    print*,"- CALL FieldScatter FOR TARGET GRID ALNSF."
    call ESMF_FieldScatter(alnsf_target_grid, data_one_tile, rootpet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", error)
  enddo
 
@@ -306,7 +306,7 @@
  alnwf_target_grid = ESMF_FieldCreate(target_grid, &
                                       typekind=ESMF_TYPEKIND_R8, &
                                       staggerloc=ESMF_STAGGERLOC_CENTER, rc=error)
- if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldCreate", error)
 
  do tile = 1, num_tiles_target_grid
@@ -315,7 +315,7 @@
    endif
    print*,"- CALL FieldScatter FOR TARGET GRID ALNWF."
    call ESMF_FieldScatter(alnwf_target_grid, data_one_tile, rootpet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", error)
  enddo
 
@@ -327,14 +327,14 @@
  facsf_target_grid = ESMF_FieldCreate(target_grid, &
                                       typekind=ESMF_TYPEKIND_R8, &
                                       staggerloc=ESMF_STAGGERLOC_CENTER, rc=error)
- if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldCreate", error)
 
  print*,"- CALL FieldCreate FOR TARGET GRID FACWF."
  facwf_target_grid = ESMF_FieldCreate(target_grid, &
                                       typekind=ESMF_TYPEKIND_R8, &
                                       staggerloc=ESMF_STAGGERLOC_CENTER, rc=error)
- if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldCreate", error)
 
  do tile = 1, num_tiles_target_grid
@@ -343,7 +343,7 @@
    endif
    print*,"- CALL FieldScatter FOR TARGET GRID FACSF."
    call ESMF_FieldScatter(facsf_target_grid, data_one_tile, rootpet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", error)
    if (localpet == 0) then
      do j = 1, j_target
@@ -355,7 +355,7 @@
      enddo
    endif
    call ESMF_FieldScatter(facwf_target_grid, data_one_tile, rootpet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", error)
  enddo
 

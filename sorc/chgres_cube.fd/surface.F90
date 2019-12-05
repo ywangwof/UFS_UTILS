@@ -4103,8 +4103,6 @@ end subroutine replace_land_sfcparams
 
  integer                     :: rc
 
- real(esmf_kind_r8), pointer    :: target_ptr(:,:)
-
  print*,"- CALL FieldCreate FOR TARGET GRID T2M."
  t2m_target_grid = ESMF_FieldCreate(target_grid, &
                                     typekind=ESMF_TYPEKIND_R8, &
@@ -4154,28 +4152,12 @@ end subroutine replace_land_sfcparams
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
- print*,"- ZERO OUT TARGET grid snow liq equiv."
- call ESMF_FieldGet(snow_liq_equiv_target_grid, &
-                    farrayPtr=target_ptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-    call error_handler("IN FieldGet", rc)
-
- target_ptr = 0.0
-
  print*,"- CALL FieldCreate FOR TARGET GRID SNOW DEPTH."
  snow_depth_target_grid = ESMF_FieldCreate(target_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
-
- print*,"- ZERO OUT TARGET grid snow depth."
- call ESMF_FieldGet(snow_depth_target_grid, &
-                    farrayPtr=target_ptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-    call error_handler("IN FieldGet", rc)
-
- target_ptr = 0.0
 
  print*,"- CALL FieldCreate FOR TARGET GRID SEA ICE FRACTION."
  seaice_fract_target_grid = ESMF_FieldCreate(target_grid, &
@@ -4190,14 +4172,6 @@ end subroutine replace_land_sfcparams
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
-
- print*,"- ZERO OUT TARGET sea ice depth."
- call ESMF_FieldGet(seaice_depth_target_grid, &
-                    farrayPtr=target_ptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-    call error_handler("IN FieldGet", rc)
-
- target_ptr = 0.0
 
  print*,"- CALL FieldCreate FOR TARGET GRID SEA ICE SKIN TEMP."
  seaice_skin_temp_target_grid = ESMF_FieldCreate(target_grid, &
