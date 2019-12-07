@@ -42,7 +42,7 @@
                                     num_tracers_input, &
                                     input_type, external_model, &
                                     get_var_cond, read_from_input, tracers, &
-                                    convert_sfc  
+                                    convert_sfc, internal_GSD 
 
  use model_grid, only             : input_grid,        &
                                     i_input, j_input,  &
@@ -104,6 +104,9 @@
  type(esmf_field), public        :: veg_type_input_grid     ! vegetation type
  type(esmf_field), public        :: z0_input_grid           ! roughness length
  type(esmf_field), public        :: veg_greenness_input_grid ! vegetation fraction
+ type(esmf_field), public        :: lai_input_grid ! leaf area index
+ type(esmf_field), public        :: max_veg_greenness_input_grid ! shdmax
+ type(esmf_field), public        :: min_veg_greenness_input_grid ! shdmin
 
  integer,  public                :: lsoil_input=4  ! # of soil layers,
                                                    ! # LJR: turn off hard wiring, but 
@@ -461,6 +464,26 @@
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
     call error_handler("IN FieldCreate", rc)
+
+ if (internal_GSD) then
+   min_veg_greenness_input_grid = ESMF_FieldCreate(input_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__))&
+    call error_handler("IN FieldCreate", rc)
+
+   max_veg_greenness_input_grid = ESMF_FieldCreate(input_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__))&
+    call error_handler("IN FieldCreate", rc)
+
+   lai_input_grid = ESMF_FieldCreate(input_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__))&
+    call error_handler("IN FieldCreate", rc)
+ endif
 
  print*,"- CALL FieldCreate FOR INPUT TERRAIN."
  terrain_input_grid = ESMF_FieldCreate(input_grid, &
@@ -2207,9 +2230,9 @@
  integer                               :: i, j, k, n, lvl_str_space_len
  integer                               :: rc, clb(3), cub(3)
  integer                               :: vlev, iret,varnum
+ logical                               :: exist
 
- 
- 
+
  logical                                :: conv_omega=.false., &
                                            isnative=.false., &
                                            hasspfh=.true.
@@ -2221,7 +2244,7 @@
                                           u_tmp_3d(:,:,:), v_tmp_3d(:,:,:)
  real(esmf_kind_r8), pointer           :: presptr(:,:,:), psptr(:,:),tptr(:,:,:), &
                                           qptr(:,:,:), wptr(:,:,:)
-                                          
+
  real(esmf_kind_r4)                     :: value
  real(esmf_kind_r8)                    :: pt
  real(esmf_kind_r8), parameter         :: p0 = 100000.0
@@ -2248,8 +2271,11 @@
  print*,"- USE INVENTORY FILE ", inv_file
 
  print*,"- OPEN FILE."
- inquire(file=the_file,exist=iret)
- if (iret == 0) call error_handler("OPENING GRIB2 ATM FILE.", iret)
+ inquire(file=the_file,exist=exist)
+ if (.not.exist) then
+   iret = 1
+   call error_handler("OPENING GRIB2 ATM FILE.", iret)
+ end if
 
    !print*,"- READ VERTICAL LEVELS."
    iret = grb2_inq(the_file,inv_file,":UGRD:"," hybrid level:")
@@ -2260,7 +2286,7 @@
       lvl_str = "mb:" 
       lvl_str_space = " mb:"
       lvl_str_space_len = 4
-      isnative = 0
+      isnative = .false.
       iret = grb2_inq(the_file,inv_file,":UGRD:",lvl_str_space)
       lev_input=iret
     else
@@ -2333,7 +2359,9 @@
 
    vname = tracers_input(n)
 
-   i = maxloc(merge(1.,0.,trac_names_vmap == vname),dim=1)
+   do i = 1, num_tracers
+     if (trim(vname)==trim(trac_names_vmap(i))) exit
+   end do
 
    tracers_input_grib(n)=trac_names_grib(i)
    tracers_input_vmap(n)=trac_names_vmap(i)
@@ -2740,8 +2768,13 @@ if (localpet == 0) then
   
  endif
  
- if (localpet == 0 .and. file_is_converted .and. .not. convert_sfc) &
-      call system("rm "//trim(the_file))
+ ! This test doesn't make any sense! file_is_converted is imported from model_grid.F90,
+ ! where it is set to zero. No part of this chgres_cube code is setting this variable
+ ! to something else than zero, hence the next few lines will never execute. Besides,
+ ! (localpet == 0) and convert_sfc are logicals, whereas file_is_converted is an integer.
+ ! This violates the Fortran standard and causes compiler errors with the GNU compiler.
+ !if ( localpet == 0 .and. file_is_converted .and. .not. convert_sfc) &
+ !     call system("rm "//trim(the_file))
  end subroutine read_input_atm_grib2_file
  
 !---------------------------------------------------------------------------
@@ -4351,9 +4384,10 @@ if (localpet == 0) then
  character(len=50)                      :: method
 
  integer                               :: rc,ncid2d, varid, varnum, iret, i, j, k
- 
- real(esmf_kind_r4)                    :: value
 
+ logical                               :: exist
+
+ real(esmf_kind_r4)                    :: value
 
  real(nemsio_realkind), allocatable    :: dummy(:), dummy2d_ni(:,:)
  real(esmf_kind_r4), allocatable       :: dummy2d(:,:), tsk_save(:,:)
@@ -4371,9 +4405,12 @@ if (localpet == 0) then
  sfc_file = trim(data_dir_input_grid) // "/" // trim(sfc_files_input_grid(1))
  
    print*,"- OPEN FILE."
-   inquire(file=the_file,exist=iret)
-   if (iret == 0) call error_handler("OPENING GRIB2 ATM FILE.", iret)
- 
+   inquire(file=the_file,exist=exist)
+   if (.not.exist) then
+     iret = 1
+     call error_handler("OPENING GRIB2 ATM FILE.", iret)
+   end if
+
    !print*,"- OPEN FILE ", trim(the_file)
    !rc=grb2_mk_inv(the_file,inv_file)
    !if (rc < 0) call error_handler("OPENING FILE.", rc)
@@ -4639,7 +4676,7 @@ if (localpet == 0) then
     call error_handler("IN FieldScatter", rc)
  
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   
- ! Vegetation type, soil type, and vegetation fraction might be in the file. If they are
+ ! Vegetation type and vegetation fraction might be in the file. If they are
  ! not, then we will leave the climatological data in the ESMF field 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  
@@ -4678,43 +4715,20 @@ if (localpet == 0) then
   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", rc)
 
- if (.not. replace_vgfrc) then  
+ if (.not. replace_vgfrc .and. internal_GSD) then  
    if (localpet == 0) then
      print*,"- READ VEG FRACTION."
      vname="vfrac"
      slev=":surface:" 
      call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
                loc=varnum)                 
-     vname=":VFRAC:"
-     rc= grb2_inq(the_file, inv_file, vname,slev,' hour fcst:', data2=dummy2d)
+     !! Changing these for GSD internal runs using new HRRR files
+     vname=":VEG:"
+     rc= grb2_inq(the_file, inv_file, vname,slev,'n=1101:', data2=dummy2d)
    
-     if (rc <= 0 .and. trim(to_upper(external_model))=="HRRR") then 
-     print*, "OPEN GEOGRID FILE ", trim(geo_file)
-     rc = nf90_open(geo_file,NF90_NOWRITE,ncid2d)
-  
-		 if (rc == 0) then
-		   print*, "INQUIRE ABOUT VEG FRACTION FROM GEOGRID FILE"
-		   rc = nf90_inq_varid(ncid2d,"GREENFRAC",varid)
-		   if (rc<0) print*, "ERROR FINDING GREENFRAC IN GEOGRID FILE"
-	 
-		   if (rc == 0) then
-			   print*, "READ VEG FRACTION FROM GEOGRID FILE "
-			   rc = nf90_get_var(ncid2d,varid,dummy2d)
-			   if (rc<0) print*, "ERROR READING GREENFRAC FROM FILE" 
-			   print*, "min max dummy2d = ", minval(dummy2d), maxval(dummy2d)
-		   endif
-	 
-		   print*, "CLOSE GEOGRID FILE "
-		   iret = nf90_close(ncid2d)
-		 endif
-   
-     elseif (rc > 0) then
-		 rc = 0
-     endif
-
-     if (rc < 0) call error_handler("COULD NOT FIND VEGETATION FRACTION IN FILE.  &
-        PLEASE SET REPLACE_VGFRC=.TRUE. . EXITING")
-
+     if (rc <= 0) call error_handler("COULD NOT FIND VEGETATION FRACTION IN FILE.  &
+        PLEASE SET REPLACE_VGFRC=.TRUE. . EXITING", rc)
+     if(maxval(dummy2d) > 2.0) dummy2d = dummy2d / 100.0_esmf_kind_r4
      print*,'vfrac ',maxval(dummy2d),minval(dummy2d)
     
    endif
@@ -4723,8 +4737,78 @@ if (localpet == 0) then
    call ESMF_FieldScatter(veg_greenness_input_grid,real(dummy2d,esmf_kind_r8), rootpet=0, rc=rc)
    if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
       call error_handler("IN FieldScatter", rc)
- endif
+  endif
 
+  ! New for internal_GSD, read in min, max vegetation fraction
+  if (internal_GSD) then
+   if (localpet == 0) then
+     print*,"- READ MIN VEG FRACTION."
+     vname="vfrac_min"
+     slev=":surface:"
+     call get_var_cond(vname,this_miss_var_method=method,this_miss_var_value=value, &
+               loc=varnum)
+     !! Changing these for GSD internal runs using new HRRR files
+     vname=":VEG:"
+     rc= grb2_inq(the_file, inv_file, vname,slev,'n=1102:',data2=dummy2d)
+
+     if (rc <= 0) call error_handler("COULD NOT FIND MIN VEGETATION FRACTION IN FILE. &
+        PLEASE SET REPLACE_VGFRC=.TRUE. . EXITING",rc)
+     if(maxval(dummy2d) > 2.0) dummy2d = dummy2d / 100.0_esmf_kind_r4
+     print*,'vfrac min',maxval(dummy2d),minval(dummy2d)
+
+     endif
+
+   print*,"- CALL FieldScatter FOR INPUT GRID MIN VEG GREENNESS."
+   call ESMF_FieldScatter(min_veg_greenness_input_grid,real(dummy2d,esmf_kind_r8), rootpet=0, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__))&
+      call error_handler("IN FieldScatter", rc)
+
+
+   if (localpet == 0) then
+     print*,"- READ MAX VEG FRACTION."
+     vname="vfrac_max"
+     slev=":surface:"
+     call get_var_cond(vname,this_miss_var_method=method,this_miss_var_value=value, &
+               loc=varnum)
+     !! Changing these for GSD internal runs using new HRRR files
+     vname=":VEG:"
+     rc= grb2_inq(the_file, inv_file, vname,slev,'n=1103:',data2=dummy2d)
+
+     if (rc <= 0) call error_handler("COULD NOT FIND MAX VEGETATION FRACTION IN FILE. &
+        PLEASE SET REPLACE_VGFRC=.TRUE. . EXITING",rc)
+     if(maxval(dummy2d) > 2.0) dummy2d = dummy2d / 100.0_esmf_kind_r4
+     print*,'vfrac max',maxval(dummy2d),minval(dummy2d)
+
+   endif !localpet==0
+
+   print*,"- CALL FieldScatter FOR INPUT GRID MAX VEG GREENNESS."
+   call ESMF_FieldScatter(max_veg_greenness_input_grid,real(dummy2d,esmf_kind_r8),rootpet=0, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__))&
+      call error_handler("IN FieldScatter", rc)
+
+   if (localpet == 0) then
+     print*,"- READ LAI."
+     vname="lai"
+     slev=":surface:"
+     call get_var_cond(vname,this_miss_var_method=method,this_miss_var_value=value, &
+               loc=varnum)
+     !! Changing these for GSD internal runs using new HRRR files
+     vname=":var0_7_198:"
+     rc= grb2_inq(the_file, inv_file, vname,slev,':n=1104:',data2=dummy2d)
+
+     if (rc <= 0) call error_handler("COULD NOT FIND LAI IN FILE. &
+        PLEASE SET REPLACE_VGFRC=.TRUE. . EXITING",rc)
+
+     print*,'lai',maxval(dummy2d),minval(dummy2d)
+
+   endif !localpet==0
+
+   print*,"- CALL FieldScatter FOR INPUT GRID LAI."
+   call ESMF_FieldScatter(lai_input_grid,real(dummy2d,esmf_kind_r8),rootpet=0, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__))&
+      call error_handler("IN FieldScatter", rc)
+
+  endif !internal_GSD=true
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!     
  ! Begin variables whose presence in grib2 files varies, but no climatological data is 
