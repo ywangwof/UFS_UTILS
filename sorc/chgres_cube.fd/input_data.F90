@@ -5584,9 +5584,11 @@ if (localpet == 0) then
  real(esmf_kind_r8), intent(inout), allocatable :: u(:,:,:),v(:,:,:)
  
  real(esmf_kind_r4), dimension(i_input,j_input)  :: alpha
- real(esmf_kind_r8), dimension(i_input,j_input)  :: lon
- real(esmf_kind_r4), allocatable         :: u_tmp(:,:), v_tmp(:,:)
- real(esmf_kind_r4)                      :: value_u, value_v, lov,latin1,latin2
+ real(esmf_kind_r8), dimension(i_input,j_input)  :: lon, lat
+ real(esmf_kind_r4), allocatable                 :: u_tmp(:,:),v_tmp(:,:)
+ real(esmf_kind_r4), dimension(i_input,j_input)  :: ws,wd
+ real(esmf_kind_r4)                      :: value_u, value_v,lov,latin1,latin2
+ real(esmf_kind_r8)                      :: d2r
  
  integer                                 :: varnum_u, varnum_v, ncid, vlev, id_var, & 
                                             error, iret, i,istr
@@ -5595,7 +5597,8 @@ if (localpet == 0) then
  character(len=50)                       :: method_u, method_v
  character(len=250)                      :: file_coord, cmdline_msg
  character(len=10000)                    :: temp_msg
- 
+
+ d2r=acos(-1.0_esmf_kind_r8) / 180.0_esmf_kind_r8 
  if (localpet==0) then
    allocate(u(i_input,j_input,lev_input))
    allocate(v(i_input,j_input,lev_input))
@@ -5614,16 +5617,50 @@ if (localpet == 0) then
                        loc=varnum_v)
                        
  if (trim(input_grid_type)=="rotated_latlon") then  
+   print*,"- CALL FieldGather FOR INPUT GRID LONGITUDE"
+   call ESMF_FieldGather(longitude_input_grid, lon, rootPet=0, tile=1, rc=error)
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+   print*,"- CALL FieldGather FOR INPUT GRID LATITUDE"
+   call ESMF_FieldGather(latitude_input_grid, lat, rootPet=0, tile=1, rc=error)
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+        call error_handler("IN FieldGather", error)
+
    if (localpet==0) then                   
-     print*,"- READ ROTATION ANGLE"
-     print*, trim(file_coord)
-     error=nf90_open(trim(file_coord),nf90_nowrite,ncid)
-     call netcdf_err(error, 'opening nc file' )
-     error=nf90_inq_varid(ncid, 'gridrot', id_var)
-     call netcdf_err(error, 'reading field id' )
-     error=nf90_get_var(ncid, id_var, alpha)
-     call netcdf_err(error, 'reading field' )
-     error = nf90_close(ncid)
+     print*,"- CALCULATE ROTATION ANGLE FOR ROTATED_LATLON INPUT GRID"
+     cmdline_msg = trim(wgrib2_path)//" "//trim(file)//" -d 1 -grid &> temp.out"
+     call system(cmdline_msg)
+     !1:0:grid_template=32769:winds(grid):
+     !   I am not an Arakawa E-grid. 
+     !   I am rotated but have no rotation angle.
+     !   I am staggered. What am I?
+     !   (953 x 834) units 1e-06 input WE:SN output WE:SN res 56
+     !   lat0 -10.590603 lat-center 54.000000 dlat 121.813000
+     !   lon0 220.914154 lon-center 254.000000 dlon 121.813000 #points=794802     
+     open(4,file="temp.out")
+     do i = 1,7
+      read(4,"(A)") temp_msg
+      if (i.eq.6) then
+        istr = index(temp_msg, "lat-center ") + len("lat_center ")
+        read(temp_msg(istr:istr+9),*) latin1
+      else if (i.eq.7) then
+        istr = index(temp_msg, "lon-center ") + len("lon-center ")
+        read(temp_msg(istr:istr+10),*) lov
+      end if
+     enddo
+     close(4) 
+    
+     !print*, trim(file_coord)
+     !error=nf90_open(trim(file_coord),nf90_nowrite,ncid)
+     !call netcdf_err(error, 'opening nc file' )
+     !error=nf90_inq_varid(ncid, 'gridrot', id_var)
+     !call netcdf_err(error, 'reading field id' )
+     !error=nf90_get_var(ncid, id_var, alpha)
+     !call netcdf_err(error, 'reading field' )
+     !error = nf90_close(ncid)
+     print*, "- CALL CALCALPHA_ROTLATLON with center lat,lon = ",latin1,lov
+      call calcalpha_rotlatlon(lat,lon,latin1,lov,alpha)
+      print*, " alpha min/max = ",MINVAL(alpha),MAXVAL(alpha) 
    endif
  elseif (trim(input_grid_type) == "lambert") then
    !# NG this has been edited to correctly calculate gridrot for Lambert grids
@@ -5684,12 +5721,12 @@ if (localpet == 0) then
                           "VALUE IN THE VARMAP TABLE IF THIS ERROR IS NOT DESIRABLE.",iret)
         endif
       endif
-  
+    
       if (trim(input_grid_type) == "latlon") then
         u(:,:,vlev) = u_tmp
         v(:,:,vlev) = v_tmp
       else if (trim(input_grid_type) == "rotated_latlon") then
-        ws = sqrt(u_tmp**2 + v_tmp**2)
+        ws = sqrt(u_tmp**2 + v_tmp**2) 
         wd = atan2(-u_tmp,-v_tmp) / d2r ! calculate grid-relative wind direction
         wd = wd + alpha + 180.0 ! Rotate from grid- to earth-relative direction
         wd = 270.0 - wd ! Convert from meteorological (true N) to mathematical direction
