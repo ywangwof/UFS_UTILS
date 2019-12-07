@@ -329,7 +329,7 @@
 !------------------------------------------------------------------------------
  if ( internal_GSD) then
    if (trim(external_model) /= "HRRR") then
-     call error_handler("internal_GSD = .true. is only valid for HRRRR input data")
+     call error_handler("internal_GSD = .true. is only valid for HRRR input data")
    endif
    print*, "WARNING: THE internal_GSD OPTION IS INTENDED ONLY FOR INTERNAL &
    OPERATIONAL USE AT GSD WITH SPECIFIC HRRR FILES. UNINTENDED RESULTS ARE POSSIBLE &
