@@ -5684,11 +5684,17 @@ if (localpet == 0) then
                           "VALUE IN THE VARMAP TABLE IF THIS ERROR IS NOT DESIRABLE.",iret)
         endif
       endif
-   
-      if (trim(input_grid_type) == "latlon" .or. trim(input_grid_type) == "rotated_latlon") then
-      !if (trim(input_grid_type) == "latlon") then
+  
+      if (trim(input_grid_type) == "latlon") then
         u(:,:,vlev) = u_tmp
         v(:,:,vlev) = v_tmp
+      else if (trim(input_grid_type) == "rotated_latlon") then
+        ws = sqrt(u_tmp**2 + v_tmp**2)
+        wd = atan2(-u_tmp,-v_tmp) / d2r ! calculate grid-relative wind direction
+        wd = wd + alpha + 180.0 ! Rotate from grid- to earth-relative direction
+        wd = 270.0 - wd ! Convert from meteorological (true N) to mathematical direction
+        u(:,:,vlev) = -ws*cos(wd*d2r)
+        v(:,:,vlev) = -ws*sin(wd*d2r)
       else
         u(:,:,vlev) = real(u_tmp * cos(alpha) + v_tmp * sin(alpha),esmf_kind_r8)
         v(:,:,vlev) = real(v_tmp * cos(alpha) - u_tmp * sin(alpha),esmf_kind_r8) 
@@ -5875,6 +5881,45 @@ subroutine gridrot(lov,latin1,latin2,lon,rot)
   rot = trot * dtor
 
 end subroutine gridrot
+
+! Subroutine calcalpha_rotlatlon calculates rotation angle
+! specific to rotated latlon grids, needed to convert to 
+! earth-relative winds 
+subroutine calcalpha_rotlatlon(latgrid,longrid,cenlat,cenlon,alpha)
+
+  use model_grid, only                : i_input,j_input
+  implicit none
+
+  real(esmf_kind_r8), intent(in)      :: latgrid(i_input,j_input), &
+                                         longrid(i_input,j_input)
+  real(esmf_kind_r4), intent(in)      :: cenlat, cenlon
+  real(esmf_kind_r4), intent(out)     :: alpha(i_input,j_input)
+
+  ! Variables local to subroutine
+  real(esmf_kind_r8)             :: D2R,lon0_r,lat0_r,sphi0,cphi0
+  real(esmf_kind_r8), DIMENSION(i_input,j_input) :: tlat,tlon,tph,sinalpha
+
+  D2R = acos(-1.0_esmf_kind_r8) /  180.0_esmf_kind_r8
+  if (cenlon .lt. 0) then
+      lon0_r = (cenlon + 360.0)*D2R
+  else
+      lon0_r = cenlon*D2R
+  end if
+  lat0_r=cenlat*D2R
+  sphi0=sin(lat0_r)
+  cphi0=cos(lat0_r)
+
+  ! deal with input lat/lon
+  tlat = latgrid * D2R
+  tlon = longrid * D2R
+
+  ! Calculate alpha (rotation angle)
+  tlon = -tlon + lon0_r
+  tph  = asin(cphi0*sin(tlat) - sphi0*cos(tlat)*cos(tlon))
+  sinalpha = sphi0 * sin(tlon) / cos(tph)
+  alpha = -asin(sinalpha)/D2R
+  ! returns alpha in degrees  
+end subroutine calcalpha_rotlatlon
 
 subroutine read_grib_soil(the_file,inv_file,vname,vname_file,dummy3d,rc)
   
