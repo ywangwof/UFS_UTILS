@@ -226,8 +226,8 @@
 ! Determine CRES of target grid from the name of the mosaic file.
 !-------------------------------------------------------------------------
 
- is = index(mosaic_file_target_grid, "/", .true.)
- ie = index(mosaic_file_target_grid, "_mosaic")
+ is = index(mosaic_file_target_grid, "/", back=.true.)
+ ie = index(mosaic_file_target_grid, "_mosaic", back=.true.)
 
  if (is == 0 .or. ie == 0) then
    call error_handler("CANT DETERMINE CRES FROM MOSAIC FILE.", 1)
@@ -306,7 +306,7 @@
 !-------------------------------------------------------------------------
 
  if (trim(input_type) == "grib2") then
-   if (.not. any((/"GFS","NAM","RAP","HRRR"/)==trim(external_model))) then
+   if (.not. any((/character(4)::"GFS","NAM","RAP","HRRR"/)==trim(external_model))) then
      print*, "WARNING: KNOWN SUPPORTED external_model INPUTS ARE GFS, NAM, RAP, AND HRRR. &
      RESULTS MAY NOT BE AS EXPECTED. "
    endif
@@ -329,7 +329,7 @@
 !------------------------------------------------------------------------------
  if ( internal_GSD) then
    if (trim(external_model) /= "HRRR") then
-     call error_handler("internal_GSD = .true. is only valid for HRRR input data")
+     call error_handler("internal_GSD = .true. is only valid for HRRRR input data")
    endif
    print*, "WARNING: THE internal_GSD OPTION IS INTENDED ONLY FOR INTERNAL &
    OPERATIONAL USE AT GSD WITH SPECIFIC HRRR FILES. UNINTENDED RESULTS ARE POSSIBLE &
