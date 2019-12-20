@@ -27,19 +27,16 @@ if [[ -d /lfs3 ]] ; then
     fi
     target=jet
     module purge
-     export NCEPLIBS=/mnt/lfs3/projects/hfv3gfs/gwv/ljtjet/lib
-     echo NCEPLIBS HARD SET to  $NCEPLIBS in `pwd`/module_setup.sh.inc
-     module use $NCEPLIBS/modulefiles
-elif [[ -d /scratch3 ]] ; then
-    # We are on NOAA Theia
+    module use /mnt/lfs3/projects/hfv3gfs/nwprod/lib/modulefiles
+elif [[ -d /scratch1 ]] ; then
+    # We are on NOAA Hera
     if ( ! eval module help > /dev/null 2>&1 ) ; then
 	echo load the module command 1>&2
         source /apps/lmod/lmod/init/$__ms_shell
     fi
-    target=theia
+    target=hera
     module purge
-    module use /scratch3/NCEPDEV/nwprod/modulefiles/
-    module use /scratch3/NCEPDEV/nwprod/lib/modulefiles
+    MOD_PATH=/scratch2/NCEPDEV/nwprod/NCEPLIBS/modulefiles
 elif [[ -d /gpfs/hps && -e /etc/SuSE-release ]] ; then
     # We are on NOAA Luna or Surge
     if ( ! eval module help > /dev/null 2>&1 ) ; then
@@ -92,12 +89,12 @@ elif [[ -d /dcom && -d /hwrf ]] ; then
     target=wcoss
     module purge
 elif [[ -d /glade ]] ; then
-    # We are on NCAR Yellowstone
+    # We are on NCAR Cheyenne
     if ( ! eval module help > /dev/null 2>&1 ) ; then
 	echo load the module command 1>&2
         . /usr/share/Modules/init/$__ms_shell
     fi
-    target=yellowstone
+    target=cheyenne
     module purge
 elif [[ -d /lustre && -d /ncrc ]] ; then
     # We are on GAEA. 
@@ -112,6 +109,26 @@ elif [[ -d /lustre && -d /ncrc ]] ; then
     fi
     target=gaea
     module purge
+elif [[ -d /Applications ]] ; then
+    # We are on a MacOSX system, nothing to do
+    echo "Platform: MacOSX"
+    target=macosx
+elif [[ -e /etc/redhat-release ]] ; then
+    if grep -iq centos "/etc/redhat-release" ; then
+        # We are on CentOS Linux, nothing to do
+        echo "Platform: CentOS Linux"
+        target=linux
+    else
+        echo WARNING: UNKNOWN PLATFORM 1>&2
+    fi
+elif [[ -e /etc/issue ]] ; then
+    if grep -iq ubuntu "/etc/issue" ; then
+        # We are on Ubuntu Linux, nothing to do
+        echo "Platform: Ubuntu Linux"
+        target=linux
+    else
+        echo WARNING: UNKNOWN PLATFORM 1>&2
+    fi
 else
     echo WARNING: UNKNOWN PLATFORM 1>&2
 fi

@@ -199,14 +199,14 @@
    error = nf90_def_dim(ncid, 'lon', i_target, dim_lon)
    call netcdf_err(error, 'defining lon dimension')
 
-   j_target2 = j_target - (2*halo)
+   j_target2 = j_target - (2*halo_bndy)
    error = nf90_def_dim(ncid, 'lat', j_target2, dim_lat)
    call netcdf_err(error, 'DEFINING LAT DIMENSION')
 
    error = nf90_def_dim(ncid, 'lonp', ip1_target, dim_lonp)
    call netcdf_err(error, 'DEFINING LONP DIMENSION')
 
-   j_target2 = jp1_target - (2*halo_p1)
+   j_target2 = j_target - (2*halo_bndy) - 1
    error = nf90_def_dim(ncid, 'latm', j_target2, dim_latm)
    call netcdf_err(error, 'DEFINING LATM DIMENSION')
 
@@ -490,8 +490,10 @@
 
  endif
 
-! Set up bounds.  Indices are with respect to the whole grid -
-! including halo.
+!---------------------------------------------------------------------------
+! Set up bounds for mass points.  Indices are with respect to the whole
+! grid - including total halo (boundary plus blending halo).
+!---------------------------------------------------------------------------
 
  i_start_top = 1
  i_end_top   = i_target
@@ -505,18 +507,18 @@
 
  i_start_left = 1
  i_end_left   = halo
- j_start_left = halo + 1
- j_end_left   = j_target - halo
+ j_start_left = halo_bndy + 1
+ j_end_left   = j_target - halo_bndy
 
  i_start_right = i_target - halo + 1
  i_end_right   = i_target
- j_start_right = halo + 1
- j_end_right   = j_target - halo
+ j_start_right = halo_bndy + 1
+ j_end_right   = j_target - halo_bndy
 
  if (localpet == 0) then
 
-! Indices are with respect to the computational grid -
-! without lateral halo but including blending halo.
+! Indices here are with respect to the computational grid -
+! without lateral boundary halo but including blending halo.
 
    allocate(idum(i_start_top:i_end_top))
    do i = i_start_top, i_end_top
@@ -580,10 +582,10 @@
 
  if (localpet == 0) then
    allocate(data_one_tile(i_target,j_target))
-   allocate(dum2d_top(i_target,halo))
-   allocate(dum2d_bottom(i_target,halo))
-   allocate(dum2d_left(halo, j_target-2*halo))
-   allocate(dum2d_right(halo, j_target-2*halo))
+   allocate(dum2d_top(i_start_top:i_end_top, j_start_top:j_end_top))
+   allocate(dum2d_bottom(i_start_bottom:i_end_bottom, j_start_bottom:j_end_bottom))
+   allocate(dum2d_left(i_start_left:i_end_left, j_start_left:j_end_left))
+   allocate(dum2d_right(i_start_right:i_end_right, j_start_right:j_end_right))
  else
    allocate(data_one_tile(0,0))
    allocate(dum2d_top(0,0))
@@ -596,7 +598,7 @@
 
  print*,"- CALL FieldGather FOR TARGET GRID SURFACE PRESSURE"
  call ESMF_FieldGather(ps_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
- if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
  if (localpet == 0) then
@@ -620,10 +622,10 @@
 
  if (localpet == 0) then
    allocate(data_one_tile_3d(i_target,j_target,levp1_target))
-   allocate(dum3d_top(i_target,halo,levp1_target))
-   allocate(dum3d_bottom(i_target,halo,levp1_target))
-   allocate(dum3d_left(halo, (j_target-2*halo), levp1_target))
-   allocate(dum3d_right(halo, (j_target-2*halo), levp1_target))
+   allocate(dum3d_top(i_start_top:i_end_top, j_start_top:j_end_top, levp1_target))
+   allocate(dum3d_bottom(i_start_bottom:i_end_bottom, j_start_bottom:j_end_bottom, levp1_target))
+   allocate(dum3d_left(i_start_left:i_end_left, j_start_left:j_end_left, levp1_target))
+   allocate(dum3d_right(i_start_right:i_end_right, j_start_right:j_end_right, levp1_target))
  else
    allocate(data_one_tile_3d(0,0,0))
    allocate(dum3d_top(0,0,0))
@@ -634,7 +636,7 @@
 
  print*,"- CALL FieldGather FOR TARGET GRID HEIGHT FOR TILE: ", tile
  call ESMF_FieldGather(zh_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
- if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
  if (localpet == 0) then
@@ -662,10 +664,10 @@
 
  if (localpet == 0) then
    allocate(data_one_tile_3d(i_target,j_target,lev_target))
-   allocate(dum3d_top(i_target,halo,lev_target))
-   allocate(dum3d_bottom(i_target,halo,lev_target))
-   allocate(dum3d_left(halo, (j_target-2*halo), lev_target))
-   allocate(dum3d_right(halo, (j_target-2*halo), lev_target))
+   allocate(dum3d_top(i_start_top:i_end_top, j_start_top:j_end_top, lev_target))
+   allocate(dum3d_bottom(i_start_bottom:i_end_bottom, j_start_bottom:j_end_bottom, lev_target))
+   allocate(dum3d_left(i_start_left:i_end_left, j_start_left:j_end_left, lev_target))
+   allocate(dum3d_right(i_start_right:i_end_right, j_start_right:j_end_right, lev_target))
  else
    allocate(data_one_tile_3d(0,0,0))
    allocate(dum3d_top(0,0,0))
@@ -678,7 +680,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID TRACER FOR TILE: ", trim(tracers(n)), tile
    call ESMF_FieldGather(tracers_target_grid(n), data_one_tile_3d, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -706,7 +708,7 @@
 
  print*,"- CALL FieldGather FOR TARGET GRID W FOR TILE: ", tile
  call ESMF_FieldGather(dzdt_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
- if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
  if (localpet == 0) then
@@ -732,7 +734,7 @@
 
  print*,"- CALL FieldGather FOR TARGET GRID TEMPERATURE FOR TILE: ", tile
  call ESMF_FieldGather(temp_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
- if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
  if (localpet == 0) then
@@ -756,7 +758,10 @@
 
  deallocate(dum3d_top, dum3d_bottom, dum3d_left, dum3d_right, data_one_tile_3d)
 
-! Set up bounds for staggered 'S' winds
+!---------------------------------------------------------------------------
+! Set up bounds for 's' winds.  Indices are with respect to the whole
+! grid - including total halo (boundary plus blending halo).
+!---------------------------------------------------------------------------
 
  i_start_top = 1
  i_end_top   = i_target
@@ -770,15 +775,19 @@
 
  i_start_left = 1
  i_end_left   = halo
- j_start_left = halo_p1 + 1
- j_end_left   = jp1_target - halo_p1
+ j_start_left = halo_bndy + 2
+ j_end_left   = j_target - halo_bndy
 
  i_start_right = i_target - halo + 1
  i_end_right   = i_target
- j_start_right = halo_p1 + 1
- j_end_right   = jp1_target - halo_p1
+ j_start_right = halo_bndy + 2
+ j_end_right   = j_target - halo_bndy
 
  if (localpet == 0) then
+
+! Indices here are with respect to the computational grid -
+! without lateral boundary halo but including blending halo.
+
    allocate(idum(i_start_top:i_end_top))
    do i = i_start_top, i_end_top
      idum(i) = i - halo_bndy
@@ -841,10 +850,10 @@
 
  if (localpet == 0) then
    allocate(data_one_tile_3d(i_target,jp1_target,lev_target))
-   allocate(dum3d_top(i_target,halo_p1,lev_target))
-   allocate(dum3d_bottom(i_target,halo_p1,lev_target))
-   allocate(dum3d_left(halo, (j_end_left-j_start_left+1), lev_target))
-   allocate(dum3d_right(halo, (j_end_right-j_start_right+1), lev_target))
+   allocate(dum3d_top(i_start_top:i_end_top, j_start_top:j_end_top, lev_target))
+   allocate(dum3d_bottom(i_start_bottom:i_end_bottom, j_start_bottom:j_end_bottom, lev_target))
+   allocate(dum3d_left(i_start_left:i_end_left, j_start_left:j_end_left, lev_target))
+   allocate(dum3d_right(i_start_right:i_end_right, j_start_right:j_end_right, lev_target))
  else
    allocate(data_one_tile_3d(0,0,0))
    allocate(dum3d_top(0,0,0))
@@ -855,7 +864,7 @@
 
  print*,"- CALL FieldGather FOR TARGET GRID U_S FOR TILE: ", tile
  call ESMF_FieldGather(u_s_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
- if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
  if (localpet == 0) then
@@ -881,7 +890,7 @@
 
  print*,"- CALL FieldGather FOR TARGET GRID V_S FOR TILE: ", tile
  call ESMF_FieldGather(v_s_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
- if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
  if (localpet == 0) then
@@ -905,7 +914,10 @@
 
  deallocate(dum3d_top, dum3d_bottom, dum3d_left, dum3d_right, data_one_tile_3d)
 
-! Set up bounds for staggered 'W' winds
+!---------------------------------------------------------------------------
+! Set up bounds for 'w' winds.  Indices are with respect to the whole
+! grid - including total halo (boundary plus blending halo).
+!---------------------------------------------------------------------------
 
  i_start_top = 1
  i_end_top   = ip1_target
@@ -919,15 +931,19 @@
 
  i_start_left = 1
  i_end_left   = halo_p1
- j_start_left = halo_p1
- j_end_left   = j_target - halo
+ j_start_left = halo_bndy + 1
+ j_end_left   = j_target - halo_bndy
 
  i_start_right = ip1_target - halo_p1 + 1
  i_end_right   = ip1_target
- j_start_right = halo_p1
- j_end_right   = j_target - halo
+ j_start_right = halo_bndy + 1
+ j_end_right   = j_target - halo_bndy
 
  if (localpet == 0) then
+
+! Indices here are with respect to the computational grid -
+! without lateral boundary halo but including blending halo.
+
    allocate(idum(i_start_top:i_end_top))
    do i = i_start_top, i_end_top
      idum(i) = i - halo_bndy
@@ -990,10 +1006,10 @@
 
  if (localpet == 0) then
    allocate(data_one_tile_3d(ip1_target,j_target,lev_target))
-   allocate(dum3d_top(ip1_target,halo,lev_target))
-   allocate(dum3d_bottom(ip1_target,halo,lev_target))
-   allocate(dum3d_left(halo_p1, (j_end_left-j_start_left+1), lev_target))
-   allocate(dum3d_right(halo_p1, (j_end_right-j_start_right+1), lev_target))
+   allocate(dum3d_top(i_start_top:i_end_top, j_start_top:j_end_top, lev_target))
+   allocate(dum3d_bottom(i_start_bottom:i_end_bottom, j_start_bottom:j_end_bottom, lev_target))
+   allocate(dum3d_left(i_start_left:i_end_left, j_start_left:j_end_left, lev_target))
+   allocate(dum3d_right(i_start_right:i_end_right, j_start_right:j_end_right, lev_target))
  else
    allocate(data_one_tile_3d(0,0,0))
    allocate(dum3d_top(0,0,0))
@@ -1004,7 +1020,7 @@
 
  print*,"- CALL FieldGather FOR TARGET GRID U_W FOR TILE: ", tile
  call ESMF_FieldGather(u_w_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
- if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
  if (localpet == 0) then
@@ -1030,7 +1046,7 @@
 
  print*,"- CALL FieldGather FOR TARGET GRID V_W FOR TILE: ", tile
  call ESMF_FieldGather(v_w_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
- if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
  if (localpet == 0) then
@@ -1154,7 +1170,7 @@
    if (regional > 0) then
        outfile = "out.atm.tile7.nc"
      else
-       WRITE(OUTFILE, '(A, I1, A)'), 'out.atm.tile', tile, '.nc'
+       WRITE(OUTFILE, '(A, I1, A)') 'out.atm.tile', tile, '.nc'
      endif
 
 !--- open the file
@@ -1237,7 +1253,7 @@
  do tile = 1, num_tiles_target_grid
    print*,"- CALL FieldGather FOR TARGET GRID LONGITUDE FOR TILE: ", tile
    call ESMF_FieldGather(longitude_target_grid, data_one_tile, rootPet=tile-1, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
  enddo
 
@@ -1252,7 +1268,7 @@
  do tile = 1, num_tiles_target_grid
    print*,"- CALL FieldGather FOR TARGET GRID LATITUDE FOR TILE: ", tile
    call ESMF_FieldGather(latitude_target_grid, data_one_tile, rootPet=tile-1, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
  enddo
 
@@ -1267,7 +1283,7 @@
  do tile = 1, num_tiles_target_grid
    print*,"- CALL FieldGather FOR TARGET GRID SURFACE PRESSURE FOR TILE: ", tile
    call ESMF_FieldGather(ps_target_grid, data_one_tile, rootPet=tile-1, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
  enddo
 
@@ -1292,7 +1308,7 @@
  do tile = 1, num_tiles_target_grid
    print*,"- CALL FieldGather FOR TARGET GRID HEIGHT FOR TILE: ", tile
    call ESMF_FieldGather(zh_target_grid, data_one_tile_3d, rootPet=tile-1, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
  enddo
 
@@ -1318,7 +1334,7 @@
  do tile = 1, num_tiles_target_grid
    print*,"- CALL FieldGather FOR TARGET GRID VERTICAL VELOCITY FOR TILE: ", tile
    call ESMF_FieldGather(dzdt_target_grid, data_one_tile_3d, rootPet=tile-1, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
  enddo
 
@@ -1334,7 +1350,7 @@
  do tile = 1, num_tiles_target_grid
    print*,"- CALL FieldGather FOR TARGET GRID DELP FOR TILE: ", tile
    call ESMF_FieldGather(delp_target_grid, data_one_tile_3d, rootPet=tile-1, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
  enddo
 
@@ -1350,7 +1366,7 @@
  do tile = 1, num_tiles_target_grid
    print*,"- CALL FieldGather FOR TARGET GRID TEMPERATURE FOR TILE: ", tile
    call ESMF_FieldGather(temp_target_grid, data_one_tile_3d, rootPet=tile-1, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
  enddo
 
@@ -1369,7 +1385,7 @@
    do tile = 1, num_tiles_target_grid
      print*,"- CALL FieldGather FOR TARGET GRID TRACER ", trim(tracers(n)), " TILE: ", tile
      call ESMF_FieldGather(tracers_target_grid(n), data_one_tile_3d, rootPet=tile-1, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
    enddo
 
@@ -1397,7 +1413,7 @@
  do tile = 1, num_tiles_target_grid
    print*,"- CALL FieldGather FOR TARGET GRID U_S FOR TILE: ", tile
    call ESMF_FieldGather(u_s_target_grid, data_one_tile_3d, rootPet=tile-1, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
  enddo
 
@@ -1413,7 +1429,7 @@
  do tile = 1, num_tiles_target_grid
    print*,"- CALL FieldGather FOR TARGET GRID V_S FOR TILE: ", tile
    call ESMF_FieldGather(v_s_target_grid, data_one_tile_3d, rootPet=tile-1, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
  enddo
 
@@ -1439,7 +1455,7 @@
  do tile = 1, num_tiles_target_grid
    print*,"- CALL FieldGather FOR TARGET GRID U_W FOR TILE: ", tile
    call ESMF_FieldGather(u_w_target_grid, data_one_tile_3d, rootPet=tile-1, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
  enddo
 
@@ -1455,7 +1471,7 @@
  do tile = 1, num_tiles_target_grid
    print*,"- CALL FieldGather FOR TARGET GRID V_W FOR TILE: ", tile
    call ESMF_FieldGather(v_w_target_grid, data_one_tile_3d, rootPet=tile-1, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
  enddo
 
@@ -1634,7 +1650,7 @@
      if (regional > 0) then
        outfile = "out.sfc.tile7.nc"
      else
-       WRITE(OUTFILE, '(A, I1, A)'), 'out.sfc.tile', tile, '.nc'
+       WRITE(OUTFILE, '(A, I1, A)') 'out.sfc.tile', tile, '.nc'
      endif
 
 !--- open the file
@@ -2076,7 +2092,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID SNOW LIQ EQUIV FOR TILE: ", tile
    call ESMF_FieldGather(snow_liq_equiv_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2087,7 +2103,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID SNOW DEPTH FOR TILE: ", tile
    call ESMF_FieldGather(snow_depth_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2098,7 +2114,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID SLOPE TYPE FOR TILE: ", tile
    call ESMF_FieldGather(slope_type_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2109,7 +2125,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID Z0 FOR TILE: ", tile
    call ESMF_FieldGather(z0_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2120,7 +2136,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID MAX SNOW ALBEDO FOR TILE: ", tile
    call ESMF_FieldGather(mxsno_albedo_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2131,7 +2147,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID SOIL TYPE FOR TILE: ", tile
    call ESMF_FieldGather(soil_type_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2142,7 +2158,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID VEGETATION TYPE FOR TILE: ", tile
    call ESMF_FieldGather(veg_type_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2153,7 +2169,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID VEGETATION GREENNESS FOR TILE: ", tile
    call ESMF_FieldGather(veg_greenness_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2164,7 +2180,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID SUBSTRATE TEMPERATURE FOR TILE: ", tile
    call ESMF_FieldGather(substrate_temp_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2175,7 +2191,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID FACSF FOR TILE: ", tile
    call ESMF_FieldGather(facsf_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2186,7 +2202,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID FACWF FOR TILE: ", tile
    call ESMF_FieldGather(facwf_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2197,7 +2213,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID ALNSF FOR TILE: ", tile
    call ESMF_FieldGather(alnsf_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2208,7 +2224,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID ALNWF FOR TILE: ", tile
    call ESMF_FieldGather(alnwf_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2219,7 +2235,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID ALVSF FOR TILE: ", tile
    call ESMF_FieldGather(alvsf_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2230,7 +2246,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID ALVWF FOR TILE: ", tile
    call ESMF_FieldGather(alvwf_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2241,7 +2257,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID MAX VEGETATION GREENNESS FOR TILE: ", tile
    call ESMF_FieldGather(max_veg_greenness_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2252,7 +2268,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID MIN VEGETATION GREENNESS FOR TILE: ", tile
    call ESMF_FieldGather(min_veg_greenness_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2263,7 +2279,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID T2M FOR TILE: ", tile
    call ESMF_FieldGather(t2m_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2274,7 +2290,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID Q2M FOR TILE: ", tile
    call ESMF_FieldGather(q2m_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2285,7 +2301,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID TPRCP FOR TILE: ", tile
    call ESMF_FieldGather(tprcp_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2296,7 +2312,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID F10M FOR TILE: ", tile
    call ESMF_FieldGather(f10m_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2307,7 +2323,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID FFMM FOR TILE: ", tile
    call ESMF_FieldGather(ffmm_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2321,7 +2337,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID USTAR FOR TILE: ", tile
    call ESMF_FieldGather(ustar_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2332,7 +2348,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID SRFLAG FOR TILE: ", tile
    call ESMF_FieldGather(srflag_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2343,7 +2359,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID SEA ICE FRACTION FOR TILE: ", tile
    call ESMF_FieldGather(seaice_fract_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2354,7 +2370,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID SEA ICE DEPTH FOR TILE: ", tile
    call ESMF_FieldGather(seaice_depth_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2365,7 +2381,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID SEA ICE SKIN TEMP FOR TILE: ", tile
    call ESMF_FieldGather(seaice_skin_temp_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2376,7 +2392,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID SKIN TEMP FOR TILE: ", tile
    call ESMF_FieldGather(skin_temp_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2387,7 +2403,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID LANDMASK FOR TILE: ", tile
    call ESMF_FieldGather(landmask_target_grid, idata_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2398,7 +2414,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID CANOPY MOISTURE CONTENT FOR TILE: ", tile
    call ESMF_FieldGather(canopy_mc_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2411,7 +2427,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID SOIL TEMPERATURE FOR TILE: ", tile
    call ESMF_FieldGather(soil_temp_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2424,7 +2440,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID TOTAL SOIL MOISTURE FOR TILE: ", tile
    call ESMF_FieldGather(soilm_tot_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2437,7 +2453,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID LIQUID SOIL MOISTURE FOR TILE: ", tile
    call ESMF_FieldGather(soilm_liq_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -2450,7 +2466,7 @@
 
      print*,"- CALL FieldGather FOR TARGET C_D FOR TILE: ", tile
      call ESMF_FieldGather(c_d_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2461,7 +2477,7 @@
 
      print*,"- CALL FieldGather FOR TARGET C_0 FOR TILE: ", tile
      call ESMF_FieldGather(c_0_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2472,7 +2488,7 @@
 
      print*,"- CALL FieldGather FOR TARGET D_CONV FOR TILE: ", tile
      call ESMF_FieldGather(d_conv_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2483,7 +2499,7 @@
 
      print*,"- CALL FieldGather FOR TARGET DT_COOL FOR TILE: ", tile
      call ESMF_FieldGather(dt_cool_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2494,7 +2510,7 @@
 
      print*,"- CALL FieldGather FOR TARGET IFD FOR TILE: ", tile
      call ESMF_FieldGather(ifd_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2505,7 +2521,7 @@
 
      print*,"- CALL FieldGather FOR TARGET QRAIN FOR TILE: ", tile
      call ESMF_FieldGather(qrain_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2516,7 +2532,7 @@
 
      print*,"- CALL FieldGather FOR TARGET TREF FOR TILE: ", tile
      call ESMF_FieldGather(tref_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2527,7 +2543,7 @@
 
      print*,"- CALL FieldGather FOR TARGET W_D FOR TILE: ", tile
      call ESMF_FieldGather(w_d_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2538,7 +2554,7 @@
 
      print*,"- CALL FieldGather FOR TARGET W_0 FOR TILE: ", tile
      call ESMF_FieldGather(w_0_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2549,7 +2565,7 @@
 
      print*,"- CALL FieldGather FOR TARGET XS FOR TILE: ", tile
      call ESMF_FieldGather(xs_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2560,7 +2576,7 @@
 
      print*,"- CALL FieldGather FOR TARGET XT FOR TILE: ", tile
      call ESMF_FieldGather(xt_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2571,7 +2587,7 @@
 
      print*,"- CALL FieldGather FOR TARGET XU FOR TILE: ", tile
      call ESMF_FieldGather(xu_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2582,7 +2598,7 @@
 
      print*,"- CALL FieldGather FOR TARGET XV FOR TILE: ", tile
      call ESMF_FieldGather(xv_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2593,7 +2609,7 @@
 
      print*,"- CALL FieldGather FOR TARGET XZ FOR TILE: ", tile
      call ESMF_FieldGather(xz_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2604,7 +2620,7 @@
 
      print*,"- CALL FieldGather FOR TARGET XTTS FOR TILE: ", tile
      call ESMF_FieldGather(xtts_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2615,7 +2631,7 @@
 
      print*,"- CALL FieldGather FOR TARGET XZTS FOR TILE: ", tile
      call ESMF_FieldGather(xzts_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2626,7 +2642,7 @@
 
      print*,"- CALL FieldGather FOR TARGET Z_C FOR TILE: ", tile
      call ESMF_FieldGather(z_c_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2637,7 +2653,7 @@
 
      print*,"- CALL FieldGather FOR TARGET ZM FOR TILE: ", tile
      call ESMF_FieldGather(zm_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2675,7 +2691,8 @@
                                    landmask_target_grid, &
                                    i_target, j_target, lsoil_target
 
- use program_setup, only         : halo=>halo_bndy, regional
+ use program_setup, only         : halo=>halo_bndy, regional, &
+                                   internal_GSD
 
  use surface, only               : canopy_mc_target_grid,  &
                                    f10m_target_grid, &
@@ -2694,7 +2711,8 @@
                                    t2m_target_grid,   &
                                    tprcp_target_grid, &
                                    ustar_target_grid, &
-                                   z0_target_grid
+                                   z0_target_grid, &
+                                   lai_target_grid
 
 
  use static_data, only           : alvsf_target_grid,   &
@@ -2733,7 +2751,7 @@
  integer                        :: id_fice, id_tisfc, id_tprcp
  integer                        :: id_srflag, id_snwdph, id_shdmin
  integer                        :: id_shdmax, id_slope, id_snoalb
- integer                        :: id_stc, id_smc, id_slc
+ integer                        :: id_stc, id_smc, id_slc, id_lai
  integer                        :: i_target_out, j_target_out
  integer                        :: istart, iend, jstart, jend
 
@@ -2795,7 +2813,7 @@
      if (regional > 0) then
        outfile = "out.sfc.tile7.nc"
      else
-       WRITE(OUTFILE, '(A, I1, A)'), 'out.sfc.tile', tile, '.nc'
+       WRITE(OUTFILE, '(A, I1, A)') 'out.sfc.tile', tile, '.nc'
      endif
 
 !--- open the file
@@ -2860,7 +2878,7 @@
      
      print*,"- CALL FieldGather FOR TARGET GRID LANDMASK FOR TILE: ", tile
      call ESMF_FieldGather(landmask_target_grid, idata_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2882,7 +2900,7 @@
      
      print*,"- CALL FieldGather FOR TARGET GRID SKIN TEMP FOR TILE: ", tile
      call ESMF_FieldGather(skin_temp_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2903,7 +2921,7 @@
      
      print*,"- CALL FieldGather FOR TARGET GRID SNOW LIQ EQUIV FOR TILE: ", tile
      call ESMF_FieldGather(snow_liq_equiv_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2923,7 +2941,7 @@
      
      print*,"- CALL FieldGather FOR TARGET GRID SUBSTRATE TEMPERATURE FOR TILE: ", tile
      call ESMF_FieldGather(substrate_temp_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2943,7 +2961,7 @@
      
      print*,"- CALL FieldGather FOR TARGET GRID Z0 FOR TILE: ", tile
      call ESMF_FieldGather(z0_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2962,7 +2980,7 @@
      
      print*,"- CALL FieldGather FOR TARGET GRID ALVSF FOR TILE: ", tile
      call ESMF_FieldGather(alvsf_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -2981,7 +2999,7 @@
      
      print*,"- CALL FieldGather FOR TARGET GRID ALVWF FOR TILE: ", tile
      call ESMF_FieldGather(alvwf_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -3000,7 +3018,7 @@
      
      print*,"- CALL FieldGather FOR TARGET GRID ALNSF FOR TILE: ", tile
      call ESMF_FieldGather(alnsf_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -3019,7 +3037,7 @@
      
      print*,"- CALL FieldGather FOR TARGET GRID ALNWF FOR TILE: ", tile
      call ESMF_FieldGather(alnwf_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -3038,7 +3056,7 @@
      
      print*,"- CALL FieldGather FOR TARGET GRID FACSF FOR TILE: ", tile
      call ESMF_FieldGather(facsf_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -3057,7 +3075,7 @@
      
       print*,"- CALL FieldGather FOR TARGET GRID FACWF FOR TILE: ", tile
      call ESMF_FieldGather(facwf_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -3076,7 +3094,7 @@
      
      print*,"- CALL FieldGather FOR TARGET GRID VEGETATION GREENNESS FOR TILE: ", tile
      call ESMF_FieldGather(veg_greenness_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -3095,7 +3113,7 @@
      
      print*,"- CALL FieldGather FOR TARGET GRID T2M FOR TILE: ", tile
      call ESMF_FieldGather(t2m_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -3114,7 +3132,7 @@
      
      print*,"- CALL FieldGather FOR TARGET GRID Q2M FOR TILE: ", tile
      call ESMF_FieldGather(q2m_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -3133,7 +3151,7 @@
      
      print*,"- CALL FieldGather FOR TARGET GRID VEGETATION TYPE FOR TILE: ", tile
      call ESMF_FieldGather(veg_type_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -3152,7 +3170,7 @@
      
      print*,"- CALL FieldGather FOR TARGET GRID SOIL TYPE FOR TILE: ", tile
      call ESMF_FieldGather(soil_type_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -3171,7 +3189,7 @@
 
      print*,"- CALL FieldGather FOR TARGET GRID SRFLAG FOR TILE: ", tile
      call ESMF_FieldGather(srflag_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then     
@@ -3189,7 +3207,7 @@
      ! SNOW DEPTH
      print*,"- CALL FieldGather FOR TARGET GRID SNOW DEPTH FOR TILE: ", tile
      call ESMF_FieldGather(snow_depth_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -3210,7 +3228,7 @@
      
      print*,"- CALL FieldGather FOR TARGET GRID MIN VEGETATION GREENNESS FOR TILE: ", tile
      call ESMF_FieldGather(min_veg_greenness_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -3229,7 +3247,7 @@
      
      print*,"- CALL FieldGather FOR TARGET GRID MAX VEGETATION GREENNESS FOR TILE: ", tile
      call ESMF_FieldGather(max_veg_greenness_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -3244,11 +3262,31 @@
        call netcdf_err(error, 'WRITING MAX VEGETATION GREENNESS RECORD' )
      endif
 
+     if (internal_GSD) then
+     ! LEAF AREA INDEX
+
+     print*,"- CALL FieldGather FOR TARGET GRID LEAF AREA INDEX FOR TILE: ", tile
+     call ESMF_FieldGather(lai_target_grid, data_one_tile,rootPet=0, tile=tile, rc=error)
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__))&
+        call error_handler("IN FieldGather", error)
+
+     if (localpet == 0) then
+       error = nf90_def_var(ncid, 'lai', NF90_DOUBLE,(/dim_x,dim_y,dim_time/), id_lai)
+       call netcdf_err(error, 'DEFINING LAI' )
+       error = nf90_put_att(ncid, id_lai, "long_name", "leaf area index")
+       call netcdf_err(error, 'DEFINING LAI LONG NAME' )
+       error = nf90_put_att(ncid, id_shdmax, "units", "none")
+       call netcdf_err(error, 'DEFINING LAI UNITS' )
+       dum2d(:,:) = data_one_tile(istart:iend, jstart:jend)
+       error = nf90_put_var( ncid, id_lai, dum2d, start=(/1,1,1/),count=(/i_target_out,j_target_out,1/))
+       call netcdf_err(error, 'WRITING LEAF AREA INDEX RECORD' )
+     endif
+     endif
      ! SLOPE TYPE
      
      print*,"- CALL FieldGather FOR TARGET GRID SLOPE TYPE FOR TILE: ", tile
      call ESMF_FieldGather(slope_type_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -3267,7 +3305,7 @@
      
      print*,"- CALL FieldGather FOR TARGET GRID MAX SNOW ALBEDO FOR TILE: ", tile
      call ESMF_FieldGather(mxsno_albedo_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -3286,7 +3324,7 @@
      
      print*,"- CALL FieldGather FOR TARGET GRID SOIL TEMPERATURE FOR TILE: ", tile
      call ESMF_FieldGather(soil_temp_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -3304,7 +3342,7 @@
      ! TOTAL SOIL MOISTURE
      print*,"- CALL FieldGather FOR TARGET GRID TOTAL SOIL MOISTURE FOR TILE: ", tile
      call ESMF_FieldGather(soilm_tot_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -3324,7 +3362,7 @@
      
      print*,"- CALL FieldGather FOR TARGET GRID LIQUID SOIL MOISTURE FOR TILE: ", tile
      call ESMF_FieldGather(soilm_liq_target_grid, data_one_tile_3d, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -3351,7 +3389,7 @@
      
      print*,"- CALL FieldGather FOR TARGET GRID CANOPY MOISTURE CONTENT FOR TILE: ", tile
      call ESMF_FieldGather(canopy_mc_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -3376,7 +3414,7 @@
      
      print*,"- CALL FieldGather FOR TARGET GRID F10M FOR TILE: ", tile
      call ESMF_FieldGather(f10m_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
      if (localpet == 0) then
@@ -3397,7 +3435,7 @@
        
     print*,"- CALL FieldGather FOR TARGET GRID FFMM FOR TILE: ", tile
     call ESMF_FieldGather(ffmm_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-    if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -3428,7 +3466,7 @@
 
     print*,"- CALL FieldGather FOR TARGET GRID TPRCP FOR TILE: ", tile
      call ESMF_FieldGather(tprcp_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -3461,7 +3499,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID USTAR FOR TILE: ", tile
    call ESMF_FieldGather(ustar_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
     if (localpet == 0) then
@@ -3484,7 +3522,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID SEA ICE FRACTION FOR TILE: ", tile
    call ESMF_FieldGather(seaice_fract_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -3505,7 +3543,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID SEA ICE DEPTH FOR TILE: ", tile
    call ESMF_FieldGather(seaice_depth_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then
@@ -3526,7 +3564,7 @@
 
    print*,"- CALL FieldGather FOR TARGET GRID SEA ICE SKIN TEMP FOR TILE: ", tile
    call ESMF_FieldGather(seaice_skin_temp_target_grid, data_one_tile, rootPet=0, tile=tile, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldGather", error)
 
    if (localpet == 0) then

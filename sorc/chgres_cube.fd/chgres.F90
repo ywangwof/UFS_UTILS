@@ -14,7 +14,7 @@
  use atmosphere, only          : atmosphere_driver
 
  use program_setup, only       : read_setup_namelist, &
- 																 read_varmap, &
+                                 read_varmap, &
                                  convert_atm, &
                                  convert_sfc 
 
@@ -40,17 +40,17 @@
 
  print*,"- INITIALIZE ESMF"
  call ESMF_Initialize(rc=ierr)
- if(ESMF_logFoundError(rcToCheck=ierr,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=ierr,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("INITIALIZING ESMF", ierr)
 
  print*,"- CALL VMGetGlobal"
  call ESMF_VMGetGlobal(vm, rc=ierr)
- if(ESMF_logFoundError(rcToCheck=ierr,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=ierr,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN VMGetGlobal", ierr)
 
  print*,"- CALL VMGet"
  call ESMF_VMGet(vm, localPet=localpet, petCount=npets, rc=ierr)
- if(ESMF_logFoundError(rcToCheck=ierr,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=ierr,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN VMGet", ierr)
 
  print*,'- NPETS IS  ',npets

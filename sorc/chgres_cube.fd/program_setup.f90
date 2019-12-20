@@ -150,6 +150,9 @@
  logical, public                 :: replace_sotyp = .true.
  logical, public                 :: replace_vgfrc = .true.
  logical, public                 :: tg3_from_soil = .false.
+ logical, public                 :: internal_GSD = .false.
+ logical, public                 :: interp_lai = .false.
+
 
 
  real, allocatable, public       :: drysmc_input(:), drysmc_target(:)
@@ -168,8 +171,10 @@
  contains
 
  subroutine read_setup_namelist
-
+ 
  implicit none
+ 
+ 
 
  integer                     :: is, ie, ierr
 
@@ -202,7 +207,7 @@
                    replace_vgtyp, replace_sotyp, replace_vgfrc, &
                    replace_clwmr, phys_suite, wgrib2_path, &
                    halo_bndy, halo_blend, numsoil_out, &
-                   tg3_from_soil
+                   tg3_from_soil, internal_GSD
 
  print*,"- READ SETUP NAMELIST"
 
@@ -212,6 +217,10 @@
  if (ierr /= 0) call error_handler("READING SETUP NAMELIST.", ierr)
  close (41)
  
+ call to_lower(input_type)
+ call to_upper(external_model)
+ call to_upper(phys_suite)
+ 
  orog_dir_target_grid = trim(orog_dir_target_grid) // '/'
  orog_dir_input_grid = trim(orog_dir_input_grid) // '/'
 
@@ -219,8 +228,8 @@
 ! Determine CRES of target grid from the name of the mosaic file.
 !-------------------------------------------------------------------------
 
- is = index(mosaic_file_target_grid, "/", .true.)
- ie = index(mosaic_file_target_grid, "_mosaic")
+ is = index(mosaic_file_target_grid, "/", back=.true.)
+ ie = index(mosaic_file_target_grid, "_mosaic", back=.true.)
 
  if (is == 0 .or. ie == 0) then
    call error_handler("CANT DETERMINE CRES FROM MOSAIC FILE.", 1)
@@ -285,8 +294,51 @@
    case default
      call error_handler("UNRECOGNIZED INPUT DATA TYPE.", 1)
  end select
+ 
+!-------------------------------------------------------------------------
+! Ensure proper file variable provided for grib2 input  
+!-------------------------------------------------------------------------
 
+ if (trim(input_type) == "grib2") then
+   if (trim(grib2_file_input_grid) == "NULL" .or. trim(grib2_file_input_grid) == "") then
+     call error_handler("FOR GRIB2 DATA, PLEASE PROVIDE GRIB2_FILE_INPUT_GRID")
+   endif
+ endif
+ 
+!-------------------------------------------------------------------------
+! For grib2 input, warn about possibly unsupported external model types
+!-------------------------------------------------------------------------
+
+ if (trim(input_type) == "grib2") then
+   if (.not. any((/character(4)::"GFS","NAM","RAP","HRRR"/)==trim(external_model))) then
+     print*, "WARNING: KNOWN SUPPORTED external_model INPUTS ARE GFS, NAM, RAP, AND HRRR. &
+     RESULTS MAY NOT BE AS EXPECTED. "
+   endif
+ endif
+
+!-------------------------------------------------------------------------
+! For grib2 hrrr input, require input geogrid file 
+!-------------------------------------------------------------------------
+
+ if (trim(input_type) == "grib2" .and. trim(external_model)=="HRRR") then
+   if (trim(geogrid_file_input_grid) == "NULL" .or. trim(grib2_file_input_grid) == "") then
+     call error_handler("FOR HRRR DATA, PLEASE PROVIDE GEOGRID_FILE_INPUT_GRID")
+   endif
+ endif
  return
+
+!------------------------------------------------------------------------------
+! For if internal_GSD=.true., check that data is HRRR and warn user of specific
+! use
+!------------------------------------------------------------------------------
+ if ( internal_GSD) then
+   if (trim(external_model) /= "HRRR") then
+     call error_handler("internal_GSD = .true. is only valid for HRRRR input data")
+   endif
+   print*, "WARNING: THE internal_GSD OPTION IS INTENDED ONLY FOR INTERNAL &
+   OPERATIONAL USE AT GSD WITH SPECIFIC HRRR FILES. UNINTENDED RESULTS ARE POSSIBLE &
+    OTHERWISE."
+ endif
 
  end subroutine read_setup_namelist
 
@@ -339,10 +391,7 @@ subroutine read_varmap
        num_tracers = num_tracers + 1
        tracers_input(num_tracers)=chgres_var_names(k)
      endif
-     
    enddo
- 
-
    close(14)
  endif
 end subroutine read_varmap

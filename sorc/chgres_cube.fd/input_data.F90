@@ -43,7 +43,7 @@ module input_data
                                     num_tracers_input, &
                                     input_type, external_model, &
                                     get_var_cond, read_from_input, tracers, &
-                                    convert_sfc  
+                                    convert_sfc, internal_GSD 
 
  use model_grid, only             : input_grid,        &
                                     i_input, j_input,  &
@@ -105,6 +105,9 @@ module input_data
  type(esmf_field), public        :: veg_type_input_grid     ! vegetation type
  type(esmf_field), public        :: z0_input_grid           ! roughness length
  type(esmf_field), public        :: veg_greenness_input_grid ! vegetation fraction
+ type(esmf_field), public        :: lai_input_grid ! leaf area index
+ type(esmf_field), public        :: max_veg_greenness_input_grid ! shdmax
+ type(esmf_field), public        :: min_veg_greenness_input_grid ! shdmin
 
  integer,  public                :: lsoil_input=4  ! # of soil layers,
                                                    ! # LJR: turn off hard wiring, but 
@@ -190,126 +193,126 @@ module input_data
  c_d_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
    call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID C_0."
  c_0_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
    call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID D_CONV."
  d_conv_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
    call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID DT_COOL."
  dt_cool_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
    call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID IFD."
  ifd_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
    call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID QRAIN."
  qrain_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
    call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID TREF."
  tref_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
    call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID W_D."
  w_d_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
    call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID W_0."
  w_0_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
    call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID XS."
  xs_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
    call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID XT."
  xt_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
    call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID XU."
  xu_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
    call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID XV."
  xv_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
    call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID XZ."
  xz_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
    call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID XTTS."
  xtts_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
    call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID XZTS."
  xzts_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
    call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID Z_C."
  z_c_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
    call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID ZM."
  zm_input_grid = ESMF_FieldCreate(input_grid, &
                                   typekind=ESMF_TYPEKIND_R8, &
                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
    call error_handler("IN FieldCreate", rc)
  
  if (trim(input_type) == "gaussian" .or. trim(input_type) == "gfs_gaussian") then
@@ -336,140 +339,160 @@ module input_data
  landsea_mask_input_grid = ESMF_FieldCreate(input_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID Z0."
  z0_input_grid = ESMF_FieldCreate(input_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID VEGETATION TYPE."
  veg_type_input_grid = ESMF_FieldCreate(input_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID CANOPY MOISTURE CONTENT."
  canopy_mc_input_grid = ESMF_FieldCreate(input_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID SEAICE FRACTION."
  seaice_fract_input_grid = ESMF_FieldCreate(input_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID SEAICE DEPTH."
  seaice_depth_input_grid = ESMF_FieldCreate(input_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID SEAICE SKIN TEMPERATURE."
  seaice_skin_temp_input_grid = ESMF_FieldCreate(input_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID SNOW DEPTH."
  snow_depth_input_grid = ESMF_FieldCreate(input_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID SNOW LIQUID EQUIVALENT."
  snow_liq_equiv_input_grid = ESMF_FieldCreate(input_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID T2M."
  t2m_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID Q2M."
  q2m_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID TPRCP."
  tprcp_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID F10M."
  f10m_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID USTAR."
  ustar_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID FFMM."
  ffmm_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID SRFLAG."
  srflag_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT SKIN TEMPERATURE."
  skin_temp_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT SOIL TYPE."
  soil_type_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT VEGETATION GREENNESS."
  veg_greenness_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
+
+ if (internal_GSD) then
+   min_veg_greenness_input_grid = ESMF_FieldCreate(input_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__))&
+    call error_handler("IN FieldCreate", rc)
+
+   max_veg_greenness_input_grid = ESMF_FieldCreate(input_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__))&
+    call error_handler("IN FieldCreate", rc)
+
+   lai_input_grid = ESMF_FieldCreate(input_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__))&
+    call error_handler("IN FieldCreate", rc)
+ endif
 
  print*,"- CALL FieldCreate FOR INPUT TERRAIN."
  terrain_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT SOIL TEMPERATURE."
@@ -478,7 +501,7 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lsoil_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT TOTAL SOIL MOISTURE."
@@ -487,7 +510,7 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lsoil_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT LIQUID SOIL MOISTURE."
@@ -496,7 +519,7 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lsoil_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  if (trim(input_type) == "restart") then
@@ -584,14 +607,14 @@ module input_data
  ps_input_grid = ESMF_FieldCreate(input_grid, &
                                   typekind=ESMF_TYPEKIND_R8, &
                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID TERRAIN."
  terrain_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID TEMPERATURE."
@@ -600,7 +623,7 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  allocate(tracers_input_grid(num_tracers))
@@ -616,7 +639,7 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldCreate", rc)
  enddo
 
@@ -626,7 +649,7 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID U."
@@ -635,7 +658,7 @@ module input_data
                                  staggerloc=ESMF_STAGGERLOC_CENTER, &
                                  ungriddedLBound=(/1/), &
                                  ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID V."
@@ -644,7 +667,7 @@ module input_data
                                  staggerloc=ESMF_STAGGERLOC_CENTER, &
                                  ungriddedLBound=(/1/), &
                                  ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  if (localpet == 0) then
@@ -675,7 +698,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR SURFACE PRESSURE."
  call ESMF_FieldScatter(ps_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -685,7 +708,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR TERRAIN."
  call ESMF_FieldScatter(terrain_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  do k = 1, num_tracers_input
@@ -696,7 +719,7 @@ module input_data
 
    print*,"- CALL FieldScatter FOR INPUT ", trim(tracers_input(k))
    call ESMF_FieldScatter(tracers_input_grid(k), dummy3d, rootpet=0, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldScatter", rc)
 
  enddo
@@ -708,7 +731,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT GRID TEMPERATURE."
  call ESMF_FieldScatter(temp_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 !---------------------------------------------------------------------------
@@ -723,7 +746,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT DZDT."
  call ESMF_FieldScatter(dzdt_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -734,12 +757,12 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT U-WIND."
  call ESMF_FieldScatter(u_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  print*,"- CALL FieldScatter FOR INPUT V-WIND."
  call ESMF_FieldScatter(v_input_grid, dummy3d2, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  deallocate(dummy2d, dummy3d, dummy3d2)
@@ -766,7 +789,7 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
 
  print*,"- CALL FieldGet FOR 3-D PRES."
  nullify(pptr)
@@ -774,14 +797,14 @@ module input_data
                     computationalLBound=clb, &
                     computationalUBound=cub, &
                     farrayPtr=pptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR SURFACE PRESSURE."
  nullify(psptr)
  call ESMF_FieldGet(ps_input_grid, &
                     farrayPtr=psptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
 !---------------------------------------------------------------------------
@@ -878,7 +901,7 @@ module input_data
  ps_input_grid = ESMF_FieldCreate(input_grid, &
                                   typekind=ESMF_TYPEKIND_R8, &
                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID TEMPERATURE."
@@ -887,7 +910,7 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  allocate(tracers_input_grid(num_tracers))
@@ -903,7 +926,7 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldCreate", rc)
  enddo
 
@@ -913,7 +936,7 @@ module input_data
                                  staggerloc=ESMF_STAGGERLOC_CENTER, &
                                  ungriddedLBound=(/1/), &
                                  ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID V."
@@ -922,7 +945,7 @@ module input_data
                                  staggerloc=ESMF_STAGGERLOC_CENTER, &
                                  ungriddedLBound=(/1/), &
                                  ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID DZDT."
@@ -931,14 +954,14 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID TERRAIN."
  terrain_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  if (localpet == 0) then
@@ -970,7 +993,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT GRID TEMPERATURE."
  call ESMF_FieldScatter(temp_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
  do n = 1, num_tracers_input
@@ -989,7 +1012,7 @@ module input_data
 
    print*,"- CALL FieldScatter FOR INPUT ", trim(tracers_input(n))
    call ESMF_FieldScatter(tracers_input_grid(n), dummy3d, rootpet=0, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldScatter", rc)
 
  enddo
@@ -1008,7 +1031,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT U-WIND."
  call ESMF_FieldScatter(u_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -1025,7 +1048,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT V-WIND."
  call ESMF_FieldScatter(v_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
 !---------------------------------------------------------------------------
@@ -1040,7 +1063,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT DZDT."
  call ESMF_FieldScatter(dzdt_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -1056,7 +1079,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR TERRAIN."
  call ESMF_FieldScatter(terrain_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -1072,7 +1095,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR SURFACE PRESSURE."
  call ESMF_FieldScatter(ps_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  call nemsio_close(gfile)
@@ -1097,7 +1120,7 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
 
  print*,"- CALL FieldGet FOR 3-D PRES."
  nullify(pptr)
@@ -1105,14 +1128,14 @@ module input_data
                     computationalLBound=clb, &
                     computationalUBound=cub, &
                     farrayPtr=pptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR SURFACE PRESSURE."
  nullify(psptr)
  call ESMF_FieldGet(ps_input_grid, &
                     farrayPtr=psptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
 !---------------------------------------------------------------------------
@@ -1200,7 +1223,7 @@ module input_data
  ps_input_grid = ESMF_FieldCreate(input_grid, &
                                   typekind=ESMF_TYPEKIND_R8, &
                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID TEMPERATURE."
@@ -1209,7 +1232,7 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  allocate(tracers_input_grid(num_tracers))
@@ -1222,7 +1245,7 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldCreate", rc)
  enddo
 
@@ -1232,7 +1255,7 @@ module input_data
                                  staggerloc=ESMF_STAGGERLOC_CENTER, &
                                  ungriddedLBound=(/1/), &
                                  ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID V."
@@ -1241,7 +1264,7 @@ module input_data
                                  staggerloc=ESMF_STAGGERLOC_CENTER, &
                                  ungriddedLBound=(/1/), &
                                  ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT DPRES."
@@ -1250,7 +1273,7 @@ module input_data
                                  staggerloc=ESMF_STAGGERLOC_CENTER, &
                                  ungriddedLBound=(/1/), &
                                  ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID DZDT."
@@ -1259,14 +1282,14 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID TERRAIN."
  terrain_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  if (localpet == 0) then
@@ -1298,7 +1321,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT GRID TEMPERATURE."
  call ESMF_FieldScatter(temp_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  do n = 1, num_tracers_input
@@ -1317,7 +1340,7 @@ module input_data
 
    print*,"- CALL FieldScatter FOR INPUT ", trim(tracers_input(n))
    call ESMF_FieldScatter(tracers_input_grid(n), dummy3d, rootpet=0, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldScatter", rc)
 
  enddo
@@ -1336,7 +1359,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT U-WIND."
  call ESMF_FieldScatter(u_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -1353,7 +1376,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT V-WIND."
  call ESMF_FieldScatter(v_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -1370,7 +1393,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT DPRES."
  call ESMF_FieldScatter(dpres_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -1387,7 +1410,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT DZDT."
  call ESMF_FieldScatter(dzdt_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -1403,7 +1426,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR TERRAIN."
  call ESMF_FieldScatter(terrain_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  call nemsio_close(gfile)
@@ -1432,7 +1455,7 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldGet FOR DELTA PRESSURE."
@@ -1441,21 +1464,21 @@ module input_data
                     computationalLBound=clb, &
                     computationalUBound=cub, &
                     farrayPtr=dpresptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR 3-D PRESSURE."
  nullify(presptr)
  call ESMF_FieldGet(pres_input_grid, &
                     farrayPtr=presptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR SURFACE PRESSURE."
  nullify(psptr)
  call ESMF_FieldGet(ps_input_grid, &
                     farrayPtr=psptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  allocate(pres_interface(levp1_input))
@@ -1555,7 +1578,7 @@ module input_data
                                  staggerloc=ESMF_STAGGERLOC_CENTER, &
                                  ungriddedLBound=(/1/), &
                                  ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID V."
@@ -1564,7 +1587,7 @@ module input_data
                                  staggerloc=ESMF_STAGGERLOC_CENTER, &
                                  ungriddedLBound=(/1/), &
                                  ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID DZDT."
@@ -1573,7 +1596,7 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID TEMPERATURE."
@@ -1582,7 +1605,7 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID DELTA PRESSURE."
@@ -1591,14 +1614,14 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID TERRAIN."
  terrain_input_grid = ESMF_FieldCreate(input_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  allocate(tracers_input_grid(num_tracers))
@@ -1610,7 +1633,7 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldCreate", rc)
 
  enddo
@@ -1642,7 +1665,7 @@ module input_data
  do tile = 1, num_tiles_input_grid
    print*,"- CALL FieldScatter FOR INPUT GRID TERRAIN for tile ",tile
    call ESMF_FieldScatter(terrain_input_grid, data_one_tile, rootpet=tile-1, tile=tile, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldScatter", rc)
  enddo
 
@@ -1657,7 +1680,7 @@ module input_data
  do tile = 1, num_tiles_input_grid
    print*,"- CALL FieldScatter FOR INPUT GRID VERTICAL VELOCITY for tile ",tile
    call ESMF_FieldScatter(dzdt_input_grid, data_one_tile_3d, rootpet=tile-1, tile=tile, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldScatter", rc)
  enddo
 
@@ -1672,7 +1695,7 @@ module input_data
  do tile = 1, num_tiles_input_grid
    print*,"- CALL FieldScatter FOR INPUT GRID TEMPERATURE."
    call ESMF_FieldScatter(temp_input_grid, data_one_tile_3d, rootpet=tile-1, tile=tile, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldScatter", rc)
  enddo
 
@@ -1687,7 +1710,7 @@ module input_data
  do tile = 1, num_tiles_input_grid
    print*,"- CALL FieldScatter FOR INPUT DELTA PRESSURE."
    call ESMF_FieldScatter(dpres_input_grid, data_one_tile_3d, rootpet=tile-1, tile=tile, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldScatter", rc)
  enddo
 
@@ -1702,7 +1725,7 @@ module input_data
  do tile = 1, num_tiles_input_grid
    print*,"- CALL FieldScatter FOR INPUT GRID U."
    call ESMF_FieldScatter(u_input_grid, data_one_tile_3d, rootpet=tile-1, tile=tile, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldScatter", rc)
  enddo
 
@@ -1717,7 +1740,7 @@ module input_data
  do tile = 1, num_tiles_input_grid
    print*,"- CALL FieldScatter FOR INPUT GRID V."
    call ESMF_FieldScatter(v_input_grid, data_one_tile_3d, rootpet=tile-1, tile=tile, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldScatter", rc)
  enddo
 
@@ -1744,7 +1767,7 @@ module input_data
    do tile = 1, num_tiles_input_grid
      print*,"- CALL FieldScatter FOR INPUT ", trim(tracers_input(i))
      call ESMF_FieldScatter(tracers_input_grid(i), data_one_tile_3d, rootpet=tile-1, tile=tile, rc=rc)
-     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldScatter", rc)
    enddo
 
@@ -1766,13 +1789,13 @@ module input_data
  ps_input_grid = ESMF_FieldCreate(input_grid, &
                                   typekind=ESMF_TYPEKIND_R8, &
                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldGet FOR SURFACE PRESSURE."
  call ESMF_FieldGet(ps_input_grid, &
                     farrayPtr=psptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID PRESSURE."
@@ -1781,7 +1804,7 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldGet FOR PRESSURE."
@@ -1789,13 +1812,13 @@ module input_data
                     computationalLBound=clb, &
                     computationalUBound=cub, &
                     farrayPtr=presptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR DELTA PRESSURE."
  call ESMF_FieldGet(dpres_input_grid, &
                     farrayPtr=dpresptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  allocate(pres_interface(levp1_input))
@@ -1900,7 +1923,7 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldCreate", rc)
 
  enddo
@@ -1911,7 +1934,7 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID DELTA PRESSURE."
@@ -1920,7 +1943,7 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID TEMPERATURE."
@@ -1929,7 +1952,7 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID U."
@@ -1938,7 +1961,7 @@ module input_data
                                  staggerloc=ESMF_STAGGERLOC_CENTER, &
                                  ungriddedLBound=(/1/), &
                                  ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID V."
@@ -1947,21 +1970,21 @@ module input_data
                                  staggerloc=ESMF_STAGGERLOC_CENTER, &
                                  ungriddedLBound=(/1/), &
                                  ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID SURFACE PRESSURE."
  ps_input_grid = ESMF_FieldCreate(input_grid, &
                                   typekind=ESMF_TYPEKIND_R8, &
                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR INPUT GRID TERRAIN."
  terrain_input_grid = ESMF_FieldCreate(input_grid, &
                                   typekind=ESMF_TYPEKIND_R8, &
                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  if (localpet < num_tiles_input_grid) then
@@ -1992,7 +2015,7 @@ module input_data
  do tile = 1, num_tiles_input_grid
    print*,"- CALL FieldScatter FOR INPUT GRID VERTICAL VELOCITY."
    call ESMF_FieldScatter(dzdt_input_grid, data_one_tile_3d, rootpet=tile-1, tile=tile, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldScatter", rc)
  enddo
 
@@ -2010,7 +2033,7 @@ module input_data
    do tile = 1, num_tiles_input_grid
      print*,"- CALL FieldScatter FOR INPUT GRID TRACER ", trim(tracers_input(n))
      call ESMF_FieldScatter(tracers_input_grid(n), data_one_tile_3d, rootpet=tile-1, tile=tile, rc=rc)
-     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldScatter", rc)
    enddo
 
@@ -2028,7 +2051,7 @@ module input_data
  do tile = 1, num_tiles_input_grid
    print*,"- CALL FieldScatter FOR INPUT GRID TEMPERATURE."
    call ESMF_FieldScatter(temp_input_grid, data_one_tile_3d, rootpet=tile-1, tile=tile, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldScatter", rc)
  enddo
 
@@ -2044,7 +2067,7 @@ module input_data
  do tile = 1, num_tiles_input_grid
    print*,"- CALL FieldScatter FOR INPUT GRID U."
    call ESMF_FieldScatter(u_input_grid, data_one_tile_3d, rootpet=tile-1, tile=tile, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldScatter", rc)
  enddo
 
@@ -2060,7 +2083,7 @@ module input_data
  do tile = 1, num_tiles_input_grid
    print*,"- CALL FieldScatter FOR INPUT GRID V."
    call ESMF_FieldScatter(v_input_grid, data_one_tile_3d, rootpet=tile-1, tile=tile, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldScatter", rc)
  enddo
 
@@ -2075,7 +2098,7 @@ module input_data
  do tile = 1, num_tiles_input_grid
    print*,"- CALL FieldScatter FOR INPUT GRID SURFACE PRESSURE."
    call ESMF_FieldScatter(ps_input_grid, data_one_tile, rootpet=tile-1, tile=tile, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldScatter", rc)
  enddo
 
@@ -2090,7 +2113,7 @@ module input_data
  do tile = 1, num_tiles_input_grid
    print*,"- CALL FieldScatter FOR INPUT GRID TERRAIN."
    call ESMF_FieldScatter(terrain_input_grid, data_one_tile, rootpet=tile-1, tile=tile, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldScatter", rc)
  enddo
 
@@ -2106,7 +2129,7 @@ module input_data
  do tile = 1, num_tiles_input_grid
    print*,"- CALL FieldScatter FOR INPUT DELTA PRESSURE."
    call ESMF_FieldScatter(dpres_input_grid, data_one_tile_3d, rootpet=tile-1, tile=tile, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldScatter", rc)
  enddo
 
@@ -2130,7 +2153,7 @@ module input_data
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldGet FOR PRESSURE."
@@ -2138,19 +2161,19 @@ module input_data
                     computationalLBound=clb, &
                     computationalUBound=cub, &
                     farrayPtr=presptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR DELTA PRESSURE."
  call ESMF_FieldGet(dpres_input_grid, &
                     farrayPtr=dpresptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR SURFACE PRESSURE."
  call ESMF_FieldGet(ps_input_grid, &
                     farrayPtr=psptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  allocate(pres_interface(levp1_input))
@@ -2555,6 +2578,584 @@ module input_data
  end subroutine read_input_atm_wrf_file
 
 !---------------------------------------------------------------------------
+! Read input grid atmospheric grib2 files.
+!---------------------------------------------------------------------------
+
+ subroutine read_input_atm_grib2_file(localpet)
+
+ use wgrib2api
+ 
+ use grib2_util, only                   : read_vcoord, iso2sig, rh2spfh, convert_omega, &
+                                           countDigit
+ use model_grid, only                   : file_is_converted
+
+
+ implicit none
+
+ integer, intent(in)                   :: localpet
+ 
+ integer, parameter                    :: ntrac_max=14
+
+ character(len=300)                    :: the_file
+ character(len=20)                     :: vlevtyp, vname, lvl_str,lvl_str_space, &
+                                          trac_names_grib(ntrac_max), & 
+                                          trac_names_vmap(ntrac_max), &
+                                          tracers_input_grib(num_tracers), tmpstr, & 
+                                          method, tracers_input_vmap(num_tracers), &
+                                          tracers_default(ntrac_max), vname2
+ character (len=500)                    :: metadata
+
+ integer                               :: i, j, k, n, lvl_str_space_len
+ integer                               :: rc, clb(3), cub(3)
+ integer                               :: vlev, iret,varnum
+ logical                               :: exist
+
+
+ logical                                :: conv_omega=.false., &
+                                           isnative=.false., &
+                                           hasspfh=.true.
+
+ real(esmf_kind_r8), allocatable       :: vcoord(:,:)
+ real(esmf_kind_r8), allocatable       :: rlevs(:)
+ real(esmf_kind_r4), allocatable       :: dummy2d(:,:)
+ real(esmf_kind_r8), allocatable       :: dummy3d(:,:,:), dummy2d_8(:,:),&
+                                          u_tmp_3d(:,:,:), v_tmp_3d(:,:,:)
+ real(esmf_kind_r8), pointer           :: presptr(:,:,:), psptr(:,:),tptr(:,:,:), &
+                                          qptr(:,:,:), wptr(:,:,:)
+
+ real(esmf_kind_r4)                     :: value
+ real(esmf_kind_r8)                    :: pt
+ real(esmf_kind_r8), parameter         :: p0 = 100000.0
+ 
+ type(atmdata), allocatable   :: atm(:)
+ 
+ tracers(:) = "NULL"
+ trac_names_grib = (/character(8)::":SPFH:",":CLWMR:", "O3MR",":CICE:", ":RWMR:",":SNMR:",":GRLE:", &
+               ":TCDC:", ":NCCICE:",":SPNCR:", ":NCONCD:",":PMTF:",":PMTC:",":TKE:"/)
+ trac_names_vmap = (/character(8)::"sphum", "liq_wat","o3mr","ice_wat", &
+                      "rainwat", "snowwat", "graupel", "cld_amt", "ice_nc", &
+                      "rain_nc","water_nc","liq_aero","ice_aero", &
+                      "sgs_tke"/)
+ tracers_default = (/character(8)::"sphum", "liq_wat","o3mr","ice_wat", &
+                      "rainwat", "snowwat", "graupel", "cld_amt", "ice_nc", &
+                      "rain_nc","water_nc","liq_aero","ice_aero", &
+                      "sgs_tke"/)
+ the_file = trim(data_dir_input_grid) // "/" // trim(grib2_file_input_grid)
+ !if (file_is_converted) then
+ !  the_file = "./test.grib2"
+ !endif
+
+ print*,"- READ ATMOS DATA FROM GRIB2 FILE: ", trim(the_file)
+ print*,"- USE INVENTORY FILE ", inv_file
+
+ print*,"- OPEN FILE."
+ inquire(file=the_file,exist=exist)
+ if (.not.exist) then
+   iret = 1
+   call error_handler("OPENING GRIB2 ATM FILE.", iret)
+ end if
+
+   !print*,"- READ VERTICAL LEVELS."
+   iret = grb2_inq(the_file,inv_file,":UGRD:"," hybrid level:")
+   !if (iret < 0) call error_handler("COUNTING VERTICAL LEVELS.", iret)
+  
+    if (iret <= 0) then
+      if (localpet == 0) print*,"DATA IS ON ISOBARIC LEVELS, WILL NEED TO CONVERT AFTER READING"
+      lvl_str = "mb:" 
+      lvl_str_space = " mb:"
+      lvl_str_space_len = 4
+      isnative = .false.
+      iret = grb2_inq(the_file,inv_file,":UGRD:",lvl_str_space)
+      lev_input=iret
+    else
+      if (localpet == 0) PRINT*, "DATA IS ON NATIVE SIGMA/HYBRID LEVELS"
+      lvl_str = "hybrid level:"
+      lvl_str_space = " hybrid level:"
+      lvl_str_space_len = 14
+      isnative = .true.
+      iret = grb2_inq(the_file,inv_file,":UGRD:",lvl_str_space)
+      if (iret < 0) call error_handler("READING VERTICAL LEVEL TYPE.", iret)
+      lev_input=iret
+    endif
+ !endif
+    print*, "lev_input = ", lev_input
+    allocate(slevs(lev_input))
+    allocate(rlevs(lev_input))
+    levp1_input = lev_input + 1
+    
+    ! get the vertical levels, and search string by sequential reads
+
+    do i = 1,lev_input
+      iret=grb2_inq(the_file,inv_file,':UGRD:',trim(lvl_str),sequential=i-1,desc=metadata)
+      if (iret.ne.1) call error_handler(" IN SEQUENTIAL FILE READ.", iret)
+    
+      j = index(metadata,':UGRD:') + len(':UGRD:')
+      k = index(metadata,trim(lvl_str_space)) + len(trim(lvl_str_space))-1
+
+      read(metadata(j:k),*) rlevs(i)
+
+      slevs(i) = metadata(j-1:k)
+		
+      if (.not. isnative) rlevs(i) = rlevs(i) * 100.0
+      if (localpet==0) print*, "LEVEL = ", slevs(i)
+	enddo
+
+   allocate(vcoord(levp1_input,2))
+   if (localpet == 0) print*,"- READ VERTICAL COORDINATE INFO."
+   if (localpet == 0) print*, metadata
+   call read_vcoord(isnative,rlevs,vcoord,lev_input,levp1_input,pt,metadata,iret)
+   if (iret /= 0) call error_handler("READING VERTICAL COORDINATE INFO.", iret)
+   
+   !if (localpet==0) print*, "VCOORD(:,1) = ", vcoord(:,1)
+ 
+   if (localpet == 0) print*,"- FIND SPFH OR RH IN FILE"
+   iret = grb2_inq(the_file,inv_file,':SPFH:',lvl_str_space)
+
+   if (iret <= 0) then
+    iret = grb2_inq(the_file,inv_file,':RH:')
+    if (iret <= 0) call error_handler("READING ATMOSPHERIC WATER VAPOR VARIABLE.", iret)
+    hasspfh = .false.
+    trac_names_grib(1)=':RH:'
+   endif
+   
+   if (localpet == 0) print*,"- FIND CICE or CIMIXR"
+   iret = grb2_inq(the_file,inv_file,':CICE:',lvl_str_space)
+
+   if (iret <= 0) then
+    iret = grb2_inq(the_file,inv_file,':CIMIXR:',lvl_str_space)
+    if (iret >= 1) trac_names_grib(4)=':CIMIXR:'
+    if (iret <= 0) then
+      iret = grb2_inq(the_file,inv_file,':ICMR:',lvl_str_space)
+      if (iret >= 1) trac_names_grib(4)=':ICMR:'
+    endif
+   endif
+
+  print*,"- COUNT NUMBER OF TRACERS TO BE READ IN BASED ON PHYSICS SUITE TABLE"
+  !um_tracers = 0
+  !tracers_input(:)=""
+  do n = 1, num_tracers
+
+   vname = tracers_input(n)
+
+   do i = 1, num_tracers
+     if (trim(vname)==trim(trac_names_vmap(i))) exit
+   end do
+
+   tracers_input_grib(n)=trac_names_grib(i)
+   tracers_input_vmap(n)=trac_names_vmap(i)
+   tracers(n)=tracers_default(i)
+
+ enddo
+
+ num_tracers_input = num_tracers
+
+ allocate(atm(num_tracers+5))
+ if (localpet==0) print*, "NUMBER OF TRACERS IN FILE = ", num_tracers
+
+ if (localpet == 0) print*,"- CALL FieldCreate FOR INPUT GRID SURFACE PRESSURE."
+ ps_input_grid = ESMF_FieldCreate(input_grid, &
+                                  typekind=ESMF_TYPEKIND_R8, &
+                                  staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ if (localpet == 0) print*,"- CALL FieldCreate FOR INPUT GRID TEMPERATURE."
+ temp_input_grid = ESMF_FieldCreate(input_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                   ungriddedLBound=(/1/), &
+                                   ungriddedUBound=(/lev_input/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ allocate(tracers_input_grid(num_tracers))
+
+ do i = 1,num_tracers
+   if (localpet == 0) print*,"- CALL FieldCreate FOR INPUT GRID TRACER ", trim(tracers_input(i))
+
+   tracers_input_grid(i) = ESMF_FieldCreate(input_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                   ungriddedLBound=(/1/), &
+                                   ungriddedUBound=(/lev_input/), rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+     call error_handler("IN FieldCreate", rc)
+ enddo
+
+ if (localpet == 0) print*,"- CALL FieldCreate FOR INPUT GRID U."
+ u_input_grid = ESMF_FieldCreate(input_grid, &
+                                 typekind=ESMF_TYPEKIND_R8, &
+                                 staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                 ungriddedLBound=(/1/), &
+                                 ungriddedUBound=(/lev_input/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ if (localpet == 0) print*,"- CALL FieldCreate FOR INPUT GRID V."
+ v_input_grid = ESMF_FieldCreate(input_grid, &
+                                 typekind=ESMF_TYPEKIND_R8, &
+                                 staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                 ungriddedLBound=(/1/), &
+                                 ungriddedUBound=(/lev_input/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldCreate", rc)
+    
+ if (localpet == 0) print*,"- CALL FieldCreate FOR INPUT GRID DZDT."
+ dzdt_input_grid = ESMF_FieldCreate(input_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                   ungriddedLBound=(/1/), &
+                                   ungriddedUBound=(/lev_input/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ if (localpet == 0) print*,"- CALL FieldCreate FOR INPUT GRID TERRAIN."
+ terrain_input_grid = ESMF_FieldCreate(input_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ if (localpet == 0) then
+   allocate(dummy2d(i_input,j_input))
+   allocate(dummy2d_8(i_input,j_input))
+   allocate(dummy3d(i_input,j_input,lev_input))
+ else
+   allocate(dummy2d(0,0))
+   allocate(dummy2d_8(0,0))
+   allocate(dummy3d(0,0,0))
+ endif
+
+!-----------------------------------------------------------------------
+! 3-d fields in native files increment from bottom to model top.
+! That is what is expected by this program, so no need to flip indices.
+! Fields in non-native files, though, read in from top to bottom. We will
+! flip indices after the data is converted to sigma coordinates.
+!-----------------------------------------------------------------------
+ 
+ if (localpet == 0) then
+   print*,"- READ TEMPERATURE."
+   vname = ":TMP:"
+    do vlev = 1, lev_input
+      iret = grb2_inq(the_file,inv_file,vname,slevs(vlev),data2=dummy2d)
+      if (iret<=0) then 
+        call error_handler("READING IN TEMPERATURE AT LEVEL "//trim(slevs(vlev)),iret)
+      endif
+      dummy3d(:,:,vlev) = real(dummy2d,esmf_kind_r8)
+      print*,'temp check after read ',vlev, dummy3d(1,1,vlev)
+    enddo
+ endif
+
+ if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT GRID TEMPERATURE."
+ call ESMF_FieldScatter(temp_input_grid, dummy3d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ do n = 1, num_tracers
+
+   if (localpet == 0) print*,"- READ ", trim(tracers_input_vmap(n))
+   vname = tracers_input_vmap(n)
+   call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
+                       this_field_var_name=tmpstr,loc=varnum)
+   if (n==1 .and. .not. hasspfh) then 
+        print*,"- CALL FieldGather TEMPERATURE." 
+        call ESMF_FieldGather(temp_input_grid,dummy3d,rootPet=0, tile=1, rc=rc)
+        if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+        call error_handler("IN FieldGet", rc) 
+   endif
+   if (localpet == 0) then
+     vname = trim(tracers_input_grib(n))
+     vname2 = "var"
+     if (trim(vname) == ":PMTC:") then
+       vname = "var0_"
+       vname2 = "_13_192"
+     elseif (trim(vname) == ":PMTF:") then
+       vname = "var0_"
+       vname2 = "_13_193"
+     elseif (trim(vname) == ":CLWMR:") then
+       vname = "var0_"
+       vname2 = "_1_22"
+     endif
+     
+     do vlev = 1, lev_input
+      iret = grb2_inq(the_file,inv_file,vname,slevs(vlev),vname2,data2=dummy2d)
+     
+      if (iret <= 0) then
+        call handle_grib_error(vname, slevs(vlev),method,value,varnum,iret,var=dummy2d)
+        if (iret==1) then ! missing_var_method == skip or no entry
+          if (trim(vname)==":SPFH:" .or. trim(vname) == ":RH:" .or.  &
+              trim(vname) == ":O3MR:") then
+            call error_handler("READING IN "//trim(vname)//" AT LEVEL "//trim(slevs(vlev))&
+                      //". SET A FILL VALUE IN THE VARMAP TABLE IF THIS ERROR IS NOT DESIRABLE.",iret)
+          else
+            exit
+          endif
+        endif
+      endif
+      
+      if (n==1 .and. .not. hasspfh) then
+        call rh2spfh(dummy2d,rlevs(vlev),dummy3d(:,:,vlev))
+      endif
+
+       print*,'tracer ',vlev, maxval(dummy2d),minval(dummy2d)
+       dummy3d(:,:,vlev) = real(dummy2d,esmf_kind_r8)
+     enddo
+     endif
+
+   if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT ", trim(tracers(n))
+   call ESMF_FieldScatter(tracers_input_grid(n), dummy3d, rootpet=0, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+      call error_handler("IN FieldScatter", rc)
+ enddo
+ 
+ call read_winds(the_file,inv_file,u_tmp_3d,v_tmp_3d, localpet) 
+
+ if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT U-WIND."
+ call ESMF_FieldScatter(u_input_grid, u_tmp_3d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT V-WIND."
+ call ESMF_FieldScatter(v_input_grid, v_tmp_3d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldScatter", rc)
+    
+if (localpet == 0) then
+   print*,"- READ SURFACE PRESSURE."
+   vname = ":PRES:"
+   vlevtyp = ":surface:"
+   iret = grb2_inq(the_file,inv_file,vname,vlevtyp,data2=dummy2d)
+   if (iret <= 0) call error_handler("READING SURFACE PRESSURE RECORD.", iret)
+   dummy2d_8 = real(dummy2d,esmf_kind_r8)
+ endif
+
+ if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT GRID SURFACE PRESSURE."
+ call ESMF_FieldScatter(ps_input_grid, dummy2d_8, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldScatter", rc)
+
+  if (localpet == 0) then
+   print*,"- READ DZDT."
+   vname = "dzdt"
+   call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
+                         loc=varnum)
+   vname = ":DZDT:"
+   do vlev = 1, lev_input
+     iret = grb2_inq(the_file,inv_file,vname,slevs(vlev),data2=dummy2d)
+     if (iret <= 0) then
+       print*,"DZDT not available at level ", trim(slevs(vlev)), " so checking for VVEL"
+       vname = ":VVEL:"
+       iret = grb2_inq(the_file,inv_file,vname,slevs(vlev),data2=dummy2d)
+       
+       
+       if (iret <= 0) then
+        call handle_grib_error(vname, slevs(vlev),method,value,varnum,iret,var=dummy2d)
+        if (iret==1) then ! missing_var_method == skip 
+          cycle
+        endif
+       else
+        conv_omega = .true.
+       endif
+       
+     endif
+     print*,'dzdt ',vlev, maxval(dummy2d),minval(dummy2d)
+     dummy3d(:,:,vlev) = dummy2d
+   enddo
+ endif
+
+ if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT DZDT."
+ call ESMF_FieldScatter(dzdt_input_grid, dummy3d, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldScatter", rc)
+
+ if (localpet == 0) then
+   print*,"- READ TERRAIN."
+    vname = ":HGT:"
+   vlevtyp = ":surface:"
+   iret = grb2_inq(the_file,inv_file,vname,vlevtyp,data2=dummy2d)
+   if (iret <= 0) call error_handler("READING TERRAIN HEIGHT RECORD.", iret)
+   dummy2d_8 = real(dummy2d,esmf_kind_r8)
+ endif
+
+ if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT GRID TERRAIN."
+ call ESMF_FieldScatter(terrain_input_grid, dummy2d_8, rootpet=0, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldScatter", rc)
+ 
+  if (localpet == 0) print*,"- CALL FieldCreate FOR INPUT GRID PRESSURE."
+ pres_input_grid = ESMF_FieldCreate(input_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                   ungriddedLBound=(/1/), &
+                                   ungriddedUBound=(/lev_input/), rc=rc)
+
+ deallocate(dummy2d, dummy3d, dummy2d_8)
+ 
+!---------------------------------------------------------------------------
+! Compute 3-d pressure.
+!---------------------------------------------------------------------------
+ if (localpet == 0) print*,"-CONVERT DATA TO SIGMA LEVELS AND COMPUTE 3D PRESSURE"
+ if (.not. isnative) then
+    
+   if (localpet == 0) print*,"- CALL FieldGet FOR SURFACE PRESSURE."
+   nullify(psptr)
+   call ESMF_FieldGet(ps_input_grid, &
+                      farrayPtr=psptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+      call error_handler("IN FieldGet", rc)
+      
+  if (localpet == 0) print*,"- CALL FieldGet FOR 3-D PRESSURE."
+  call ESMF_FieldGet(pres_input_grid, &
+                    farrayPtr=atm(1)%var, rc=rc)
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldGet", rc)
+
+  if (localpet == 0) print*,"- CALL FieldGet TEMPERATURE."  
+  call ESMF_FieldGet(temp_input_grid, &
+                    computationalLBound=clb, &
+                    computationalUBound=cub, &
+                    farrayPtr=atm(2)%var, rc=rc)
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldGet", rc) 
+  
+  if (localpet == 0) print*,"- CALL FieldGet FOR U"
+  call ESMF_FieldGet(u_input_grid, &
+                    farrayPtr=atm(3)%var, rc=rc)
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldGet", rc)
+    
+  if (localpet == 0) print*,"- CALL FieldGet FOR V"
+  call ESMF_FieldGet(v_input_grid, &
+                    farrayPtr=atm(4)%var, rc=rc)
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldGet", rc)
+  
+   if (localpet == 0) print*,"- CALL FieldGet FOR W"
+  call ESMF_FieldGet(dzdt_input_grid, &
+                    farrayPtr=atm(5)%var, rc=rc)
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldGet", rc)
+ 
+  if (localpet == 0) print*,"- CALL FieldGet FOR TRACERS."
+  do i=1,num_tracers
+    call ESMF_FieldGet(tracers_input_grid(i), &
+                    farrayPtr=atm(i+5)%var, rc=rc)
+    if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+      call error_handler("IN FieldGet", rc)
+    if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldGet", rc) 
+  end do
+  
+  call iso2sig(rlevs,vcoord,lev_input,levp1_input,psptr,atm,clb,cub,5+num_tracers, iret)
+  deallocate(vcoord)
+
+ else
+   if (localpet == 0) print*,"- COMPUTE 3-D PRESSURE."
+
+   if (localpet == 0) print*,"- CALL FieldGet FOR 3-D PRESSURE."
+   nullify(presptr)
+   
+   call ESMF_FieldGet(pres_input_grid, &
+                      computationalLBound=clb, &
+                      computationalUBound=cub, &
+                      farrayPtr=presptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+      call error_handler("IN FieldGet", rc)
+
+   if (localpet == 0) print*,"- CALL FieldGet FOR SURFACE PRESSURE."
+   nullify(psptr)
+   call ESMF_FieldGet(ps_input_grid, &
+                      farrayPtr=psptr, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+      call error_handler("IN FieldGet", rc)
+
+   do i = clb(1), cub(1)
+     do j = clb(2), cub(2)
+       
+       do k = 1,lev_input
+         presptr(i,j,k) = vcoord(k,2)*(psptr(i,j)-pt) + vcoord(k,1)*(p0-pt)+pt
+       enddo
+       
+     enddo
+   enddo
+
+  deallocate(vcoord)
+ endif
+ 
+ if (localpet == 0) then
+   print*,'psfc is ',clb(1),clb(2),psptr(clb(1),clb(2))
+   if (isnative) then
+     print*,'pres is ',cub(1),cub(2),presptr(cub(1),cub(2),:) 
+     
+     print*,'pres check 1',localpet,maxval(presptr(clb(1):cub(1),clb(2):cub(2),1)), &
+              minval(presptr(clb(1):cub(1),clb(2):cub(2),1))
+     print*,'pres check lev',localpet,maxval(presptr(clb(1):cub(1),clb(2):cub(2), &
+            lev_input)),minval(presptr(clb(1):cub(1),clb(2):cub(2),lev_input))
+   else
+     print*,'pres is ',cub(1),cub(2),atm(1)%var(cub(1),cub(2),:)
+     print*,'pres check 1',localpet,maxval(atm(1)%var(clb(1):cub(1),clb(2):cub(2),1)), &
+              minval(atm(1)%var(clb(1):cub(1),clb(2):cub(2),1))
+     print*,'pres check lev',localpet,maxval(atm(1)%var(clb(1):cub(1),clb(2):cub(2), &
+            lev_input)),minval(atm(1)%var(clb(1):cub(1),clb(2):cub(2),lev_input))
+   endif
+
+ 
+ endif
+ 
+!---------------------------------------------------------------------------
+! Convert from 2-d to 3-d component winds.
+!---------------------------------------------------------------------------
+ call convert_winds
+ 
+!---------------------------------------------------------------------------
+! Convert dpdt to dzdt if needed
+!---------------------------------------------------------------------------
+ if (conv_omega) then
+  nullify(tptr)
+  if (localpet == 0) print*,"- CALL FieldGet TEMPERATURE."  
+  call ESMF_FieldGet(temp_input_grid, &
+                    farrayPtr=tptr, rc=rc)
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldGet", rc) 
+    
+  nullify(qptr)
+  if (localpet == 0) print*,"- CALL FieldGet SPECIFIC HUMIDITY."  
+  call ESMF_FieldGet(tracers_input_grid(1), &
+                    computationalLBound=clb, &
+                    computationalUBound=cub, &
+                    farrayPtr=qptr, rc=rc)
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldGet", rc)
+    
+  nullify(wptr)
+  if (localpet == 0) print*,"- CALL FieldGet DZDT." 
+  call ESMF_FieldGet(dzdt_input_grid, &
+                    computationalLBound=clb, &
+                    computationalUBound=cub, &
+                    farrayPtr=wptr, rc=rc)
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldGet", rc)
+  
+  nullify(presptr)
+  call ESMF_FieldGet(pres_input_grid, &
+                    farrayPtr=presptr, rc=rc)
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldGet", rc)
+    
+  call convert_omega(wptr,presptr,tptr,qptr,clb,cub)
+  
+ endif
+ 
+ ! This test doesn't make any sense! file_is_converted is imported from model_grid.F90,
+ ! where it is set to zero. No part of this chgres_cube code is setting this variable
+ ! to something else than zero, hence the next few lines will never execute. Besides,
+ ! (localpet == 0) and convert_sfc are logicals, whereas file_is_converted is an integer.
+ ! This violates the Fortran standard and causes compiler errors with the GNU compiler.
+ !if ( localpet == 0 .and. file_is_converted .and. .not. convert_sfc) &
+ !     call system("rm "//trim(the_file))
+ end subroutine read_input_atm_grib2_file
+ 
+!---------------------------------------------------------------------------
 ! Read input grid surface data from a spectral gfs gaussian sfcio file.
 ! Prior to July 19, 2017.
 !---------------------------------------------------------------------------
@@ -2616,21 +3217,21 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT LANDSEA MASK."
  call ESMF_FieldScatter(landsea_mask_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) dummy2d = sfcdata%zorl
 
  print*,"- CALL FieldScatter FOR INPUT Z0."
  call ESMF_FieldScatter(z0_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) dummy2d = nint(sfcdata%vtype)
 
  print*,"- CALL FieldScatter FOR INPUT VEG TYPE."
  call ESMF_FieldScatter(veg_type_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
 ! Prior to July, 2017, gfs used zobler soil types.  '13' indicates permanent land ice.
@@ -2640,133 +3241,133 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT CANOPY MC."
  call ESMF_FieldScatter(canopy_mc_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) dummy2d = sfcdata%fice
 
  print*,"- CALL FieldScatter FOR INPUT ICE FRACTION."
  call ESMF_FieldScatter(seaice_fract_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) dummy2d = sfcdata%hice
 
  print*,"- CALL FieldScatter FOR INPUT ICE DEPTH."
  call ESMF_FieldScatter(seaice_depth_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) dummy2d = sfcdata%tisfc
 
  print*,"- CALL FieldScatter FOR INPUT ICE SKIN TEMP."
  call ESMF_FieldScatter(seaice_skin_temp_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) dummy2d = sfcdata%snwdph ! mm (expected by program)
 
  print*,"- CALL FieldScatter FOR INPUT SNOW DEPTH."
  call ESMF_FieldScatter(snow_depth_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) dummy2d = sfcdata%sheleg
 
  print*,"- CALL FieldScatter FOR INPUT SNOW LIQUID EQUIV."
  call ESMF_FieldScatter(snow_liq_equiv_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) dummy2d = sfcdata%t2m
 
  print*,"- CALL FieldScatter FOR INPUT T2M."
  call ESMF_FieldScatter(t2m_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) dummy2d = sfcdata%q2m
 
  print*,"- CALL FieldScatter FOR INPUT Q2M."
  call ESMF_FieldScatter(q2m_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) dummy2d = sfcdata%tprcp
 
  print*,"- CALL FieldScatter FOR INPUT TPRCP."
  call ESMF_FieldScatter(tprcp_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) dummy2d = sfcdata%f10m
 
  print*,"- CALL FieldScatter FOR INPUT F10M."
  call ESMF_FieldScatter(f10m_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) dummy2d = sfcdata%uustar
 
  print*,"- CALL FieldScatter FOR INPUT USTAR."
  call ESMF_FieldScatter(ustar_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) dummy2d = sfcdata%ffmm
 
  print*,"- CALL FieldScatter FOR INPUT FFMM."
  call ESMF_FieldScatter(ffmm_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) dummy2d = sfcdata%srflag
 
  print*,"- CALL FieldScatter FOR INPUT SRFLAG."
  call ESMF_FieldScatter(srflag_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) dummy2d = sfcdata%tsea
 
  print*,"- CALL FieldScatter FOR INPUT SKIN TEMP."
  call ESMF_FieldScatter(skin_temp_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) dummy2d = nint(sfcdata%stype)
 
  print*,"- CALL FieldScatter FOR INPUT SOIL TYPE."
  call ESMF_FieldScatter(soil_type_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) dummy2d = sfcdata%orog
 
  print*,"- CALL FieldScatter FOR INPUT TERRAIN."
  call ESMF_FieldScatter(terrain_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) dummy3d = sfcdata%slc
 
  print*,"- CALL FieldScatter FOR INPUT LIQUID SOIL MOISTURE."
  call ESMF_FieldScatter(soilm_liq_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) dummy3d = sfcdata%smc
 
  print*,"- CALL FieldScatter FOR INPUT TOTAL SOIL MOISTURE."
  call ESMF_FieldScatter(soilm_tot_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) dummy3d = sfcdata%stc
 
  print*,"- CALL FieldScatter FOR INPUT SOIL TEMPERATURE."
  call ESMF_FieldScatter(soil_temp_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  deallocate(dummy2d, dummy3d)
@@ -2822,7 +3423,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT TERRAIN."
  call ESMF_FieldScatter(terrain_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -2835,7 +3436,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT LANDSEA MASK."
  call ESMF_FieldScatter(landsea_mask_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
  
  if (localpet == 0) then
@@ -2848,7 +3449,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT GRID SEAICE FRACTION."
  call ESMF_FieldScatter(seaice_fract_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -2861,7 +3462,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT GRID SEAICE DEPTH."
  call ESMF_FieldScatter(seaice_depth_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -2874,7 +3475,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT GRID SEAICE SKIN TEMPERATURE."
  call ESMF_FieldScatter(seaice_skin_temp_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -2887,7 +3488,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT GRID SNOW LIQUID EQUIVALENT."
  call ESMF_FieldScatter(snow_liq_equiv_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -2900,7 +3501,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT GRID SNOW DEPTH."
  call ESMF_FieldScatter(snow_depth_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -2913,7 +3514,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT GRID VEG TYPE."
  call ESMF_FieldScatter(veg_type_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -2926,7 +3527,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT GRID SOIL TYPE."
  call ESMF_FieldScatter(soil_type_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -2939,7 +3540,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT GRID T2M."
  call ESMF_FieldScatter(t2m_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -2952,7 +3553,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT GRID Q2M."
  call ESMF_FieldScatter(q2m_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -2965,7 +3566,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT GRID TPRCP."
  call ESMF_FieldScatter(tprcp_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -2978,7 +3579,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT GRID FFMM"
  call ESMF_FieldScatter(ffmm_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -2991,13 +3592,13 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT GRID USTAR"
  call ESMF_FieldScatter(ustar_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) dummy2d = 0.0
  print*,"- CALL FieldScatter FOR INPUT GRID SRFLAG"
  call ESMF_FieldScatter(srflag_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -3010,7 +3611,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT GRID SKIN TEMPERATURE"
  call ESMF_FieldScatter(skin_temp_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -3023,7 +3624,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT GRID F10M."
  call ESMF_FieldScatter(f10m_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -3036,7 +3637,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT GRID CANOPY MOISTURE CONTENT."
  call ESMF_FieldScatter(canopy_mc_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -3049,7 +3650,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT GRID Z0."
  call ESMF_FieldScatter(z0_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  deallocate(dummy2d)
@@ -3073,7 +3674,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT LIQUID SOIL MOISTURE."
  call ESMF_FieldScatter(soilm_liq_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
  
  if (localpet == 0) then
@@ -3095,7 +3696,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT TOTAL SOIL MOISTURE."
  call ESMF_FieldScatter(soilm_tot_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -3117,7 +3718,7 @@ module input_data
 
  print*,"- CALL FieldScatter FOR INPUT SOIL TEMPERATURE."
  call ESMF_FieldScatter(soil_temp_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  deallocate(dummy3d, dummy)
@@ -3125,571 +3726,7 @@ module input_data
  if (localpet == 0) call nemsio_close(gfile)
 
  end subroutine read_input_sfc_gfs_gaussian_file
-!---------------------------------------------------------------------------
-! Read input grid atmospheric grib2 files.
-!---------------------------------------------------------------------------
 
- subroutine read_input_atm_grib2_file(localpet)
-
- use wgrib2api
- 
- use grib2_util, only                   : read_vcoord, iso2sig, rh2spfh, convert_omega, &
-                                           countDigit
- use model_grid, only                   : file_is_converted
-
-
- implicit none
-
- integer, intent(in)                   :: localpet
- 
- integer, parameter                    :: ntrac_max=14
-
- character(len=300)                    :: the_file
- character(len=20)                     :: vlevtyp, vname, lvl_str,lvl_str_space, &
-                                          trac_names_grib(ntrac_max), & 
-                                          trac_names_vmap(ntrac_max), &
-                                          tracers_input_grib(num_tracers), tmpstr, & 
-                                          method, tracers_input_vmap(num_tracers), &
-                                          tracers_default(ntrac_max), vname2
- character (len=500)                    :: metadata
-
- integer                               :: i, j, k, n, lvl_str_space_len
- integer                               :: rc, clb(3), cub(3)
- integer                               :: vlev, iret,varnum
-
- 
- 
- logical                                :: conv_omega=.false., &
-                                           isnative=.false., &
-                                           hasspfh=.true.
-
- real(esmf_kind_r8), allocatable       :: vcoord(:,:)
- real(esmf_kind_r8), allocatable       :: rlevs(:)
- real(esmf_kind_r4), allocatable       :: dummy2d(:,:)
- real(esmf_kind_r8), allocatable       :: dummy3d(:,:,:), dummy2d_8(:,:),&
-                                          u_tmp_3d(:,:,:), v_tmp_3d(:,:,:)
- real(esmf_kind_r8), pointer           :: presptr(:,:,:), psptr(:,:),tptr(:,:,:), &
-                                          qptr(:,:,:), wptr(:,:,:)
-                                          
- real(esmf_kind_r4)                     :: value
- real(esmf_kind_r8)                    :: pt
- real(esmf_kind_r8), parameter         :: p0 = 100000.0
- 
- type(atmdata), allocatable   :: atm(:)
- 
-
- 
- tracers(:) = "NULL"
- trac_names_grib = (/":SPFH:",":CLWMR:", "O3MR",":CICE:", ":RWMR:",":SNMR:",":GRLE:", &
-               ":TCDC:", ":NCCICE:",":SPNCR:", ":NCONCD:",":PMTF:",":PMTC:",":TKE:"/)
- trac_names_vmap = (/"sphum", "liq_wat","o3mr","ice_wat", &
-                      "rainwat", "snowwat", "graupel", "cld_amt", "ice_nc", &
-                      "rain_nc","water_nc","liq_aero","ice_aero", &
-                      "sgs_tke"/)
- tracers_default = (/"sphum", "liq_wat","o3mr","ice_wat", &
-                      "rainwat", "snowwat", "graupel", "cld_amt", "ice_nc", &
-                      "rain_nc","water_nc","liq_aero","ice_aero", &
-                      "sgs_tke"/)
- the_file = trim(data_dir_input_grid) // "/" // trim(grib2_file_input_grid)
- !if (file_is_converted) then
- !  the_file = "./test.grib2"
- !endif
-
- print*,"- READ ATMOS DATA FROM GRIB2 FILE: ", trim(the_file)
- print*,"- USE INVENTORY FILE ", inv_file
-
- print*,"- OPEN FILE."
- inquire(file=the_file,exist=iret)
- if (iret == 0) call error_handler("OPENING GRIB2 ATM FILE.", iret)
-
- !print*,"- READ VERTICAL LEVELS."
- iret = grb2_inq(the_file,inv_file,":UGRD:"," hybrid level:")
- !if (iret < 0) call error_handler("COUNTING VERTICAL LEVELS.", iret)
-
-	if (iret <= 0) then
-		if (localpet == 0) print*,"DATA IS ON ISOBARIC LEVELS, WILL NEED TO CONVERT AFTER READING"
-		lvl_str = "mb:" 
-		lvl_str_space = " mb:"
-		lvl_str_space_len = 4
-		isnative = 0
-		iret = grb2_inq(the_file,inv_file,":UGRD:",lvl_str_space)
-		lev_input=iret
-	else
-		if (localpet == 0) PRINT*, "DATA IS ON NATIVE SIGMA/HYBRID LEVELS"
-		lvl_str = "hybrid level:"
-		lvl_str_space = " hybrid level:"
-		lvl_str_space_len = 14
-		isnative = .true.
-		iret = grb2_inq(the_file,inv_file,":UGRD:",lvl_str_space)
-		if (iret < 0) call error_handler("READING VERTICAL LEVEL TYPE.", iret)
-		lev_input=iret
-	endif
-!endif
-	print*, "lev_input = ", lev_input
-	allocate(slevs(lev_input))
-	allocate(rlevs(lev_input))
-	levp1_input = lev_input + 1
-	
-	! get the vertical levels, and search string by sequential reads
-
-	do i = 1,lev_input
-		iret=grb2_inq(the_file,inv_file,':UGRD:',trim(lvl_str),sequential=i-1,desc=metadata)
-		if (iret.ne.1) call error_handler(" IN SEQUENTIAL FILE READ.", iret)
-	
-		j = index(metadata,':UGRD:') + len(':UGRD:')
-		k = index(metadata,trim(lvl_str_space)) + len(trim(lvl_str_space))-1
-
-		read(metadata(j:k),*) rlevs(i)
-	
-		slevs(i) = metadata(j-1:k)
-		
-		if (.not. isnative) rlevs(i) = rlevs(i) * 100.0
-	
-		if (localpet==0) print*, "LEVEL = ", rlevs(i)
-	enddo
-
- allocate(vcoord(levp1_input,2))
- if (localpet == 0) print*,"- READ VERTICAL COORDINATE INFO."
- call read_vcoord(isnative,rlevs,vcoord,lev_input,levp1_input,pt,metadata,iret)
- if (iret /= 0) call error_handler("READING VERTICAL COORDINATE INFO.", iret)
- 
- if (localpet==0) print*, "VCOORD(:,1) = ", vcoord(:,1)
- if (localpet==0) print*, "VCOORD(:,2) = ", vcoord(:,2)
-
- if (localpet == 0) print*,"- FIND SPFH OR RH IN FILE"
- iret = grb2_inq(the_file,inv_file,':SPFH:',lvl_str_space)
-
- if (iret <= 0) then
-	iret = grb2_inq(the_file,inv_file,':RH:')
-	if (iret <= 0) call error_handler("READING ATMOSPHERIC WATER VAPOR VARIABLE.", iret)
-	hasspfh = .false.
-	trac_names_grib(1)=':RH:'
- endif
- 
- if (localpet == 0) print*,"- FIND CICE or CIMIXR"
- iret = grb2_inq(the_file,inv_file,':CICE:',lvl_str_space)
-
- if (iret <= 0) then
-	iret = grb2_inq(the_file,inv_file,':CIMIXR:',lvl_str_space)
-	if (iret >= 1) trac_names_grib(4)=':CIMIXR:'
-	if (iret <= 0) then
-		iret = grb2_inq(the_file,inv_file,':ICMR:',lvl_str_space)
-		if (iret >= 1) trac_names_grib(4)=':ICMR:'
-	endif
- endif
-
- print*,"- COUNT NUMBER OF TRACERS TO BE READ IN BASED ON PHYSICS SUITE TABLE"
- !um_tracers = 0
- !tracers_input(:)=""
- do n = 1, num_tracers
-
-	 vname = tracers_input(n)
- 
-	 i = maxloc(merge(1.,0.,trac_names_vmap == vname),dim=1)
-
-	 tracers_input_grib(n)=trac_names_grib(i)
-	 tracers_input_vmap(n)=trac_names_vmap(i)
-	 tracers(n)=tracers_default(i)
-	 tracers_input(n) = tracers_default(i)
- enddo
-
- num_tracers_input = num_tracers
- 
- allocate(atm(num_tracers+4))
- if (localpet==0) print*, "NUMBER OF TRACERS IN FILE = ", num_tracers
-
- if (localpet == 0) print*,"- CALL FieldCreate FOR INPUT GRID SURFACE PRESSURE."
- ps_input_grid = ESMF_FieldCreate(input_grid, &
-                                  typekind=ESMF_TYPEKIND_R8, &
-                                  staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldCreate", rc)
-
- if (localpet == 0) print*,"- CALL FieldCreate FOR INPUT GRID TEMPERATURE."
- temp_input_grid = ESMF_FieldCreate(input_grid, &
-                                   typekind=ESMF_TYPEKIND_R8, &
-                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
-                                   ungriddedLBound=(/1/), &
-                                   ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldCreate", rc)
-
- allocate(tracers_input_grid(num_tracers))
-
- do i = 1,num_tracers
-   if (localpet == 0) print*,"- CALL FieldCreate FOR INPUT GRID TRACER ", trim(tracers_input(i))
-
-   tracers_input_grid(i) = ESMF_FieldCreate(input_grid, &
-                                   typekind=ESMF_TYPEKIND_R8, &
-                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
-                                   ungriddedLBound=(/1/), &
-                                   ungriddedUBound=(/lev_input/), rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-     call error_handler("IN FieldCreate", rc)
- enddo
-
- if (localpet == 0) print*,"- CALL FieldCreate FOR INPUT GRID U."
- u_input_grid = ESMF_FieldCreate(input_grid, &
-                                 typekind=ESMF_TYPEKIND_R8, &
-                                 staggerloc=ESMF_STAGGERLOC_CENTER, &
-                                 ungriddedLBound=(/1/), &
-                                 ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldCreate", rc)
-
- if (localpet == 0) print*,"- CALL FieldCreate FOR INPUT GRID V."
- v_input_grid = ESMF_FieldCreate(input_grid, &
-                                 typekind=ESMF_TYPEKIND_R8, &
-                                 staggerloc=ESMF_STAGGERLOC_CENTER, &
-                                 ungriddedLBound=(/1/), &
-                                 ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldCreate", rc)
-    
- if (localpet == 0) print*,"- CALL FieldCreate FOR INPUT GRID DZDT."
- dzdt_input_grid = ESMF_FieldCreate(input_grid, &
-                                   typekind=ESMF_TYPEKIND_R8, &
-                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
-                                   ungriddedLBound=(/1/), &
-                                   ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldCreate", rc)
-
- if (localpet == 0) print*,"- CALL FieldCreate FOR INPUT GRID TERRAIN."
- terrain_input_grid = ESMF_FieldCreate(input_grid, &
-                                   typekind=ESMF_TYPEKIND_R8, &
-                                   staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldCreate", rc)
-
- if (localpet == 0) then
-   allocate(dummy2d(i_input,j_input))
-   allocate(dummy2d_8(i_input,j_input))
-   allocate(dummy3d(i_input,j_input,lev_input))
- else
-   allocate(dummy2d(0,0))
-   allocate(dummy2d_8(0,0))
-   allocate(dummy3d(0,0,0))
- endif
-
-!-----------------------------------------------------------------------
-! 3-d fields in native files increment from bottom to model top.
-! That is what is expected by this program, so no need to flip indices.
-! Fields in non-native files, though, read in from top to bottom. We will
-! flip indices after the data is converted to sigma coordinates.
-!-----------------------------------------------------------------------
- 
- if (localpet == 0) then
-   print*,"- READ TEMPERATURE."
-   vname = ":TMP:"
-    do vlev = 1, lev_input
-      iret = grb2_inq(the_file,inv_file,vname,slevs(vlev),data2=dummy2d)
-      if (iret<=0) then 
-        call error_handler("READING IN TEMPERATURE AT LEVEL "//trim(slevs(vlev)),iret)
-      endif
-      dummy3d(:,:,vlev) = real(dummy2d,esmf_kind_r8)
-      print*,'temp check after read ',vlev, dummy3d(1,1,vlev)
-    enddo
- endif
-
- if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT GRID TEMPERATURE."
- call ESMF_FieldScatter(temp_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldScatter", rc)
-
- do n = 1, num_tracers
-
-   if (localpet == 0) print*,"- READ ", trim(tracers_input_vmap(n))
-   vname = tracers_input_vmap(n)
-   call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
-                       this_field_var_name=tmpstr,loc=varnum)
-   if (n==1 .and. .not. hasspfh) then 
-        print*,"- CALL FieldGather TEMPERATURE." 
-        call ESMF_FieldGather(temp_input_grid,dummy3d,rootPet=0, tile=1, rc=rc)
-        if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-        call error_handler("IN FieldGet", rc) 
-   endif
-   if (localpet == 0) then
-     vname = trim(tracers_input_grib(n))
-     vname2 = "var"
-     if (trim(vname) == ":PMTC:") then
-       vname = "var0_"
-       vname2 = "_13_192"
-     elseif (trim(vname) == ":PMTF:") then
-       vname = "var0_"
-       vname2 = "_13_193"
-     endif
-     
-     do vlev = 1, lev_input
-      iret = grb2_inq(the_file,inv_file,vname,slevs(vlev),vname2,data2=dummy2d)
-     
-      if (iret <= 0) then
-        call handle_grib_error(vname, slevs(vlev),method,value,varnum,iret,var=dummy2d)
-        if (iret==1) then ! missing_var_method == skip or no entry
-          if (trim(vname)==":SPFH:" .or. trim(vname) == ":RH:" .or.  &
-              trim(vname) == ":O3MR:") then
-            call error_handler("READING IN "//trim(vname)//" AT LEVEL "//trim(slevs(vlev))&
-                      //". SET A FILL VALUE IN THE VARMAP TABLE IF THIS ERROR IS NOT DESIRABLE.",iret)
-          else
-            exit
-          endif
-        endif
-      endif
-      
-      if (n==1 .and. .not. hasspfh) then
-        call rh2spfh(dummy2d,rlevs(vlev),dummy3d(:,:,vlev))
-      endif
-
-       print*,'tracer ',vlev, maxval(dummy2d),minval(dummy2d)
-       dummy3d(:,:,vlev) = real(dummy2d,esmf_kind_r8)
-     enddo
-     if(localpet==0 .and. trim(tracers_input_vmap(n))=="sphum") then
-         print*,'q ',dummy3d(1,1,:)
-     endif
-   endif
-
-   if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT ", trim(tracers(n))
-   call ESMF_FieldScatter(tracers_input_grid(n), dummy3d, rootpet=0, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-      call error_handler("IN FieldScatter", rc)
- enddo
- 
- call read_winds(the_file,inv_file,u_tmp_3d,v_tmp_3d, localpet) 
-
- if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT U-WIND."
- call ESMF_FieldScatter(u_input_grid, u_tmp_3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldScatter", rc)
-
- if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT V-WIND."
- call ESMF_FieldScatter(v_input_grid, v_tmp_3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldScatter", rc)
-    
-if (localpet == 0) then
-   print*,"- READ SURFACE PRESSURE."
-   vname = ":PRES:"
-   vlevtyp = ":surface:"
-   iret = grb2_inq(the_file,inv_file,vname,vlevtyp,data2=dummy2d)
-   if (iret <= 0) call error_handler("READING SURFACE PRESSURE RECORD.", iret)
-   dummy2d_8 = real(dummy2d,esmf_kind_r8)
- endif
-
- if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT GRID SURFACE PRESSURE."
- call ESMF_FieldScatter(ps_input_grid, dummy2d_8, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldScatter", rc)
-
-  if (localpet == 0) then
-   print*,"- READ DZDT."
-   vname = "dzdt"
-   call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
-                         loc=varnum)
-   vname = ":DZDT:"
-   do vlev = 1, lev_input
-     iret = grb2_inq(the_file,inv_file,vname,slevs(vlev),data2=dummy2d)
-     if (iret <= 0) then
-       print*,"DZDT not available at level ", trim(slevs(vlev)), " so checking for VVEL"
-       vname = ":VVEL:"
-       iret = grb2_inq(the_file,inv_file,vname,slevs(vlev),data2=dummy2d)
-       
-       
-       if (iret <= 0) then
-        call handle_grib_error(vname, slevs(vlev),method,value,varnum,iret,var=dummy2d)
-        if (iret==1) then ! missing_var_method == skip 
-          exit
-        endif
-       else
-        conv_omega = .true.
-       endif
-       
-     endif
-     print*,'dzdt ',vlev, maxval(dummy2d),minval(dummy2d)
-     dummy3d(:,:,vlev) = dummy2d
-   enddo
- endif
-
- if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT DZDT."
- call ESMF_FieldScatter(dzdt_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldScatter", rc)
-
- if (localpet == 0) then
-   print*,"- READ TERRAIN."
-    vname = ":HGT:"
-   vlevtyp = ":surface:"
-   iret = grb2_inq(the_file,inv_file,vname,vlevtyp,data2=dummy2d)
-   if (iret <= 0) call error_handler("READING TERRAIN HEIGHT RECORD.", iret)
-   dummy2d_8 = real(dummy2d,esmf_kind_r8)
- endif
-
- if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT GRID TERRAIN."
- call ESMF_FieldScatter(terrain_input_grid, dummy2d_8, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldScatter", rc)
- 
-  if (localpet == 0) print*,"- CALL FieldCreate FOR INPUT GRID PRESSURE."
- pres_input_grid = ESMF_FieldCreate(input_grid, &
-                                   typekind=ESMF_TYPEKIND_R8, &
-                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
-                                   ungriddedLBound=(/1/), &
-                                   ungriddedUBound=(/lev_input/), rc=rc)
-
- deallocate(dummy2d, dummy3d, dummy2d_8)
- 
-!---------------------------------------------------------------------------
-! Compute 3-d pressure.
-!---------------------------------------------------------------------------
- if (localpet == 0) print*,"-CONVERT DATA TO SIGMA LEVELS AND COMPUTE 3D PRESSURE"
- if (.not. isnative) then
-    
-   if (localpet == 0) print*,"- CALL FieldGet FOR SURFACE PRESSURE."
-   nullify(psptr)
-   call ESMF_FieldGet(ps_input_grid, &
-                      farrayPtr=psptr, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-      call error_handler("IN FieldGet", rc)
-      
-  if (localpet == 0) print*,"- CALL FieldGet FOR 3-D PRESSURE."
-  call ESMF_FieldGet(pres_input_grid, &
-                    farrayPtr=atm(1)%var, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldGet", rc)
-
-  if (localpet == 0) print*,"- CALL FieldGet TEMPERATURE."  
-  call ESMF_FieldGet(temp_input_grid, &
-                    computationalLBound=clb, &
-                    computationalUBound=cub, &
-                    farrayPtr=atm(2)%var, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldGet", rc) 
-  
-  if (localpet == 0) print*,"- CALL FieldGet FOR U"
-  call ESMF_FieldGet(u_input_grid, &
-                    farrayPtr=atm(3)%var, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldGet", rc)
-    
-  if (localpet == 0) print*,"- CALL FieldGet FOR V"
-  call ESMF_FieldGet(v_input_grid, &
-                    farrayPtr=atm(4)%var, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldGet", rc)
- 
-  if (localpet == 0) print*,"- CALL FieldGet FOR TRACERS."
-  do i=1,num_tracers
-    call ESMF_FieldGet(tracers_input_grid(i), &
-                    farrayPtr=atm(i+4)%var, rc=rc)
-    if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-      call error_handler("IN FieldGet", rc)
-    if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldGet", rc) 
-  end do
-  
-  call iso2sig(rlevs,vcoord,lev_input,levp1_input,psptr,atm,clb,cub,4+num_tracers, iret)
-  deallocate(vcoord)
-
- else
-   if (localpet == 0) print*,"- COMPUTE 3-D PRESSURE."
-
-   if (localpet == 0) print*,"- CALL FieldGet FOR 3-D PRESSURE."
-   nullify(presptr)
-   
-   call ESMF_FieldGet(pres_input_grid, &
-                      computationalLBound=clb, &
-                      computationalUBound=cub, &
-                      farrayPtr=presptr, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-      call error_handler("IN FieldGet", rc)
-
-   if (localpet == 0) print*,"- CALL FieldGet FOR SURFACE PRESSURE."
-   nullify(psptr)
-   call ESMF_FieldGet(ps_input_grid, &
-                      farrayPtr=psptr, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-      call error_handler("IN FieldGet", rc)
-
-   do i = clb(1), cub(1)
-     do j = clb(2), cub(2)
-       
-       do k = 1,lev_input
-         presptr(i,j,k) = vcoord(k,2)*(psptr(i,j)-pt) + vcoord(k,1)*(p0-pt)+pt
-       enddo
-       
-     enddo
-   enddo
-
-  deallocate(vcoord)
- endif
- 
- if (localpet == 0) then
-   print*,'psfc is ',clb(1),clb(2),psptr(clb(1),clb(2))
-   if (isnative) then
-     print*,'pres is ',cub(1),cub(2),presptr(cub(1),cub(2),:) 
-     
-     print*,'pres check 1',localpet,maxval(presptr(clb(1):cub(1),clb(2):cub(2),1)), &
-              minval(presptr(clb(1):cub(1),clb(2):cub(2),1))
-     print*,'pres check lev',localpet,maxval(presptr(clb(1):cub(1),clb(2):cub(2), &
-            lev_input)),minval(presptr(clb(1):cub(1),clb(2):cub(2),lev_input))
-   else
-     print*,'pres is ',cub(1),cub(2),atm(1)%var(cub(1),cub(2),:)
-     print*,'pres check 1',localpet,maxval(atm(1)%var(clb(1):cub(1),clb(2):cub(2),1)), &
-              minval(atm(1)%var(clb(1):cub(1),clb(2):cub(2),1))
-     print*,'pres check lev',localpet,maxval(atm(1)%var(clb(1):cub(1),clb(2):cub(2), &
-            lev_input)),minval(atm(1)%var(clb(1):cub(1),clb(2):cub(2),lev_input))
-   endif
-
- 
- endif
- 
-!---------------------------------------------------------------------------
-! Convert from 2-d to 3-d component winds.
-!---------------------------------------------------------------------------
- call convert_winds
- 
-!---------------------------------------------------------------------------
-! Convert dpdt to dzdt if needed
-!---------------------------------------------------------------------------
- if (conv_omega) then
-  nullify(tptr)
-  if (localpet == 0) print*,"- CALL FieldGet TEMPERATURE."  
-  call ESMF_FieldGet(temp_input_grid, &
-                    farrayPtr=tptr, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldGet", rc) 
-    
-  nullify(qptr)
-  if (localpet == 0) print*,"- CALL FieldGet SPECIFIC HUMIDITY."  
-  call ESMF_FieldGet(tracers_input_grid(1), &
-                    computationalLBound=clb, &
-                    computationalUBound=cub, &
-                    farrayPtr=qptr, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldGet", rc)
-    
-  nullify(wptr)
-  if (localpet == 0) print*,"- CALL FieldGet DZDT." 
-  call ESMF_FieldGet(dzdt_input_grid, &
-                    computationalLBound=clb, &
-                    computationalUBound=cub, &
-                    farrayPtr=wptr, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldGet", rc)
-  
-  nullify(presptr)
-  call ESMF_FieldGet(pres_input_grid, &
-                    farrayPtr=presptr, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldGet", rc)
-    
-  call convert_omega(wptr,presptr,tptr,qptr,clb,cub)
-  
- endif
- 
- if (localpet == 0 .and. file_is_converted .and. .not. convert_sfc) &
-      call system("rm "//trim(the_file))
-
- end subroutine read_input_atm_grib2_file
  
 !---------------------------------------------------------------------------
 ! Read input grid surface data from an fv3 gaussian history file.
@@ -3736,7 +3773,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT TERRAIN."
  call ESMF_FieldScatter(terrain_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -3749,7 +3786,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT LANDSEA MASK."
  call ESMF_FieldScatter(landsea_mask_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
  
  if (localpet == 0) then
@@ -3762,7 +3799,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID SEAICE FRACTION."
  call ESMF_FieldScatter(seaice_fract_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -3775,7 +3812,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID SEAICE DEPTH."
  call ESMF_FieldScatter(seaice_depth_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -3788,7 +3825,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID SEAICE SKIN TEMPERATURE."
  call ESMF_FieldScatter(seaice_skin_temp_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -3801,7 +3838,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID SNOW LIQUID EQUIVALENT."
  call ESMF_FieldScatter(snow_liq_equiv_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -3814,7 +3851,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID SNOW DEPTH."
  call ESMF_FieldScatter(snow_depth_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -3827,7 +3864,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID VEG TYPE."
  call ESMF_FieldScatter(veg_type_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -3840,7 +3877,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID SOIL TYPE."
  call ESMF_FieldScatter(soil_type_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -3853,7 +3890,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID T2M."
  call ESMF_FieldScatter(t2m_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -3866,7 +3903,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID Q2M."
  call ESMF_FieldScatter(q2m_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -3879,7 +3916,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID TPRCP."
  call ESMF_FieldScatter(tprcp_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -3892,7 +3929,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID FFMM"
  call ESMF_FieldScatter(ffmm_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -3905,13 +3942,13 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID USTAR"
  call ESMF_FieldScatter(ustar_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) dummy2d = 0.0
  print*,"- CALL FieldScatter FOR INPUT GRID SRFLAG"
  call ESMF_FieldScatter(srflag_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -3924,7 +3961,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID SKIN TEMPERATURE"
  call ESMF_FieldScatter(skin_temp_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -3937,7 +3974,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID F10M."
  call ESMF_FieldScatter(f10m_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -3950,7 +3987,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID CANOPY MOISTURE CONTENT."
  call ESMF_FieldScatter(canopy_mc_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -3963,7 +4000,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID Z0."
  call ESMF_FieldScatter(z0_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  deallocate(dummy2d)
@@ -3987,7 +4024,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT LIQUID SOIL MOISTURE."
  call ESMF_FieldScatter(soilm_liq_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
  
  if (localpet == 0) then
@@ -4009,7 +4046,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT TOTAL SOIL MOISTURE."
  call ESMF_FieldScatter(soilm_tot_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -4031,7 +4068,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT SOIL TEMPERATURE."
  call ESMF_FieldScatter(soil_temp_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  deallocate(dummy3d, dummy)
@@ -4110,7 +4147,7 @@ if (localpet == 0) then
 
    print*,"- CALL FieldScatter FOR INPUT TERRAIN."
    call ESMF_FieldScatter(terrain_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
  enddo TERRAIN_LOOP
@@ -4126,7 +4163,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT LIQUID SOIL MOISTURE."
   call ESMF_FieldScatter(soilm_liq_input_grid, data_one_tile_3d, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
   if (localpet == 0) then
@@ -4136,7 +4173,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT TOTAL SOIL MOISTURE."
   call ESMF_FieldScatter(soilm_tot_input_grid, data_one_tile_3d, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
   if (localpet == 0) then
@@ -4146,7 +4183,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT SOIL TEMPERATURE."
   call ESMF_FieldScatter(soil_temp_input_grid, data_one_tile_3d, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! land mask
@@ -4158,7 +4195,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT LANDSEA MASK."
   call ESMF_FieldScatter(landsea_mask_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! sea ice fraction
@@ -4170,7 +4207,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID SEAICE FRACTION."
   call ESMF_FieldScatter(seaice_fract_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! sea ice depth
@@ -4182,7 +4219,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID SEAICE DEPTH."
   call ESMF_FieldScatter(seaice_depth_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! sea ice skin temperature
@@ -4194,7 +4231,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID SEAICE SKIN TEMPERATURE."
   call ESMF_FieldScatter(seaice_skin_temp_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! liquid equivalent snow depth
@@ -4206,7 +4243,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID SNOW LIQUID EQUIVALENT."
   call ESMF_FieldScatter(snow_liq_equiv_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! physical snow depth
@@ -4219,7 +4256,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID SNOW DEPTH."
   call ESMF_FieldScatter(snow_depth_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! Vegetation type
@@ -4231,7 +4268,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID VEG TYPE."
   call ESMF_FieldScatter(veg_type_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! Soil type
@@ -4243,7 +4280,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID SOIL TYPE."
   call ESMF_FieldScatter(soil_type_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! Two-meter temperature
@@ -4255,7 +4292,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID T2M."
   call ESMF_FieldScatter(t2m_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! Two-meter q
@@ -4267,7 +4304,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID Q2M."
   call ESMF_FieldScatter(q2m_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
   if (localpet == 0) then
@@ -4277,7 +4314,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID TPRCP."
   call ESMF_FieldScatter(tprcp_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
   if (localpet == 0) then
@@ -4287,7 +4324,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID F10M"
   call ESMF_FieldScatter(f10m_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
   if (localpet == 0) then
@@ -4297,7 +4334,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID FFMM"
   call ESMF_FieldScatter(ffmm_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
   if (localpet == 0) then
@@ -4307,7 +4344,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID USTAR"
   call ESMF_FieldScatter(ustar_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
   if (localpet == 0) then
@@ -4317,7 +4354,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID SRFLAG"
   call ESMF_FieldScatter(srflag_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
   if (localpet == 0) then
@@ -4327,7 +4364,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID SKIN TEMPERATURE"
   call ESMF_FieldScatter(skin_temp_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
   if (localpet == 0) then
@@ -4337,7 +4374,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID CANOPY MOISTURE CONTENT."
   call ESMF_FieldScatter(canopy_mc_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
   if (localpet == 0) then
@@ -4347,7 +4384,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID Z0."
   call ESMF_FieldScatter(z0_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
  enddo TILE_LOOP
@@ -4427,7 +4464,7 @@ if (localpet == 0) then
 
    print*,"- CALL FieldScatter FOR INPUT TERRAIN."
    call ESMF_FieldScatter(terrain_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
  enddo TERRAIN_LOOP
@@ -4453,7 +4490,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT LIQUID SOIL MOISTURE."
   call ESMF_FieldScatter(soilm_liq_input_grid, data_one_tile_3d, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! total soil moisture
@@ -4475,7 +4512,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT TOTAL SOIL MOISTURE."
   call ESMF_FieldScatter(soilm_tot_input_grid, data_one_tile_3d, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! soil tempeature (ice temp at land ice points)
@@ -4497,7 +4534,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT SOIL TEMPERATURE."
   call ESMF_FieldScatter(soil_temp_input_grid, data_one_tile_3d, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! land mask
@@ -4509,7 +4546,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT LANDSEA MASK."
   call ESMF_FieldScatter(landsea_mask_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! sea ice fraction
@@ -4521,7 +4558,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID SEAICE FRACTION."
   call ESMF_FieldScatter(seaice_fract_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! sea ice depth
@@ -4533,7 +4570,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID SEAICE DEPTH."
   call ESMF_FieldScatter(seaice_depth_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! sea ice skin temperature
@@ -4545,7 +4582,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID SEAICE SKIN TEMPERATURE."
   call ESMF_FieldScatter(seaice_skin_temp_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! liquid equivalent snow depth
@@ -4557,7 +4594,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID SNOW LIQUID EQUIVALENT."
   call ESMF_FieldScatter(snow_liq_equiv_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! physical snow depth
@@ -4570,7 +4607,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID SNOW DEPTH."
   call ESMF_FieldScatter(snow_depth_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! Vegetation type
@@ -4582,7 +4619,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID VEG TYPE."
   call ESMF_FieldScatter(veg_type_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! Soil type
@@ -4594,7 +4631,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID SOIL TYPE."
   call ESMF_FieldScatter(soil_type_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! Two-meter temperature
@@ -4606,7 +4643,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID T2M."
   call ESMF_FieldScatter(t2m_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! Two-meter q
@@ -4618,7 +4655,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID Q2M."
   call ESMF_FieldScatter(q2m_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
   if (localpet == 0) then
@@ -4628,7 +4665,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID TPRCP."
   call ESMF_FieldScatter(tprcp_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
   if (localpet == 0) then
@@ -4638,7 +4675,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID F10M"
   call ESMF_FieldScatter(f10m_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
   if (localpet == 0) then
@@ -4648,7 +4685,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID FFMM"
   call ESMF_FieldScatter(ffmm_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
   if (localpet == 0) then
@@ -4658,7 +4695,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID USTAR"
   call ESMF_FieldScatter(ustar_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
   if (localpet == 0) then
@@ -4669,7 +4706,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID SRFLAG"
   call ESMF_FieldScatter(srflag_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
   if (localpet == 0) then
@@ -4679,7 +4716,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID SKIN TEMPERATURE"
   call ESMF_FieldScatter(skin_temp_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
   if (localpet == 0) then
@@ -4689,7 +4726,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID CANOPY MOISTURE CONTENT."
   call ESMF_FieldScatter(canopy_mc_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
   if (localpet == 0) then
@@ -4699,7 +4736,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT GRID Z0."
   call ESMF_FieldScatter(z0_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
  enddo TILE_LOOP
@@ -4725,9 +4762,10 @@ if (localpet == 0) then
  character(len=50)                      :: method
 
  integer                               :: rc,ncid2d, varid, varnum, iret, i, j, k
- 
- real(esmf_kind_r4)                    :: value
 
+ logical                               :: exist
+
+ real(esmf_kind_r4)                    :: value
 
  real(nemsio_realkind), allocatable    :: dummy(:), dummy2d_ni(:,:)
  real(esmf_kind_r4), allocatable       :: dummy2d(:,:), tsk_save(:,:)
@@ -4745,9 +4783,12 @@ if (localpet == 0) then
  sfc_file = trim(data_dir_input_grid) // "/" // trim(sfc_files_input_grid(1))
  
    print*,"- OPEN FILE."
-   inquire(file=the_file,exist=iret)
-   if (iret == 0) call error_handler("OPENING GRIB2 ATM FILE.", iret)
- 
+   inquire(file=the_file,exist=exist)
+   if (.not.exist) then
+     iret = 1
+     call error_handler("OPENING GRIB2 ATM FILE.", iret)
+   end if
+
    !print*,"- OPEN FILE ", trim(the_file)
    !rc=grb2_mk_inv(the_file,inv_file)
    !if (rc < 0) call error_handler("OPENING FILE.", rc)
@@ -4770,7 +4811,7 @@ if (localpet == 0) then
                                        staggerloc=ESMF_STAGGERLOC_CENTER, &
                                        ungriddedLBound=(/1/), &
                                        ungriddedUBound=(/lsoil_input/), rc=rc)
-     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldCreate", rc)
 
      print*,"- CALL FieldCreate FOR INPUT TOTAL SOIL MOISTURE."
@@ -4779,7 +4820,7 @@ if (localpet == 0) then
                                        staggerloc=ESMF_STAGGERLOC_CENTER, &
                                        ungriddedLBound=(/1/), &
                                        ungriddedUBound=(/lsoil_input/), rc=rc)
-     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldCreate", rc)
 
      print*,"- CALL FieldCreate FOR INPUT LIQUID SOIL MOISTURE."
@@ -4788,7 +4829,7 @@ if (localpet == 0) then
                                        staggerloc=ESMF_STAGGERLOC_CENTER, &
                                        ungriddedLBound=(/1/), &
                                        ungriddedUBound=(/lsoil_input/), rc=rc)
-     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+     if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldCreate", rc)
    
    endif
@@ -4824,7 +4865,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT TERRAIN."
  call ESMF_FieldScatter(terrain_input_grid, real(dummy2d,esmf_kind_r8), rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
     
 if (localpet == 0) then
@@ -4838,7 +4879,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID SEAICE FRACTION."
  call ESMF_FieldScatter(seaice_fract_input_grid,real(dummy2d,esmf_kind_r8), rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
  if (localpet == 0) then
    print*,"- READ LANDSEA MASK."
@@ -4858,7 +4899,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT LANDSEA MASK."
  call ESMF_FieldScatter(landsea_mask_input_grid,real(dummy2d,esmf_kind_r8), rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
  
  
@@ -4872,7 +4913,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID SEAICE SKIN TEMPERATURE."
  call ESMF_FieldScatter(seaice_skin_temp_input_grid,real(dummy2d,esmf_kind_r8), rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -4892,7 +4933,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID SNOW LIQUID EQUIVALENT."
  call ESMF_FieldScatter(snow_liq_equiv_input_grid,real(dummy2d,esmf_kind_r8), rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -4906,7 +4947,7 @@ if (localpet == 0) then
  
  print*,"- CALL FieldScatter FOR INPUT GRID SNOW DEPTH."
  call ESMF_FieldScatter(snow_depth_input_grid,real(dummy2d,esmf_kind_r8), rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
     
  if (localpet == 0) then
@@ -4919,7 +4960,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID T2M."
  call ESMF_FieldScatter(t2m_input_grid,real(dummy2d,esmf_kind_r8), rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -4931,7 +4972,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID Q2M."
  call ESMF_FieldScatter(q2m_input_grid,real(dummy2d,esmf_kind_r8), rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
     
 if (localpet == 0) then
@@ -4946,14 +4987,14 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID SKIN TEMPERATURE"
  call ESMF_FieldScatter(skin_temp_input_grid,real(dummy2d,esmf_kind_r8), rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
     
  if (localpet == 0) dummy2d = 0.0
  
  print*,"- CALL FieldScatter FOR INPUT GRID SRFLAG"
  call ESMF_FieldScatter(srflag_input_grid,real(dummy2d,esmf_kind_r8), rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
     
  if (localpet == 0) then
@@ -5009,11 +5050,11 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID SOIL TYPE."
  call ESMF_FieldScatter(soil_type_input_grid,dummy2d_8, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
  
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   
- ! Vegetation type, soil type, and vegetation fraction might be in the file. If they are
+ ! Vegetation type and vegetation fraction might be in the file. If they are
  ! not, then we will leave the climatological data in the ESMF field 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  
@@ -5049,56 +5090,104 @@ if (localpet == 0) then
  
   print*,"- CALL FieldScatter FOR INPUT GRID VEG TYPE."
   call ESMF_FieldScatter(veg_type_input_grid,real(dummy2d,esmf_kind_r8), rootpet=0, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldScatter", rc)
 
- if (.not. replace_vgfrc) then  
+ if (.not. replace_vgfrc .and. internal_GSD) then  
    if (localpet == 0) then
      print*,"- READ VEG FRACTION."
      vname="vfrac"
      slev=":surface:" 
      call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
                loc=varnum)                 
-     vname=":VFRAC:"
-     rc= grb2_inq(the_file, inv_file, vname,slev,' hour fcst:', data2=dummy2d)
+     !! Changing these for GSD internal runs using new HRRR files
+     vname=":VEG:"
+     rc= grb2_inq(the_file, inv_file, vname,slev,'n=1101:', data2=dummy2d)
    
-     if (rc <= 0 .and. trim(to_upper(external_model))=="HRRR") then 
-     print*, "OPEN GEOGRID FILE ", trim(geo_file)
-     rc = nf90_open(geo_file,NF90_NOWRITE,ncid2d)
-  
-		 if (rc == 0) then
-		   print*, "INQUIRE ABOUT VEG FRACTION FROM GEOGRID FILE"
-		   rc = nf90_inq_varid(ncid2d,"GREENFRAC",varid)
-		   if (rc<0) print*, "ERROR FINDING GREENFRAC IN GEOGRID FILE"
-	 
-		   if (rc == 0) then
-			   print*, "READ VEG FRACTION FROM GEOGRID FILE "
-			   rc = nf90_get_var(ncid2d,varid,dummy2d)
-			   if (rc<0) print*, "ERROR READING GREENFRAC FROM FILE" 
-			   print*, "min max dummy2d = ", minval(dummy2d), maxval(dummy2d)
-		   endif
-	 
-		   print*, "CLOSE GEOGRID FILE "
-		   iret = nf90_close(ncid2d)
-		 endif
-   
-     elseif (rc > 0) then
-		 rc = 0
-     endif
-
-     if (rc < 0) call error_handler("COULD NOT FIND VEGETATION FRACTION IN FILE.  &
-        PLEASE SET REPLACE_VGFRC=.TRUE. . EXITING")
-
+     if (rc <= 0) call error_handler("COULD NOT FIND VEGETATION FRACTION IN FILE.  &
+        PLEASE SET REPLACE_VGFRC=.TRUE. . EXITING", rc)
+     if(maxval(dummy2d) > 2.0) dummy2d = dummy2d / 100.0_esmf_kind_r4
      print*,'vfrac ',maxval(dummy2d),minval(dummy2d)
     
    endif
+
  
    print*,"- CALL FieldScatter FOR INPUT GRID VEG GREENNESS."
    call ESMF_FieldScatter(veg_greenness_input_grid,real(dummy2d,esmf_kind_r8), rootpet=0, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldScatter", rc)
- endif
+  endif
 
+  ! New for internal_GSD, read in min, max vegetation fraction
+  if (internal_GSD) then
+   if (localpet == 0) then
+     print*,"- READ MIN VEG FRACTION."
+     vname="vfrac_min"
+     slev=":surface:"
+     call get_var_cond(vname,this_miss_var_method=method,this_miss_var_value=value, &
+               loc=varnum)
+     !! Changing these for GSD internal runs using new HRRR files
+     vname=":VEG:"
+     rc= grb2_inq(the_file, inv_file, vname,slev,'n=1102:',data2=dummy2d)
+
+     if (rc <= 0) call error_handler("COULD NOT FIND MIN VEGETATION FRACTION IN FILE. &
+        PLEASE SET REPLACE_VGFRC=.TRUE. . EXITING",rc)
+     if(maxval(dummy2d) > 2.0) dummy2d = dummy2d / 100.0_esmf_kind_r4
+     print*,'vfrac min',maxval(dummy2d),minval(dummy2d)
+
+     endif
+
+   print*,"- CALL FieldScatter FOR INPUT GRID MIN VEG GREENNESS."
+   call ESMF_FieldScatter(min_veg_greenness_input_grid,real(dummy2d,esmf_kind_r8), rootpet=0, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__))&
+      call error_handler("IN FieldScatter", rc)
+
+
+   if (localpet == 0) then
+     print*,"- READ MAX VEG FRACTION."
+     vname="vfrac_max"
+     slev=":surface:"
+     call get_var_cond(vname,this_miss_var_method=method,this_miss_var_value=value, &
+               loc=varnum)
+     !! Changing these for GSD internal runs using new HRRR files
+     vname=":VEG:"
+     rc= grb2_inq(the_file, inv_file, vname,slev,'n=1103:',data2=dummy2d)
+
+     if (rc <= 0) call error_handler("COULD NOT FIND MAX VEGETATION FRACTION IN FILE. &
+        PLEASE SET REPLACE_VGFRC=.TRUE. . EXITING",rc)
+     if(maxval(dummy2d) > 2.0) dummy2d = dummy2d / 100.0_esmf_kind_r4
+     print*,'vfrac max',maxval(dummy2d),minval(dummy2d)
+
+   endif !localpet==0
+
+   print*,"- CALL FieldScatter FOR INPUT GRID MAX VEG GREENNESS."
+   call ESMF_FieldScatter(max_veg_greenness_input_grid,real(dummy2d,esmf_kind_r8),rootpet=0, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__))&
+      call error_handler("IN FieldScatter", rc)
+
+   if (localpet == 0) then
+     print*,"- READ LAI."
+     vname="lai"
+     slev=":surface:"
+     call get_var_cond(vname,this_miss_var_method=method,this_miss_var_value=value, &
+               loc=varnum)
+     !! Changing these for GSD internal runs using new HRRR files
+     vname=":var0_7_198:"
+     rc= grb2_inq(the_file, inv_file, vname,slev,':n=1104:',data2=dummy2d)
+
+     if (rc <= 0) call error_handler("COULD NOT FIND LAI IN FILE. &
+        PLEASE SET REPLACE_VGFRC=.TRUE. . EXITING",rc)
+
+     print*,'lai',maxval(dummy2d),minval(dummy2d)
+
+   endif !localpet==0
+
+   print*,"- CALL FieldScatter FOR INPUT GRID LAI."
+   call ESMF_FieldScatter(lai_input_grid,real(dummy2d,esmf_kind_r8),rootpet=0, rc=rc)
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__))&
+      call error_handler("IN FieldScatter", rc)
+
+  endif !internal_GSD=true
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!     
  ! Begin variables whose presence in grib2 files varies, but no climatological data is 
@@ -5129,7 +5218,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID SEAICE DEPTH."
  call ESMF_FieldScatter(seaice_depth_input_grid,dummy2d_8, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
     
  !Not available in any grib files
@@ -5156,7 +5245,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID TPRCP."
  call ESMF_FieldScatter(tprcp_input_grid,dummy2d_8, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
  !Not available in any grib files
  if (localpet == 0) then
@@ -5182,7 +5271,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID FFMM"
  call ESMF_FieldScatter(ffmm_input_grid,dummy2d_8, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
     
  ! Available in HRRR/RAP/NAM 
@@ -5209,7 +5298,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID USTAR"
  call ESMF_FieldScatter(ustar_input_grid,dummy2d_8, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  !Maybe available in GFS?
@@ -5236,7 +5325,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID F10M."
  call ESMF_FieldScatter(f10m_input_grid,dummy2d_8, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  !Maybe available in some RAP files
@@ -5264,7 +5353,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID CANOPY MOISTURE CONTENT."
  call ESMF_FieldScatter(canopy_mc_input_grid,dummy2d_8, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  !Available in NAM/HRRR
@@ -5295,7 +5384,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT GRID Z0."
  call ESMF_FieldScatter(z0_input_grid,dummy2d_8, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
     
  deallocate(dummy2d)
@@ -5311,7 +5400,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT LIQUID SOIL MOISTURE."
  call ESMF_FieldScatter(soilm_liq_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
  
  if (localpet == 0) then
@@ -5325,7 +5414,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT TOTAL SOIL MOISTURE."
  call ESMF_FieldScatter(soilm_tot_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -5345,7 +5434,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT SOIL TEMPERATURE."
  call ESMF_FieldScatter(soil_temp_input_grid, dummy3d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  deallocate(dummy3d)
@@ -6013,7 +6102,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT C_D"
   call ESMF_FieldScatter(c_d_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! c_0
@@ -6030,7 +6119,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT C_0"
   call ESMF_FieldScatter(c_0_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! d_conv
@@ -6047,7 +6136,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT D_CONV."
   call ESMF_FieldScatter(d_conv_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! dt_cool
@@ -6064,7 +6153,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT DT_COOL."
   call ESMF_FieldScatter(dt_cool_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! ifd - xu li said initialize to '1'.
@@ -6075,7 +6164,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT IFD."
   call ESMF_FieldScatter(ifd_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! qrain
@@ -6087,7 +6176,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT QRAIN."
   call ESMF_FieldScatter(qrain_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! tref
@@ -6099,7 +6188,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT TREF"
   call ESMF_FieldScatter(tref_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! w_d
@@ -6116,7 +6205,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT W_D"
   call ESMF_FieldScatter(w_d_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! w_0
@@ -6133,7 +6222,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT W_0"
   call ESMF_FieldScatter(w_0_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! xs
@@ -6145,7 +6234,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT XS"
   call ESMF_FieldScatter(xs_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! xt
@@ -6157,7 +6246,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT XT"
   call ESMF_FieldScatter(xt_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! xu
@@ -6169,7 +6258,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT XU"
   call ESMF_FieldScatter(xu_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! xv
@@ -6181,7 +6270,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT XV"
   call ESMF_FieldScatter(xv_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! xz
@@ -6193,7 +6282,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT XZ"
   call ESMF_FieldScatter(xz_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! xtts
@@ -6205,7 +6294,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT XTTS"
   call ESMF_FieldScatter(xtts_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! xzts
@@ -6217,7 +6306,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT XZTS"
   call ESMF_FieldScatter(xzts_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! z_c
@@ -6234,7 +6323,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT Z_C"
   call ESMF_FieldScatter(z_c_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
 ! zm - Not used yet. Xu li said set to '0'.
@@ -6245,7 +6334,7 @@ if (localpet == 0) then
 
   print*,"- CALL FieldScatter FOR INPUT ZM"
   call ESMF_FieldScatter(zm_input_grid, data_one_tile, rootpet=0, tile=tile, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
      call error_handler("IN FieldScatter", rc)
 
  enddo TILE_LOOP
@@ -6304,7 +6393,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT TREF."
  call ESMF_FieldScatter(tref_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -6317,7 +6406,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT C_D."
  call ESMF_FieldScatter(c_d_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -6330,7 +6419,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT C_0."
  call ESMF_FieldScatter(c_0_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -6343,7 +6432,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT D_CONV."
  call ESMF_FieldScatter(d_conv_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -6356,7 +6445,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT DT_COOL."
  call ESMF_FieldScatter(dt_cool_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -6365,7 +6454,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT IFD."
  call ESMF_FieldScatter(ifd_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -6378,7 +6467,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT QRAIN."
  call ESMF_FieldScatter(qrain_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -6391,7 +6480,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT WD."
  call ESMF_FieldScatter(w_d_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -6404,7 +6493,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT W0."
  call ESMF_FieldScatter(w_0_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -6417,7 +6506,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT XS."
  call ESMF_FieldScatter(xs_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -6430,7 +6519,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT XT."
  call ESMF_FieldScatter(xt_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -6443,7 +6532,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT XU."
  call ESMF_FieldScatter(xu_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -6456,7 +6545,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT XV."
  call ESMF_FieldScatter(xv_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -6469,7 +6558,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT XZ."
  call ESMF_FieldScatter(xz_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -6482,7 +6571,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT XTTS."
  call ESMF_FieldScatter(xtts_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -6495,7 +6584,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT XZTS."
  call ESMF_FieldScatter(xzts_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -6508,7 +6597,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT Z_C."
  call ESMF_FieldScatter(z_c_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  if (localpet == 0) then
@@ -6517,7 +6606,7 @@ if (localpet == 0) then
 
  print*,"- CALL FieldScatter FOR INPUT ZM."
  call ESMF_FieldScatter(zm_input_grid, dummy2d, rootpet=0, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  deallocate(dummy, dummy2d)
@@ -6565,86 +6654,6 @@ if (localpet == 0) then
  END SUBROUTINE READ_FV3_GRID_DATA_NETCDF
 
 !---------------------------------------------------------------------------
-! Convert from 2-d to 3-d winds.
-!---------------------------------------------------------------------------
-
- subroutine convert_winds
-
- implicit none
-
- integer                         :: clb(4), cub(4)
- integer                         :: i, j, k, rc
-
- real(esmf_kind_r8)              :: latrad, lonrad
- real(esmf_kind_r8), pointer     :: windptr(:,:,:,:)
- real(esmf_kind_r8), pointer     :: uptr(:,:,:)
- real(esmf_kind_r8), pointer     :: vptr(:,:,:)
- real(esmf_kind_r8), pointer     :: latptr(:,:)
- real(esmf_kind_r8), pointer     :: lonptr(:,:)
- real(esmf_kind_r8), pointer     :: temp(:,:,:,:)
- 
-
- print*,"- CALL FieldCreate FOR INPUT GRID 3-D WIND."
- wind_input_grid = ESMF_FieldCreate(input_grid, &
-                                   typekind=ESMF_TYPEKIND_R8, &
-                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
-                                   ungriddedLBound=(/1,1/), &
-                                   ungriddedUBound=(/lev_input,3/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldCreate", rc)
-
- print*,"- CALL FieldGet FOR 3-D WIND."
- call ESMF_FieldGet(wind_input_grid, &
-                    computationalLBound=clb, &
-                    computationalUBound=cub, &
-                    farrayPtr=windptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldGet", rc)
-
- print*,"- CALL FieldGet FOR U."
- call ESMF_FieldGet(u_input_grid, &
-                    farrayPtr=uptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldGet", rc)
-
- print*,"- CALL FieldGet FOR V."
- call ESMF_FieldGet(v_input_grid, &
-                    farrayPtr=vptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldGet", rc)
-
- print*,"- CALL FieldGet FOR LATITUDE."
- call ESMF_FieldGet(latitude_input_grid, &
-                    farrayPtr=latptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldGet", rc)
-
- print*,"- CALL FieldGet FOR LONGITUDE."
- call ESMF_FieldGet(longitude_input_grid, &
-                    farrayPtr=lonptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
-    call error_handler("IN FieldGet", rc)
-
- temp=>windptr
-
- do i = clb(1), cub(1)
-   do j = clb(2), cub(2)
-     latrad = latptr(i,j) * acos(-1.) / 180.0
-     lonrad = lonptr(i,j) * acos(-1.) / 180.0
-     do k = clb(3), cub(3)
-       windptr(i,j,k,1) = uptr(i,j,k) * cos(lonrad) - vptr(i,j,k) * sin(latrad) * sin(lonrad)
-       windptr(i,j,k,2) = uptr(i,j,k) * sin(lonrad) + vptr(i,j,k) * sin(latrad) * cos(lonrad)
-       windptr(i,j,k,3) = vptr(i,j,k) * cos(latrad)
-     enddo
-   enddo
- enddo
-
- call ESMF_FieldDestroy(u_input_grid, rc=rc)
- call ESMF_FieldDestroy(v_input_grid, rc=rc)
-
- end subroutine convert_winds
-
-!---------------------------------------------------------------------------
 ! Read winds from a grib2 file
 !---------------------------------------------------------------------------
 
@@ -6661,18 +6670,21 @@ if (localpet == 0) then
  real(esmf_kind_r8), intent(inout), allocatable :: u(:,:,:),v(:,:,:)
  
  real(esmf_kind_r4), dimension(i_input,j_input)  :: alpha
- real(esmf_kind_r8), dimension(i_input,j_input)  :: lon
- real(esmf_kind_r4), allocatable         :: u_tmp(:,:), v_tmp(:,:)
- real(esmf_kind_r4)                      :: value_u, value_v, lov
+ real(esmf_kind_r8), dimension(i_input,j_input)  :: lon, lat
+ real(esmf_kind_r4), allocatable                 :: u_tmp(:,:),v_tmp(:,:)
+ real(esmf_kind_r4), dimension(i_input,j_input)  :: ws,wd
+ real(esmf_kind_r4)                      :: value_u, value_v,lov,latin1,latin2
+ real(esmf_kind_r8)                      :: d2r
  
  integer                                 :: varnum_u, varnum_v, ncid, vlev, id_var, & 
-                                            error, iret, i
+                                            error, iret, i,istr
  
  character(len=20)                       :: vname
  character(len=50)                       :: method_u, method_v
  character(len=250)                      :: file_coord, cmdline_msg
  character(len=10000)                    :: temp_msg
- 
+
+ d2r=acos(-1.0_esmf_kind_r8) / 180.0_esmf_kind_r8 
  if (localpet==0) then
    allocate(u(i_input,j_input,lev_input))
    allocate(v(i_input,j_input,lev_input))
@@ -6691,38 +6703,85 @@ if (localpet == 0) then
                        loc=varnum_v)
                        
  if (trim(input_grid_type)=="rotated_latlon") then  
-   if (localpet==0) then                   
-     print*,"- READ ROTATION ANGLE"
-     print*, trim(file_coord)
-     error=nf90_open(trim(file_coord),nf90_nowrite,ncid)
-     call netcdf_err(error, 'opening nc file' )
-     error=nf90_inq_varid(ncid, 'gridrot', id_var)
-     call netcdf_err(error, 'reading field id' )
-     error=nf90_get_var(ncid, id_var, alpha)
-     call netcdf_err(error, 'reading field' )
-     error = nf90_close(ncid)
-   endif
- elseif (trim(input_grid_type) == "lambert") then
- 
    print*,"- CALL FieldGather FOR INPUT GRID LONGITUDE"
    call ESMF_FieldGather(longitude_input_grid, lon, rootPet=0, tile=1, rc=error)
-   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+        call error_handler("IN FieldGather", error)
+   print*,"- CALL FieldGather FOR INPUT GRID LATITUDE"
+   call ESMF_FieldGather(latitude_input_grid, lat, rootPet=0, tile=1, rc=error)
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+        call error_handler("IN FieldGather", error)
+
+   if (localpet==0) then                   
+     print*,"- CALCULATE ROTATION ANGLE FOR ROTATED_LATLON INPUT GRID"
+     cmdline_msg = trim(wgrib2_path)//" "//trim(file)//" -d 1 -grid &> temp.out"
+     call system(cmdline_msg)
+     !1:0:grid_template=32769:winds(grid):
+     !   I am not an Arakawa E-grid. 
+     !   I am rotated but have no rotation angle.
+     !   I am staggered. What am I?
+     !   (953 x 834) units 1e-06 input WE:SN output WE:SN res 56
+     !   lat0 -10.590603 lat-center 54.000000 dlat 121.813000
+     !   lon0 220.914154 lon-center 254.000000 dlon 121.813000 #points=794802     
+     open(4,file="temp.out")
+     do i = 1,7
+      read(4,"(A)") temp_msg
+      if (i.eq.6) then
+        istr = index(temp_msg, "lat-center ") + len("lat_center ")
+        read(temp_msg(istr:istr+9),*) latin1
+      else if (i.eq.7) then
+        istr = index(temp_msg, "lon-center ") + len("lon-center ")
+        read(temp_msg(istr:istr+10),*) lov
+      end if
+     enddo
+     close(4) 
+    
+     !print*, trim(file_coord)
+     !error=nf90_open(trim(file_coord),nf90_nowrite,ncid)
+     !call netcdf_err(error, 'opening nc file' )
+     !error=nf90_inq_varid(ncid, 'gridrot', id_var)
+     !call netcdf_err(error, 'reading field id' )
+     !error=nf90_get_var(ncid, id_var, alpha)
+     !call netcdf_err(error, 'reading field' )
+     !error = nf90_close(ncid)
+     print*, "- CALL CALCALPHA_ROTLATLON with center lat,lon = ",latin1,lov
+      call calcalpha_rotlatlon(lat,lon,latin1,lov,alpha)
+      print*, " alpha min/max = ",MINVAL(alpha),MAXVAL(alpha) 
+   endif
+ elseif (trim(input_grid_type) == "lambert") then
+   !# NG this has been edited to correctly calculate gridrot for Lambert grids
+   !  Previously was incorrectly using polar-stereographic formation 
+   print*,"- CALL FieldGather FOR INPUT GRID LONGITUDE"
+   call ESMF_FieldGather(longitude_input_grid, lon, rootPet=0, tile=1, rc=error)
+   if(ESMF_logFoundError(rcToCheck=error,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
         call error_handler("IN FieldGather", error)
         
    if (localpet==0) then
      cmdline_msg = trim(wgrib2_path)//" "//trim(file)//" -d 1 -grid &> temp.out"
      call system(cmdline_msg)
+     !1:0:grid_template=30:winds(grid):
+     !   Lambert Conformal: (1799 x 1059) input WE:SN output WE:SN res 8
+     !   Lat1 21.138123 Lon1 237.280472 LoV 262.500000
+     !   LatD 38.500000 Latin1 38.500000 Latin2 38.500000
+     !   LatSP 0.000000 LonSP 0.000000
+     !   North Pole (1799 x 1059) Dx 3000.000000 m Dy 3000.000000 m mode 8
      open(4,file="temp2.out")
-     do i = 1,3
+     do i = 1,4
       read(4,"(A)") temp_msg
+      if (i.eq.3) then
+        istr = index(temp_msg, "LoV ") + len("LoV ")
+        read(temp_msg(istr:istr+10),*) lov
+      else if (i.eq.4) then
+        istr = index(temp_msg, "Latin1 ") + len("Latin1 ") 
+        read(temp_msg(istr:istr+9),*) latin1 
+        istr = index(temp_msg, "Latin2 ") + len("Latin2 ")
+        read(temp_msg(istr:istr+9),*) latin2  
+      end if
      enddo
      close(4)
-     i = index(temp_msg, "LoV ") + len("LoV ")
-
-     read(temp_msg(i:i+10),*) lov
-   
-      print*, "- CALL GRIDROT"    
-      call gridrot(lov,lon,alpha)
+      print*, "- CALL GRIDROT for LC grid with lov,latin1/2 = ",lov,latin1,latin2    
+      call gridrot(lov,latin1,latin2,lon,alpha)
+      print*, " alpha min/max = ",MINVAL(alpha),MAXVAL(alpha)
    endif
  endif
  
@@ -6752,9 +6811,18 @@ if (localpet == 0) then
       if (trim(input_grid_type) == "latlon") then
         u(:,:,vlev) = u_tmp
         v(:,:,vlev) = v_tmp
-      else 
-        u(:,:,vlev) = real(u_tmp * cos(alpha) - v_tmp * sin(alpha), esmf_kind_r8)
-        v(:,:,vlev) = real(v_tmp * cos(alpha) + u_tmp * sin(alpha), esmf_kind_r8)
+      else if (trim(input_grid_type) == "rotated_latlon") then
+        ws = sqrt(u_tmp**2 + v_tmp**2) 
+        wd = atan2(-u_tmp,-v_tmp) / d2r ! calculate grid-relative wind direction
+        wd = wd + alpha + 180.0 ! Rotate from grid- to earth-relative direction
+        wd = 270.0 - wd ! Convert from meteorological (true N) to mathematical direction
+        u(:,:,vlev) = -ws*cos(wd*d2r)
+        v(:,:,vlev) = -ws*sin(wd*d2r)
+      else
+        u(:,:,vlev) = real(u_tmp * cos(alpha) + v_tmp * sin(alpha),esmf_kind_r8)
+        v(:,:,vlev) = real(v_tmp * cos(alpha) - u_tmp * sin(alpha),esmf_kind_r8) 
+        !u(:,:,vlev) = real(u_tmp * cos(alpha) - v_tmp * sin(alpha), esmf_kind_r8)
+        !v(:,:,vlev) = real(v_tmp * cos(alpha) + u_tmp * sin(alpha), esmf_kind_r8)
       endif
     
       print*, 'max, min U ', minval(u(:,:,vlev)), maxval(u(:,:,vlev))
@@ -6765,86 +6833,85 @@ if (localpet == 0) then
 end subroutine read_winds
 
 !---------------------------------------------------------------------------
-! Compute grid rotation angle for non-latlon grids
+! Convert from 2-d to 3-d winds.
 !---------------------------------------------------------------------------
 
-subroutine gridrot(lov,lon,rot)
+ subroutine convert_winds
 
-  use model_grid, only                : i_input,j_input
-  implicit none
-  
-  
-  real(esmf_kind_r4), intent(in)      :: lov
-  real(esmf_kind_r4), intent(inout)   :: rot(i_input,j_input)
-  real(esmf_kind_r8), intent(in)      :: lon(i_input,j_input)
-  
-  real(esmf_kind_r4)                  :: trot(i_input,j_input), trot_tmp(i_input,j_input)
-  real(esmf_kind_r4)                  :: pior = 3.14159265359/180.0_esmf_kind_r4
-  
-  trot_tmp = real(lon,esmf_kind_r4)-lov
-  trot = trot_tmp
-  where(trot_tmp > 180.0) trot = trot-360.0_esmf_kind_r4
-  where(trot_tmp < -180.0) trot = trot-360.0_esmf_kind_r4
-  
-  rot = trot * pior
+ implicit none
 
-end subroutine gridrot
+ integer                         :: clb(4), cub(4)
+ integer                         :: i, j, k, rc
 
-subroutine read_grib_soil(the_file,inv_file,vname,vname_file,dummy3d,rc)
-  
-  use wgrib2api
-  implicit none
-  
-  
-  character(len=250), intent(in)          :: the_file, inv_file
-  character(len=20), intent(in)           :: vname,vname_file
-  
-  integer, intent(out)                    :: rc
-  
-  real(esmf_kind_r8), intent(inout)       :: dummy3d(:,:,:)
-  
-  real(esmf_kind_r4), allocatable         :: dummy2d(:,:)
-  real(esmf_kind_r4)                      :: value
-  integer                                 :: varnum,i
-  character(len=50)                       :: slevs(lsoil_input)
-  character(len=50)                       :: method
-  
-  if(lsoil_input == 4) then
-    slevs = (/':0-0.1 m below ground:', ':0.1-0.4 m below ground:',':0.4-1 m below ground:', &
-        ':1-2 m below ground:'/)
-  elseif(lsoil_input == 9) then
-    slevs = (/':0-0 m below ground',':0.01-0.01 m below ground:',':0.04-0.04 m below ground:', &
-        ':0.1-0.1 m below ground:',':0.3-0.3 m below ground:',':0.6-0.6 m below ground:', &
-        ':1-1 m below ground:',':1.6-1.6 m below ground:',':3-3 m below ground:'/)
-  else
-    rc = -1
-    call error_handler("reading soil levels. File must have 4 or 9 soil levels.")
-  endif
+ real(esmf_kind_r8)              :: latrad, lonrad
+ real(esmf_kind_r8), pointer     :: windptr(:,:,:,:)
+ real(esmf_kind_r8), pointer     :: uptr(:,:,:)
+ real(esmf_kind_r8), pointer     :: vptr(:,:,:)
+ real(esmf_kind_r8), pointer     :: latptr(:,:)
+ real(esmf_kind_r8), pointer     :: lonptr(:,:)
+ real(esmf_kind_r8), pointer     :: temp(:,:,:,:)
  
-  call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
-                         loc=varnum)
-  do i = 1,lsoil_input
-    if (vname_file=="var2_2_1_") then
-      rc = grb2_inq(the_file,inv_file,vname_file,"_0_192:",slevs(i),data2=dummy2d)
-    else
-      rc = grb2_inq(the_file,inv_file,vname_file,slevs(i),data2=dummy2d)
-    endif
-    if (rc <= 0) then
-      call handle_grib_error(vname_file, slevs(i),method,value,varnum,rc, var=dummy2d)
-      if (rc==1 .and. trim(vname) /= "soill") then 
-        ! missing_var_method == skip or no entry in varmap table
-        call error_handler("READING IN "//trim(vname)//". SET A FILL "// &
-                      "VALUE IN THE VARMAP TABLE IF THIS ERROR IS NOT DESIRABLE.",rc)
-      elseif (rc==1) then
-        dummy3d(:,:,:) = 0.0_esmf_kind_r8
-        exit
-      endif
-    endif
-    dummy3d(:,:,i) = real(dummy2d,esmf_kind_r8)
-  end do    
-  
- end subroutine read_grib_soil
 
+ print*,"- CALL FieldCreate FOR INPUT GRID 3-D WIND."
+ wind_input_grid = ESMF_FieldCreate(input_grid, &
+                                   typekind=ESMF_TYPEKIND_R8, &
+                                   staggerloc=ESMF_STAGGERLOC_CENTER, &
+                                   ungriddedLBound=(/1,1/), &
+                                   ungriddedUBound=(/lev_input,3/), rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldCreate", rc)
+
+ print*,"- CALL FieldGet FOR 3-D WIND."
+ call ESMF_FieldGet(wind_input_grid, &
+                    computationalLBound=clb, &
+                    computationalUBound=cub, &
+                    farrayPtr=windptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldGet", rc)
+
+ print*,"- CALL FieldGet FOR U."
+ call ESMF_FieldGet(u_input_grid, &
+                    farrayPtr=uptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldGet", rc)
+
+ print*,"- CALL FieldGet FOR V."
+ call ESMF_FieldGet(v_input_grid, &
+                    farrayPtr=vptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldGet", rc)
+
+ print*,"- CALL FieldGet FOR LATITUDE."
+ call ESMF_FieldGet(latitude_input_grid, &
+                    farrayPtr=latptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldGet", rc)
+
+ print*,"- CALL FieldGet FOR LONGITUDE."
+ call ESMF_FieldGet(longitude_input_grid, &
+                    farrayPtr=lonptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+    call error_handler("IN FieldGet", rc)
+
+ temp=>windptr
+
+ do i = clb(1), cub(1)
+   do j = clb(2), cub(2)
+     latrad = latptr(i,j) * acos(-1.) / 180.0
+     lonrad = lonptr(i,j) * acos(-1.) / 180.0
+     do k = clb(3), cub(3)
+       windptr(i,j,k,1) = uptr(i,j,k) * cos(lonrad) - vptr(i,j,k) * sin(latrad) * sin(lonrad)
+       windptr(i,j,k,2) = uptr(i,j,k) * sin(lonrad) + vptr(i,j,k) * sin(latrad) * cos(lonrad)
+       windptr(i,j,k,3) = vptr(i,j,k) * cos(latrad)
+     enddo
+   enddo
+ enddo
+
+ call ESMF_FieldDestroy(u_input_grid, rc=rc)
+ call ESMF_FieldDestroy(v_input_grid, rc=rc)
+
+ end subroutine convert_winds
+ 
 subroutine handle_grib_error(vname,lev,method,value,varnum, iret,var,var8,var3d)
 
   use, intrinsic :: ieee_arithmetic
@@ -6897,6 +6964,141 @@ subroutine handle_grib_error(vname,lev,method,value,varnum, iret,var,var8,var3d)
   endif
 
 end subroutine handle_grib_error
+
+!---------------------------------------------------------------------------
+! Compute grid rotation angle for non-latlon grids
+!---------------------------------------------------------------------------
+
+!# NG The original gridrot subroutine was specific to polar stereographic grids.
+! We need to compute it for Lambert Conformal grids. So we need lat1,lat2
+! Note this follows the ncl_ncarg source code
+! ncl_ncarg-6.6.2/ni/src/ncl/GetGrids.c
+subroutine gridrot(lov,latin1,latin2,lon,rot)
+
+  use model_grid, only                : i_input,j_input
+  implicit none
+  
+  
+  real(esmf_kind_r4), intent(in)      :: lov,latin1,latin2
+  real(esmf_kind_r4), intent(inout)   :: rot(i_input,j_input)
+  real(esmf_kind_r8), intent(in)      :: lon(i_input,j_input)
+  
+  real(esmf_kind_r4)                  :: trot(i_input,j_input), tlon(i_input,j_input)
+  real(esmf_kind_r4)                  :: dtor = 3.14159265359/180.0_esmf_kind_r4
+  real(esmf_kind_r4)                  :: an
+  !trot_tmp = real(lon,esmf_kind_r4)-lov
+  !trot = trot_tmp
+  !where(trot_tmp > 180.0) trot = trot-360.0_esmf_kind_r4
+  !where(trot_tmp < -180.0) trot = trot-360.0_esmf_kind_r4
+
+  if ( (latin1 - latin2) .lt. 0.000001 ) then  
+        an = sin(latin1*dtor)
+  else
+        an = log( cos(latin1*dtor) / cos(latin2*dtor) ) / &
+             log( tan(dtor*(90.0-latin1)/2.) / tan(dtor*(90.0-latin2)/2.))
+  end if
+
+  tlon = mod(lon - lov + 180. + 3600., 360.) - 180.
+  trot = an * tlon
+
+  rot = trot * dtor
+
+end subroutine gridrot
+
+! Subroutine calcalpha_rotlatlon calculates rotation angle
+! specific to rotated latlon grids, needed to convert to 
+! earth-relative winds 
+subroutine calcalpha_rotlatlon(latgrid,longrid,cenlat,cenlon,alpha)
+
+  use model_grid, only                : i_input,j_input
+  implicit none
+
+  real(esmf_kind_r8), intent(in)      :: latgrid(i_input,j_input), &
+                                         longrid(i_input,j_input)
+  real(esmf_kind_r4), intent(in)      :: cenlat, cenlon
+  real(esmf_kind_r4), intent(out)     :: alpha(i_input,j_input)
+
+  ! Variables local to subroutine
+  real(esmf_kind_r8)             :: D2R,lon0_r,lat0_r,sphi0,cphi0
+  real(esmf_kind_r8), DIMENSION(i_input,j_input) :: tlat,tlon,tph,sinalpha
+
+  D2R = acos(-1.0_esmf_kind_r8) /  180.0_esmf_kind_r8 
+  if (cenlon .lt. 0) then
+      lon0_r = (cenlon + 360.0)*D2R
+  else
+      lon0_r = cenlon*D2R
+  end if
+  lat0_r=cenlat*D2R
+  sphi0=sin(lat0_r)
+  cphi0=cos(lat0_r)
+
+  ! deal with input lat/lon
+  tlat = latgrid * D2R
+  tlon = longrid * D2R
+
+  ! Calculate alpha (rotation angle)
+  tlon = -tlon + lon0_r
+  tph  = asin(cphi0*sin(tlat) - sphi0*cos(tlat)*cos(tlon))
+  sinalpha = sphi0 * sin(tlon) / cos(tph)
+  alpha = -asin(sinalpha)/D2R
+  ! returns alpha in degrees  
+end subroutine calcalpha_rotlatlon
+
+
+subroutine read_grib_soil(the_file,inv_file,vname,vname_file,dummy3d,rc)
+  
+  use wgrib2api
+  implicit none
+  
+  
+  character(len=250), intent(in)          :: the_file, inv_file
+  character(len=20), intent(in)           :: vname,vname_file
+  
+  integer, intent(out)                    :: rc
+  
+  real(esmf_kind_r8), intent(inout)       :: dummy3d(:,:,:)
+  
+  real(esmf_kind_r4), allocatable         :: dummy2d(:,:)
+  real(esmf_kind_r4)                      :: value
+  integer                                 :: varnum,i
+  character(len=50)                       :: slevs(lsoil_input)
+  character(len=50)                       :: method
+  
+  if(lsoil_input == 4) then
+    slevs = (/character(24)::':0-0.1 m below ground:', ':0.1-0.4 m below ground:', &
+                             ':0.4-1 m below ground:', ':1-2 m below ground:'/)
+  elseif(lsoil_input == 9) then
+    slevs = (/character(26)::':0-0 m below ground',':0.01-0.01 m below ground:',':0.04-0.04 m below ground:', &
+        ':0.1-0.1 m below ground:',':0.3-0.3 m below ground:',':0.6-0.6 m below ground:', &
+        ':1-1 m below ground:',':1.6-1.6 m below ground:',':3-3 m below ground:'/)
+  else
+    rc = -1
+    call error_handler("reading soil levels. File must have 4 or 9 soil levels.")
+  endif
+ 
+  call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
+                         loc=varnum)
+  do i = 1,lsoil_input
+    if (vname_file=="var2_2_1_") then
+      rc = grb2_inq(the_file,inv_file,vname_file,"_0_192:",slevs(i),data2=dummy2d)
+    else
+      rc = grb2_inq(the_file,inv_file,vname_file,slevs(i),data2=dummy2d)
+    endif
+    if (rc <= 0) then
+      call handle_grib_error(vname_file, slevs(i),method,value,varnum,rc, var=dummy2d)
+      if (rc==1 .and. trim(vname) /= "soill") then 
+        ! missing_var_method == skip or no entry in varmap table
+        call error_handler("READING IN "//trim(vname)//". SET A FILL "// &
+                      "VALUE IN THE VARMAP TABLE IF THIS ERROR IS NOT DESIRABLE.",rc)
+      elseif (rc==1) then
+        dummy3d(:,:,:) = 0.0_esmf_kind_r8
+        exit
+      endif
+    endif
+    dummy3d(:,:,i) = real(dummy2d,esmf_kind_r8)
+  end do    
+  
+ end subroutine read_grib_soil
 
  subroutine cleanup_input_atm_data
 

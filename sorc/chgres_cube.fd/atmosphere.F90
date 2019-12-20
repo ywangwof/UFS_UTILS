@@ -182,7 +182,7 @@ call rem_negative_tracers(localpet)
                            atm_weight_file, &
                            routehandle=regrid_bl, &
                            srctermprocessing=isrctermprocessing, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldSMMStore", rc)
 
  else
@@ -198,7 +198,7 @@ call rem_negative_tracers(localpet)
                               extrapmethod=ESMF_EXTRAPMETHOD_NEAREST_STOD, &
                               routehandle=regrid_bl, &
                               regridmethod=method, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldRegridStore", rc)
 
  endif
@@ -209,7 +209,7 @@ call rem_negative_tracers(localpet)
                        routehandle=regrid_bl, &
                        termorderflag=ESMF_TERMORDER_SRCSEQ, &
                        rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldRegrid", rc)
     
 
@@ -223,7 +223,7 @@ call rem_negative_tracers(localpet)
                        routehandle=regrid_bl, &
                        termorderflag=ESMF_TERMORDER_SRCSEQ, &
                        rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldRegrid", rc)
 
  !allocate(tmp(i_target,j_target,lev_target))
@@ -235,10 +235,8 @@ call rem_negative_tracers(localpet)
                          tracers_b4adj_target_grid(n), &
                          routehandle=regrid_bl, &
                          termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldRegrid", rc)
-   !call ESMF_FieldGather(tracers_b4adj_target_grid(n),tmp,rootPet=0, tile=1, rc=rc)
-   !if (localpet==0) print*, "min max ", trim(tracers(n)) , " = ", minval(tmp), maxval(tmp)
  enddo
 
  print*,"- CALL Field_Regrid FOR VERTICAL VELOCITY."
@@ -246,14 +244,14 @@ call rem_negative_tracers(localpet)
                        dzdt_b4adj_target_grid, &
                        routehandle=regrid_bl, &
                        termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldRegrid", rc)
 
  nullify(psptr)
  print*,"- CALL FieldGet FOR INPUT SURFACE PRESSURE."
  call ESMF_FieldGet(ps_input_grid, &
                     farrayPtr=psptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
 !------------------------------------------------------------------------------------
@@ -268,14 +266,14 @@ call rem_negative_tracers(localpet)
                        routehandle=regrid_bl, &
                        termorderflag=ESMF_TERMORDER_SRCSEQ, &
                        rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldRegrid", rc)
 
  nullify(psptr)
  print*,"- CALL FieldGet FOR INPUT SURFACE PRESSURE B4ADJ."
  call ESMF_FieldGet(ps_b4adj_target_grid, &
                     farrayPtr=psptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  psptr = p0 * psptr**one_over_exponent
@@ -286,7 +284,7 @@ call rem_negative_tracers(localpet)
                        routehandle=regrid_bl, &
                        termorderflag=ESMF_TERMORDER_SRCSEQ, &
                        rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldRegrid", rc)
 
  print*,"- CALL Field_Regrid FOR 3-D WIND."
@@ -294,12 +292,12 @@ call rem_negative_tracers(localpet)
                        wind_b4adj_target_grid, &
                        routehandle=regrid_bl, &
                        termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldRegrid", rc)
 
  print*,"- CALL FieldRegridRelease."
  call ESMF_FieldRegridRelease(routehandle=regrid_bl, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldRegridRelease", rc)
 
 !-----------------------------------------------------------------------------------
@@ -359,7 +357,7 @@ call rem_negative_tracers(localpet)
                             extrapMethod=ESMF_EXTRAPMETHOD_NEAREST_STOD, &
                             routehandle=regrid_bl, &
                             regridmethod=method, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldRegridStore", rc)
 
  print*,"- CALL Field_Regrid FOR 3-D WIND WEST EDGE."
@@ -367,12 +365,12 @@ call rem_negative_tracers(localpet)
                        wind_w_target_grid, &
                        routehandle=regrid_bl, &
                        termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldRegrid", rc)
 
  print*,"- CALL FieldRegridRelease."
  call ESMF_FieldRegridRelease(routehandle=regrid_bl, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldRegridRelease", rc)
 
  isrctermprocessing = 1
@@ -386,7 +384,7 @@ call rem_negative_tracers(localpet)
                             extrapMethod=ESMF_EXTRAPMETHOD_NEAREST_STOD, &
                             routehandle=regrid_bl, &
                             regridmethod=method, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldRegridStore", rc)
 
  print*,"- CALL Field_Regrid FOR 3-D WIND SOUTH EDGE."
@@ -394,12 +392,12 @@ call rem_negative_tracers(localpet)
                        wind_s_target_grid, &
                        routehandle=regrid_bl, &
                        termorderflag=ESMF_TERMORDER_SRCSEQ, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldRegrid", rc)
 
  print*,"- CALL FieldRegridRelease."
  call ESMF_FieldRegridRelease(routehandle=regrid_bl, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldRegridRelease", rc)
 
 !-----------------------------------------------------------------------------------
@@ -458,7 +456,7 @@ call rem_negative_tracers(localpet)
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldCreate", rc)
  enddo
 
@@ -468,7 +466,7 @@ call rem_negative_tracers(localpet)
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR TARGET GRID PRESSURE BEFORE ADJUSTMENT."
@@ -477,7 +475,7 @@ call rem_negative_tracers(localpet)
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR TARGET GRID VERTICAL VELOCITY BEFORE ADJUSTMENT."
@@ -486,7 +484,7 @@ call rem_negative_tracers(localpet)
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR TARGET GRID UNSTAGGERED WINDS BEFORE ADJUSTMENT."
@@ -495,21 +493,21 @@ call rem_negative_tracers(localpet)
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1,1/), &
                                    ungriddedUBound=(/lev_input,3/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR TARGET TERRAIN."
  terrain_interp_to_target_grid = ESMF_FieldCreate(target_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR TARGET SURFACE PRESSURE BEFORE ADJUSTMENT."
  ps_b4adj_target_grid = ESMF_FieldCreate(target_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  end subroutine create_atm_b4adj_esmf_fields
@@ -528,20 +526,20 @@ call rem_negative_tracers(localpet)
 
  do n = 1, num_tracers
     print*,"- CALL FieldCreate FOR TARGET GRID TRACERS ", trim(tracers(n))    
-    if (trim(tracers(n)) == "sphum")    P_QV = n; print*, "P_QV = ", P_QV
-    if (trim(tracers(n)) == "liq_wat")  P_QC = n; print*, "P_QC = ", P_QC
-    if (trim(tracers(n)) == "ice_wat")  P_QI = n; print*, "P_QI = ", P_QI
-    if (trim(tracers(n)) == "rainwat")  P_QR = n; print*, "P_QR = ", P_QR
-    if (trim(tracers(n)) == "ice_nc")   P_QNI = n; print*, "P_QNI = ", P_QNI
-    if (trim(tracers(n)) == "rain_nc")  P_QNR = n; print*, "P_QNR = ", P_QNR
-    if (trim(tracers(n)) == "water_nc") P_QNC = n; print*, "P_QNC = ", P_QNC
-    if (trim(tracers(n)) == "liq_aero") P_QNWFA = n; print*, "P_QNWFA = ", P_QNWFA
+    if (trim(tracers(n)) == "sphum")    P_QV = n
+    if (trim(tracers(n)) == "liq_wat")  P_QC = n
+    if (trim(tracers(n)) == "ice_wat")  P_QI = n
+    if (trim(tracers(n)) == "rainwat")  P_QR = n   
+    if (trim(tracers(n)) == "ice_nc")   P_QNI = n
+    if (trim(tracers(n)) == "rain_nc")  P_QNR = n
+    if (trim(tracers(n)) == "water_nc") P_QNC = n
+    if (trim(tracers(n)) == "liq_aero") P_QNWFA = n
     tracers_target_grid(n) = ESMF_FieldCreate(target_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_target/), rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
       call error_handler("IN FieldCreate", rc)
  enddo
 
@@ -551,7 +549,7 @@ call rem_negative_tracers(localpet)
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_target/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR TARGET GRID PRESSURE."
@@ -560,7 +558,7 @@ call rem_negative_tracers(localpet)
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_target/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR TARGET GRID VERTICAL VELOCITY."
@@ -569,7 +567,7 @@ call rem_negative_tracers(localpet)
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_target/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR TARGET GRID DELP."
@@ -578,7 +576,7 @@ call rem_negative_tracers(localpet)
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_target/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR TARGET HEIGHT."
@@ -587,7 +585,7 @@ call rem_negative_tracers(localpet)
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/levp1_target/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR TARGET UNSTAGGERED 3D-WIND."
@@ -596,7 +594,7 @@ call rem_negative_tracers(localpet)
                                    staggerloc=ESMF_STAGGERLOC_CENTER, &
                                    ungriddedLBound=(/1,1/), &
                                    ungriddedUBound=(/lev_target,3/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR TARGET U_S."
@@ -605,7 +603,7 @@ call rem_negative_tracers(localpet)
                                    staggerloc=ESMF_STAGGERLOC_EDGE2, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_target/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR TARGET V_S."
@@ -614,7 +612,7 @@ call rem_negative_tracers(localpet)
                                    staggerloc=ESMF_STAGGERLOC_EDGE2, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_target/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR TARGET 3D-WIND_S."
@@ -623,7 +621,7 @@ call rem_negative_tracers(localpet)
                                    staggerloc=ESMF_STAGGERLOC_EDGE2, &
                                    ungriddedLBound=(/1,1/), &
                                    ungriddedUBound=(/lev_target,3/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR TARGET U_W."
@@ -632,7 +630,7 @@ call rem_negative_tracers(localpet)
                                    staggerloc=ESMF_STAGGERLOC_EDGE1, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_target/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR TARGET V_W."
@@ -641,7 +639,7 @@ call rem_negative_tracers(localpet)
                                    staggerloc=ESMF_STAGGERLOC_EDGE1, &
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_target/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR TARGET 3D-WIND_W."
@@ -650,14 +648,14 @@ call rem_negative_tracers(localpet)
                                    staggerloc=ESMF_STAGGERLOC_EDGE1, &
                                    ungriddedLBound=(/1,1/), &
                                    ungriddedUBound=(/lev_target,3/), rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  print*,"- CALL FieldCreate FOR TARGET SURFACE PRESSURE."
  ps_target_grid = ESMF_FieldCreate(target_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
                                    staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
  end subroutine create_atm_esmf_fields
@@ -687,31 +685,31 @@ call rem_negative_tracers(localpet)
                     computationalLBound=clb, &
                     computationalUBound=cub, &
                     farrayPtr=windptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR U_S."
  call ESMF_FieldGet(u_s_target_grid, &
                     farrayPtr=uptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR V_S."
  call ESMF_FieldGet(v_s_target_grid, &
                     farrayPtr=vptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR LATITUDE_S."
  call ESMF_FieldGet(latitude_s_target_grid, &
                     farrayPtr=latptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR LONGITUDE_S."
  call ESMF_FieldGet(longitude_s_target_grid, &
                     farrayPtr=lonptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  do i = clb(1), cub(1)
@@ -732,31 +730,31 @@ call rem_negative_tracers(localpet)
                     computationalLBound=clb, &
                     computationalUBound=cub, &
                     farrayPtr=windptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR U_W."
  call ESMF_FieldGet(u_w_target_grid, &
                     farrayPtr=uptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR V_W."
  call ESMF_FieldGet(v_w_target_grid, &
                     farrayPtr=vptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR LATITUDE_W."
  call ESMF_FieldGet(latitude_w_target_grid, &
                     farrayPtr=latptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR LONGITUDE_W."
  call ESMF_FieldGet(longitude_w_target_grid, &
                     farrayPtr=lonptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  do i = clb(1), cub(1)
@@ -841,7 +839,7 @@ call rem_negative_tracers(localpet)
                     computationalLBound=clb, &
                     computationalUBound=cub, &
                     farrayPtr=pptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR DELP."
@@ -849,13 +847,13 @@ call rem_negative_tracers(localpet)
                     computationalLBound=clb, &
                     computationalUBound=cub, &
                     farrayPtr=delp_ptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR SURFACE PRESSURE AFTER ADJUSTMENT"
  call ESMF_FieldGet(ps_target_grid, &
                     farrayPtr=psptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  allocate(pi(clb(1):cub(1),clb(2):cub(2),1:levp1_target))
@@ -969,7 +967,7 @@ call rem_negative_tracers(localpet)
                     computationalLBound=clb, &
                     computationalUBound=cub, &
                     farrayPtr=pptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  if(localpet==0) then
@@ -979,12 +977,9 @@ call rem_negative_tracers(localpet)
  print*,"- CALL FieldGet FOR TEMPERATURE"
  call ESMF_FieldGet(temp_b4adj_target_grid, &
                     farrayPtr=tptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
     
- if(localpet==0) then
-   print*,'temp ',tptr(clb(1),clb(2),:)
- endif
 ! Find specific humidity in the array of tracer fields.
 
  do ii = 1, num_tracers
@@ -995,35 +990,31 @@ call rem_negative_tracers(localpet)
  print*,"- CALL FieldGet FOR SPECIFIC HUMIDITY"
  call ESMF_FieldGet(tracers_b4adj_target_grid(ii), &
                     farrayPtr=qptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
     
-  if(localpet==0) then
-   print*,'q ',qptr(clb(1),clb(2),:)
- endif
-
  print*,"- CALL FieldGet FOR SURFACE PRESSURE BEFORE ADJUSTMENT"
  call ESMF_FieldGet(ps_b4adj_target_grid, &
                     farrayPtr=psptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR SURFACE PRESSURE AFTER ADJUSTMENT"
  call ESMF_FieldGet(ps_target_grid, &
                     farrayPtr=psnewptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR OLD TERRAIN"
  call ESMF_FieldGet(terrain_interp_to_target_grid, &
                     farrayPtr=zsptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR NEW TERRAIN"
  call ESMF_FieldGet(terrain_target_grid, &
                     farrayPtr=zsnewptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
  allocate(zu(clb(1):cub(1),clb(2):cub(2)))
@@ -1227,7 +1218,7 @@ call rem_negative_tracers(localpet)
                     computationalLBound=clb, &
                     computationalUBound=cub, &
                     farrayPtr=p1ptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
          call error_handler("IN FieldGet", rc)
 
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1246,7 +1237,7 @@ call rem_negative_tracers(localpet)
  print*,"- CALL FieldGet FOR 3-D ADJUSTED PRESS"
  call ESMF_FieldGet(pres_target_grid, &
                     farrayPtr=P2PTR, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
          call error_handler("IN FieldGet", rc)
 
  Z2 = -LOG(P2PTR)
@@ -1254,7 +1245,7 @@ call rem_negative_tracers(localpet)
  print*,"- CALL FieldGet FOR 3-D WIND."
  call ESMF_FieldGet(wind_b4adj_target_grid, &
                     farrayPtr=WIND1PTR, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
          call error_handler("IN FieldGet", rc)
 
  C1(:,:,:,1) =  WIND1PTR(:,:,:,1)
@@ -1264,7 +1255,7 @@ call rem_negative_tracers(localpet)
  print*,"- CALL FieldGet FOR VERTICAL VELOCITY."
  call ESMF_FieldGet(dzdt_b4adj_target_grid, &
                     farrayPtr=DZDT1PTR, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
          call error_handler("IN FieldGet", rc)
 
  C1(:,:,:,4) =  DZDT1PTR(:,:,:)
@@ -1272,7 +1263,7 @@ call rem_negative_tracers(localpet)
  print*,"- CALL FieldGet FOR 3-D TEMP."
  call ESMF_FieldGet(temp_b4adj_target_grid, &
                     farrayPtr=T1PTR, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
          call error_handler("IN FieldGet", rc)
 
  C1(:,:,:,5) =  T1PTR(:,:,:)
@@ -1282,7 +1273,7 @@ call rem_negative_tracers(localpet)
    print*,"- CALL FieldGet FOR 3-D TRACERS ", trim(tracers(i))
    call ESMF_FieldGet(tracers_b4adj_target_grid(i), &
                       farrayPtr=Q1PTR, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
           call error_handler("IN FieldGet", rc)
 
    C1(:,:,:,5+I) =  Q1PTR(:,:,:)
@@ -1303,7 +1294,6 @@ call rem_negative_tracers(localpet)
  PRINT *, "IN VINTG, CALL TERP3"
  CALL TERP3(IM,1,1,1,1,4+NT,(IM*KM1),(IM*KM2), &
             KM1,IM,IM,Z1,C1,KM2,IM,IM,Z2,C2)
- PRINT*, "IN VINTG, AFTER TERP3"
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 !  COPY OUTPUT WIND, TEMPERATURE, HUMIDITY AND OTHER TRACERS
 !  EXCEPT BELOW THE INPUT DOMAIN, LET TEMPERATURE INCREASE WITH A FIXED
@@ -1313,7 +1303,7 @@ call rem_negative_tracers(localpet)
  print*,"- CALL FieldGet FOR 3-D ADJUSTED TEMP."
  call ESMF_FieldGet(temp_target_grid, &
                     farrayPtr=T2PTR, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
          call error_handler("IN FieldGet", rc)
          
  print*, "AFTER ADJ, T MIN, MAX = ", MINVAL(T2PTR(:,:,1)), MAXVAL(T2PTR(:,:,1))
@@ -1321,13 +1311,13 @@ call rem_negative_tracers(localpet)
  print*,"- CALL FieldGet FOR ADJUSTED VERTICAL VELOCITY."
  call ESMF_FieldGet(dzdt_target_grid, &
                     farrayPtr=DZDT2PTR, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
          call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR 3-D ADJUSTED WIND."
  call ESMF_FieldGet(wind_target_grid, &
                     farrayPtr=WIND2PTR, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
          call error_handler("IN FieldGet", rc)
 
  DO K=1,LEV_TARGET
@@ -1354,7 +1344,7 @@ call rem_negative_tracers(localpet)
    print*,"- CALL FieldGet FOR 3-D TRACER ", trim(tracers(ii))
    call ESMF_FieldGet(tracers_target_grid(ii), &
                       farrayPtr=Q2PTR, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
           call error_handler("IN FieldGet", rc)
 
    IF (TRIM(TRACERS(II)) == "sphum") THEN  ! specific humidity
@@ -1462,7 +1452,7 @@ call rem_negative_tracers(localpet)
 !     REAL(ESMF_KIND_R8) :: J2S 
 
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-!  FIND THE SURROUNDING INPUT INTERVAL FOR EACH OUTPUT POINT.         
+!  FIND THE SURROUNDING INPUT INTERVAL FOR EACH OUTPUT POINT.
       CALL RSEARCH(IM,KM1,IXZ1,KXZ1,Z1,KM2,IXZ2,KXZ2,Z2,1,IM,K1S) 
 
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -1722,25 +1712,25 @@ call rem_negative_tracers(localpet)
                     computationalLBound=clb, &
                     computationalUBound=cub, &
                     farrayPtr=psptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
          call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR TERRAIN HEIGHT"
  call ESMF_FieldGet(terrain_target_grid, &
                     farrayPtr=zhsfcptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
          call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR HEIGHT"
  call ESMF_FieldGet(zh_target_grid, &
                     farrayPtr=zhptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
          call error_handler("IN FieldGet", rc)
 
  print*,"- CALL FieldGet FOR TEMPERATURE"
  call ESMF_FieldGet(temp_target_grid, &
                     farrayPtr=tptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
          call error_handler("IN FieldGet", rc)
 
  do ii = 1, num_tracers
@@ -1750,7 +1740,7 @@ call rem_negative_tracers(localpet)
  print*,"- CALL FieldGet FOR SPECIFIC HUMIDITY"
  call ESMF_FieldGet(tracers_target_grid(ii), &
                     farrayPtr=qptr, rc=rc)
- if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
          call error_handler("IN FieldGet", rc)
 
  grd = grav/rdgas 
@@ -1806,63 +1796,63 @@ call rem_negative_tracers(localpet)
                     computationalLBound=clb, &
                     computationalUBound=cub, &
                     farrayPtr=tempptr, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet temp", rc)
     
    call ESMF_FieldGet(pres_target_grid, &
                     farrayPtr=presptr, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet pres", rc)
     
    call ESMF_FieldGet(landmask_target_grid, &
                     farrayPtr=landptr, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet landmask", rc)
    
    call ESMF_FieldGet(tracers_target_grid(P_QV), farrayPtr=vaporptr, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet tracers_qc", rc)
                      
    call ESMF_FieldGet(tracers_target_grid(P_QC), farrayPtr=cloudptr, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet tracers_qc", rc)
     
    if (P_QI > 0) then
 	   call ESMF_FieldGet(tracers_target_grid(P_QI), farrayPtr=iceptr, rc=rc) 
-	   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+	   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
 		call error_handler("IN FieldGet tracers_qi", rc)
    endif
     
    if (P_QR > 0) then
 	   call ESMF_FieldGet(tracers_target_grid(P_QR), farrayPtr=rainptr, rc=rc)  
-	   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+	   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
 		call error_handler("IN FieldGet tracers_qr", rc) 
    endif
 
    if (P_QNC > 0) then
 		call ESMF_FieldGet(tracers_target_grid(P_QNC), farrayPtr=qncptr, rc=rc)
-	   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+	   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
 		call error_handler("IN FieldGet tracers_qnc", rc)
 		if (num_tracers == num_tracers_input + 3) qncptr(clb(1):cub(1),clb(2):cub(2),clb(3):cub(3)) = real(-1.0, esmf_kind_r8)
    endif
     
    if (P_QNI > 0) then     
 	   call ESMF_FieldGet(tracers_target_grid(P_QNI), farrayPtr=qniptr, rc=rc) 
-	   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+	   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
 		call error_handler("IN FieldGet tracers_qni", rc)
 		if (num_tracers == num_tracers_input + 3) qniptr(clb(1):cub(1),clb(2):cub(2),clb(3):cub(3)) = real(-1.0, esmf_kind_r8)
    endif
    
    if (P_QNR > 0) then    
 	   call ESMF_FieldGet(tracers_target_grid(P_QNR), farrayPtr=qnrptr, rc=rc)  
-	   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+	   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
 		call error_handler("IN FieldGet tracers_qnr", rc)
 		if (num_tracers == num_tracers_input + 3) qnrptr(clb(1):cub(1),clb(2):cub(2),clb(3):cub(3)) = real(-1.0, esmf_kind_r8)
    endif
    
    if (P_QNWFA > 0) then    
 	   call ESMF_FieldGet(tracers_target_grid(P_QNWFA), farrayPtr=qnwfaptr, rc=rc)  
-	   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+	   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
 		call error_handler("IN FieldGet tracers_qnr", rc)
    endif
     
@@ -1877,34 +1867,46 @@ call rem_negative_tracers(localpet)
 
              !..Produce a sensible cloud droplet number concentration
 
-             if (P_QNC.gt.1 .AND. cloudptr(i,j,k).gt.0.0 .AND. qncptr(i,j,k).le.0.0) then
-                if (P_QNWFA .gt. 1) then
+             if (P_QNC.gt.1 .AND. P_QC .gt. 1) then
+               if (cloudptr(i,j,k).gt.0.0 .AND. qncptr(i,j,k).le.0.0) then
+                 if (P_QNWFA .gt. 1) then
                    qncptr(i,j,k) = make_DropletNumber (cloudptr(i,j,k)*temp_rho,       &
    &                           qnwfaptr(i,j,k)*temp_rho, real(landptr(i,j)))
-                else
+                  else
                    qncptr(i,j,k) = make_DropletNumber (cloudptr(i,j,k)*temp_rho,       &
    &                           0.0, real(landptr(i,j)))
-                endif
-                qncptr(i,j,k) = qncptr(i,j,k) / temp_rho
-                
+                 endif
+                 qncptr(i,j,k) = qncptr(i,j,k) / temp_rho
+               endif
              endif
-             if (qncptr(i,j,k) < 0) qncptr(i,j,k) = 0
+             
+             if (P_QNC.gt.1) then
+               if (qncptr(i,j,k) < 0) qncptr(i,j,k) = 0
+             endif
              !..Produce a sensible cloud ice number concentration
 
-             if (P_QNI.gt.1 .AND. iceptr(i,j,k).gt.0.0 .AND. qniptr(i,j,k).le.0.0) then
-                qniptr(i,j,k) = make_IceNumber (iceptr(i,j,k)*temp_rho, tempptr(i,j,k))
-                qniptr(i,j,k) = qniptr(i,j,k)  / temp_rho
+             if (P_QNI.gt.1 .AND. P_QI .gt. 1) then
+               if (iceptr(i,j,k).gt.0.0 .AND. qniptr(i,j,k).le.0.0) then
+                 qniptr(i,j,k) = make_IceNumber (iceptr(i,j,k)*temp_rho, tempptr(i,j,k))
+                 qniptr(i,j,k) = qniptr(i,j,k)  / temp_rho
                
+               endif
              endif
-             if (qniptr(i,j,k) < 0) qniptr(i,j,k) = 0
+             
+             if (P_QNI.gt.1) then
+               if (qniptr(i,j,k) < 0) qniptr(i,j,k) = 0
+             endif
              !..Produce a sensible rain number concentration
 
-             if (P_QNR.gt.1 .AND. rainptr(i,j,k).gt.0.0 .AND. qnrptr(i,j,k).le.0.0) then
-                qnrptr(i,j,k)  = make_RainNumber (rainptr(i,j,k)*temp_rho, tempptr(i,j,k))
-                qnrptr(i,j,k)  = qnrptr(i,j,k)  / temp_rho
-                
+             if (P_QNR.gt.1 .AND. P_QR .gt. 1) then
+               if (rainptr(i,j,k).gt.0.0 .AND. qnrptr(i,j,k).le.0.0) then
+                 qnrptr(i,j,k)  = make_RainNumber (rainptr(i,j,k)*temp_rho, tempptr(i,j,k))
+                 qnrptr(i,j,k)  = qnrptr(i,j,k)  / temp_rho
+               endif
              endif
-             if (qnrptr(i,j,k) < 0) qnrptr(i,j,k) = 0
+             if (P_QNR.gt.1) then
+               if (qnrptr(i,j,k) < 0) qnrptr(i,j,k) = 0
+             endif
           enddo
 
        enddo
@@ -2084,7 +2086,7 @@ end function make_IceNumber
                         computationalLBound=clb, &
                         computationalUBound=cub, &
                         FarrayPtr=tempptr, rc=rc)
-	   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+	   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
          call error_handler("IN FieldGet tracer", rc)
      if (trim(tracers_input(n))=="sphum") then
        where(tempptr(clb(1):cub(1),clb(2):cub(2),clb(3):cub(3)) <= 0) tempptr = real(1E-7,esmf_kind_r8)
