@@ -3722,6 +3722,7 @@ end subroutine replace_land_sfcparams
  real(esmf_kind_r8), pointer        :: seaice_skint_ptr(:,:)
  real(esmf_kind_r8), pointer        :: skint_ptr(:,:)
  real(esmf_kind_r8), pointer        :: fice_ptr(:,:)
+ real(esmf_kind_r8), pointer        :: hice_ptr(:,:)
 
  print*,"- CALL FieldGet FOR TARGET GRID LAND-SEA MASK."
  call ESMF_FieldGet(landmask_target_grid, &
@@ -3731,11 +3732,7 @@ end subroutine replace_land_sfcparams
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
-!---------------------------------------------------------------------------------------------
-! Set slope type flag value at non-land points.
-!---------------------------------------------------------------------------------------------
-
- print*,"- CALL FieldGet FOR TARGET GRID SLOPE TYPE."
+ print*,"- SET NON-LAND FLAG FOR TARGET GRID SLOPE TYPE."
  call ESMF_FieldGet(slope_type_target_grid, &
                     farrayPtr=data_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
@@ -3747,7 +3744,7 @@ end subroutine replace_land_sfcparams
  enddo
  enddo
 
- print*,"- CALL FieldGet FOR TARGET GRID SOIL TYPE."
+ print*,"- SET NON-LAND FLAG FOR TARGET GRID SOIL TYPE."
  call ESMF_FieldGet(soil_type_target_grid, &
                     farrayPtr=data_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
@@ -3759,7 +3756,7 @@ end subroutine replace_land_sfcparams
  enddo
  enddo
 
- print*,"- CALL FieldGet FOR TARGET GRID VEGETATION TYPE."
+ print*,"- SET NON-LAND FLAG FOR TARGET GRID VEGETATION TYPE."
  call ESMF_FieldGet(veg_type_target_grid, &
                     farrayPtr=veg_type_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
@@ -3771,7 +3768,7 @@ end subroutine replace_land_sfcparams
  enddo
  enddo
 
- print*,"- CALL FieldGet FOR TARGET GRID ALVSF."
+ print*,"- SET TARGET GRID ALVSF AT NON-LAND."
  call ESMF_FieldGet(alvsf_target_grid, &
                     farrayPtr=data_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
@@ -3783,7 +3780,7 @@ end subroutine replace_land_sfcparams
  enddo
  enddo
 
- print*,"- CALL FieldGet FOR TARGET GRID ALVWF."
+ print*,"- SET TARGET GRID ALVWF AT NON-LAND."
  call ESMF_FieldGet(alvwf_target_grid, &
                     farrayPtr=data_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
@@ -3795,7 +3792,7 @@ end subroutine replace_land_sfcparams
  enddo
  enddo
 
- print*,"- CALL FieldGet FOR TARGET GRID ALNSF."
+ print*,"- SET TARGET GRID ALNSF AT NON-LAND."
  call ESMF_FieldGet(alnsf_target_grid, &
                     farrayPtr=data_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
@@ -3807,7 +3804,7 @@ end subroutine replace_land_sfcparams
  enddo
  enddo
 
- print*,"- CALL FieldGet FOR TARGET GRID ALNWF."
+ print*,"- SET TARGET GRID ALNWF AT NON-LAND."
  call ESMF_FieldGet(alnwf_target_grid, &
                     farrayPtr=data_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
@@ -3819,7 +3816,7 @@ end subroutine replace_land_sfcparams
  enddo
  enddo
 
- print*,"- CALL FieldGet FOR TARGET GRID FACSF."
+ print*,"- SET NON-LAND FLAG FOR TARGET GRID FACSF."
  call ESMF_FieldGet(facsf_target_grid, &
                     farrayPtr=data_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
@@ -3831,7 +3828,7 @@ end subroutine replace_land_sfcparams
  enddo
  enddo
 
- print*,"- CALL FieldGet FOR TARGET GRID FAWSF."
+ print*,"- SET NON-LAND FLAG FOR TARGET GRID FACSF."
  call ESMF_FieldGet(facwf_target_grid, &
                     farrayPtr=data_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
@@ -3843,7 +3840,7 @@ end subroutine replace_land_sfcparams
  enddo
  enddo
 
- print*,"- CALL FieldGet FOR TARGET GRID MAXIMUM GREENNESS."
+ print*,"- SET NON-LAND FLAG FOR TARGET GRID MAXIMUM GREENNESS."
  call ESMF_FieldGet(max_veg_greenness_target_grid, &
                     farrayPtr=data_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
@@ -3855,7 +3852,7 @@ end subroutine replace_land_sfcparams
  enddo
  enddo
 
- print*,"- CALL FieldGet FOR TARGET GRID MINIMUM GREENNESS."
+ print*,"- SET NON-LAND FLAG FOR TARGET GRID MINIMUM GREENNESS."
  call ESMF_FieldGet(min_veg_greenness_target_grid, &
                     farrayPtr=data_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
@@ -3867,7 +3864,7 @@ end subroutine replace_land_sfcparams
  enddo
  enddo
 
- print*,"- CALL FieldGet FOR TARGET GRID VEGETATION GREENNESS."
+ print*,"- SET NON-LAND FLAG FOR TARGET GRID VEGETATION GREENNESS."
  call ESMF_FieldGet(veg_greenness_target_grid, &
                     farrayPtr=veg_greenness_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
@@ -3879,7 +3876,7 @@ end subroutine replace_land_sfcparams
  enddo
  enddo
 
- print*,"- CALL FieldGet FOR TARGET GRID MAX SNOW ALBEDO."
+ print*,"- SET NON-LAND FLAG FOR TARGET GRID MAX SNOW ALBEDO."
  call ESMF_FieldGet(mxsno_albedo_target_grid, &
                     farrayPtr=data_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
@@ -3891,7 +3888,7 @@ end subroutine replace_land_sfcparams
  enddo
  enddo
 
- print*,"- CALL FieldGet FOR TARGET GRID CANOPY MOISTURE CONTENT."
+ print*,"- ZERO OUT TARGET GRID CANOPY MOISTURE CONTENT WHERE NO PLANTS."
  call ESMF_FieldGet(canopy_mc_target_grid, &
                     farrayPtr=data_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
@@ -3909,7 +3906,7 @@ end subroutine replace_land_sfcparams
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
- print*,"- CALL FieldGet FOR TARGET GRID SKIN TEMP."
+ print*,"- SET TARGET GRID SKIN TEMP AT ICE POINTS."
  call ESMF_FieldGet(skin_temp_target_grid, &
                     farrayPtr=skint_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
@@ -3921,6 +3918,12 @@ end subroutine replace_land_sfcparams
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
+ print*,"- SET TARGET GRID SEA ICE DEPTH TO ZERO AT NON-ICE POINTS."
+ call ESMF_FieldGet(seaice_depth_target_grid, &
+                    farrayPtr=hice_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
  do j = clb(2), cub(2)
  do i = clb(1), cub(1)
    if (fice_ptr(i,j) > 0.0) then
@@ -3928,11 +3931,12 @@ end subroutine replace_land_sfcparams
                       ( (1.0 - fice_ptr(i,j)) * frz_ice )
    else
      seaice_skint_ptr(i,j) = skint_ptr(i,j)
+     hice_ptr(i,j) = 0.0
    endif
  enddo
  enddo
 
- print*,"- CALL FieldGet FOR TARGET GRID SUBSTRATE TEMP."
+ print*,"- SET TARGET GRID SUBSTRATE TEMP AT ICE."
  call ESMF_FieldGet(substrate_temp_target_grid, &
                     farrayPtr=data_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
@@ -3948,13 +3952,41 @@ end subroutine replace_land_sfcparams
  enddo
  enddo
 
- print*,"- CALL FieldGet FOR TARGET GRID TOTAL SOIL MOISTURE."
+ print*,"- ZERO OUT TARGET GRID SNOW DEPTH AT OPEN WATER."
+ call ESMF_FieldGet(snow_depth_target_grid, &
+                    farrayPtr=data_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ do j = clb(2), cub(2)
+ do i = clb(1), cub(1)
+   if (landmask_ptr(i,j) == 0) then  ! open water
+     data_ptr(i,j) = 0.0
+   end if
+ enddo
+ enddo
+
+ print*,"- ZERO OUT TARGET GRID SNOW LIQ AT OPEN WATER."
+ call ESMF_FieldGet(snow_liq_equiv_target_grid, &
+                    farrayPtr=data_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ do j = clb(2), cub(2)
+ do i = clb(1), cub(1)
+   if (landmask_ptr(i,j) == 0) then  ! open water
+     data_ptr(i,j) = 0.0
+   endif
+ enddo
+ enddo
+
+ print*,"- SET NON-LAND FLAG VALUE FOR TARGET GRID TOTAL SOIL MOISTURE."
  call ESMF_FieldGet(soilm_tot_target_grid, &
                     farrayPtr=soilmt_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldGet", rc)
 
- print*,"- CALL FieldGet FOR TARGET GRID LIQUID SOIL MOISTURE."
+ print*,"- SET NON-LAND FLAG VALUE FOR  TARGET GRID LIQUID SOIL MOISTURE."
  call ESMF_FieldGet(soilm_liq_target_grid, &
                     farrayPtr=soilml_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
@@ -3963,6 +3995,7 @@ end subroutine replace_land_sfcparams
  do j = clb(2), cub(2)
  do i = clb(1), cub(1)
   if (landmask_ptr(i,j) == 2 .or. landmask_ptr(i,j) == 0) then !.or. &
+!JLS  this is not commented out in develop branch
        !nint(veg_type_ptr(i,j)) == veg_type_landice_target) then
      soilmt_ptr(i,j,:) = 1.0
      soilml_ptr(i,j,:) = 1.0
@@ -3970,7 +4003,7 @@ end subroutine replace_land_sfcparams
  enddo
  enddo
 
- print*,"- CALL FieldGet FOR TARGET GRID SOIL TEMPERATURE."
+ print*,"- SET OPEN WATER FLAG FOR TARGET GRID SOIL TEMPERATURE."
  call ESMF_FieldGet(soil_temp_target_grid, &
                     farrayPtr=data3d_ptr, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
@@ -4207,12 +4240,23 @@ end subroutine replace_land_sfcparams
 
  integer                     :: rc
 
+ real(esmf_kind_r8), pointer    :: target_ptr(:,:), target_ptr_3d(:,:,:)
+ real                           :: init_val = -999.9
+
  print*,"- CALL FieldCreate FOR TARGET GRID T2M."
  t2m_target_grid = ESMF_FieldCreate(target_grid, &
                                     typekind=ESMF_TYPEKIND_R8, &
                                     staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
+
+ print*,"- INITIALIZE TARGET grid t2m."
+ call ESMF_FieldGet(t2m_target_grid, &
+                    farrayPtr=target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ target_ptr = init_val
 
  print*,"- CALL FieldCreate FOR TARGET GRID Q2M."
  q2m_target_grid = ESMF_FieldCreate(target_grid, &
@@ -4221,12 +4265,28 @@ end subroutine replace_land_sfcparams
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
+ print*,"- INITIALIZE TARGET grid q2m."
+ call ESMF_FieldGet(q2m_target_grid, &
+                    farrayPtr=target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ target_ptr = init_val
+
  print*,"- CALL FieldCreate FOR TARGET GRID TPRCP."
  tprcp_target_grid = ESMF_FieldCreate(target_grid, &
                                     typekind=ESMF_TYPEKIND_R8, &
                                     staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
+
+ print*,"- INITIALIZE TARGET grid tprcp."
+ call ESMF_FieldGet(tprcp_target_grid, &
+                    farrayPtr=target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ target_ptr = init_val
 
  print*,"- CALL FieldCreate FOR TARGET GRID F10M."
  f10m_target_grid = ESMF_FieldCreate(target_grid, &
@@ -4235,12 +4295,28 @@ end subroutine replace_land_sfcparams
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
+ print*,"- INITIALIZE TARGET grid f10m."
+ call ESMF_FieldGet(f10m_target_grid, &
+                    farrayPtr=target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ target_ptr = init_val
+
  print*,"- CALL FieldCreate FOR TARGET GRID FFMM."
  ffmm_target_grid = ESMF_FieldCreate(target_grid, &
                                     typekind=ESMF_TYPEKIND_R8, &
                                     staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
+
+ print*,"- INITIALIZE TARGET grid ffmm."
+ call ESMF_FieldGet(ffmm_target_grid, &
+                    farrayPtr=target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ target_ptr = init_val
 
  print*,"- CALL FieldCreate FOR TARGET GRID USTAR."
  ustar_target_grid = ESMF_FieldCreate(target_grid, &
@@ -4249,12 +4325,28 @@ end subroutine replace_land_sfcparams
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
+ print*,"- INITIALIZE TARGET grid ustar."
+ call ESMF_FieldGet(ustar_target_grid, &
+                    farrayPtr=target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ target_ptr = init_val
+
  print*,"- CALL FieldCreate FOR TARGET GRID SNOW LIQ EQUIV."
  snow_liq_equiv_target_grid = ESMF_FieldCreate(target_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
+
+ print*,"- INITIALIZE TARGET grid snow liq equiv."
+ call ESMF_FieldGet(snow_liq_equiv_target_grid, &
+                    farrayPtr=target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ target_ptr = init_val
 
  print*,"- CALL FieldCreate FOR TARGET GRID SNOW DEPTH."
  snow_depth_target_grid = ESMF_FieldCreate(target_grid, &
@@ -4263,12 +4355,28 @@ end subroutine replace_land_sfcparams
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
+ print*,"- INITIALIZE TARGET grid snow depth."
+ call ESMF_FieldGet(snow_depth_target_grid, &
+                    farrayPtr=target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ target_ptr = init_val
+
  print*,"- CALL FieldCreate FOR TARGET GRID SEA ICE FRACTION."
  seaice_fract_target_grid = ESMF_FieldCreate(target_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
+
+ print*,"- INITIALIZE TARGET grid sea ice fraction."
+ call ESMF_FieldGet(seaice_fract_target_grid, &
+                    farrayPtr=target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ target_ptr = init_val
 
  print*,"- CALL FieldCreate FOR TARGET GRID SEA ICE DEPTH."
  seaice_depth_target_grid = ESMF_FieldCreate(target_grid, &
@@ -4277,12 +4385,28 @@ end subroutine replace_land_sfcparams
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
+ print*,"- INITIALIZE TARGET sea ice depth."
+ call ESMF_FieldGet(seaice_depth_target_grid, &
+                    farrayPtr=target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ target_ptr = init_val
+
  print*,"- CALL FieldCreate FOR TARGET GRID SEA ICE SKIN TEMP."
  seaice_skin_temp_target_grid = ESMF_FieldCreate(target_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
+
+ print*,"- INITIALIZE TARGET sea ice skin temp."
+ call ESMF_FieldGet(seaice_skin_temp_target_grid, &
+                    farrayPtr=target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ target_ptr = init_val
 
  print*,"- CALL FieldCreate FOR TARGET GRID SRFLAG."
  srflag_target_grid = ESMF_FieldCreate(target_grid, &
@@ -4291,12 +4415,28 @@ end subroutine replace_land_sfcparams
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
+ print*,"- INITIALIZE TARGET srflag."
+ call ESMF_FieldGet(srflag_target_grid, &
+                    farrayPtr=target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ target_ptr = init_val
+
  print*,"- CALL FieldCreate FOR TARGET GRID SKIN TEMPERATURE."
  skin_temp_target_grid = ESMF_FieldCreate(target_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
+
+ print*,"- INITIALIZE TARGET grid skin temp."
+ call ESMF_FieldGet(skin_temp_target_grid, &
+                    farrayPtr=target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ target_ptr = init_val
 
  print*,"- CALL FieldCreate FOR TARGET GRID CANOPY MOISTURE CONTENT."
  canopy_mc_target_grid = ESMF_FieldCreate(target_grid, &
@@ -4305,12 +4445,28 @@ end subroutine replace_land_sfcparams
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
+ print*,"- INITIALIZE TARGET grid canopy moisture."
+ call ESMF_FieldGet(canopy_mc_target_grid, &
+                    farrayPtr=target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ target_ptr = init_val
+
  print*,"- CALL FieldCreate FOR TARGET GRID Z0."
  z0_target_grid = ESMF_FieldCreate(target_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
+
+ print*,"- INITIALIZE TARGET grid z0."
+ call ESMF_FieldGet(z0_target_grid, &
+                    farrayPtr=target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ target_ptr = init_val
 
  print*,"- CALL FieldCreate FOR INTERPOLATED TARGET GRID TERRAIN."
  terrain_from_input_grid = ESMF_FieldCreate(target_grid, &
@@ -4319,12 +4475,28 @@ end subroutine replace_land_sfcparams
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
+ print*,"- INITIALIZE TARGET grid interpolated terrain."
+ call ESMF_FieldGet(terrain_from_input_grid, &
+                    farrayPtr=target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ target_ptr = init_val
+
  print*,"- CALL FieldCreate FOR INTERPOLATED TARGET GRID SOIL TYPE."
  soil_type_from_input_grid = ESMF_FieldCreate(target_grid, &
                                      typekind=ESMF_TYPEKIND_R8, &
                                      staggerloc=ESMF_STAGGERLOC_CENTER, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
+
+ print*,"- INITIALIZE TARGET grid soil type"
+ call ESMF_FieldGet(soil_type_from_input_grid, &
+                    farrayPtr=target_ptr, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ target_ptr = init_val
 
   print*,"- CALL FieldCreate FOR INTERPOLATED TARGET GRID LEAF AREA INDEX."
   lai_target_grid = ESMF_FieldCreate(target_grid, &
@@ -4342,6 +4514,14 @@ end subroutine replace_land_sfcparams
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
+ print*,"- INITIALIZE TARGET grid soil temp"
+ call ESMF_FieldGet(soil_temp_target_grid, &
+                    farrayPtr=target_ptr_3d, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ target_ptr_3d = init_val
+
  print*,"- CALL FieldCreate FOR TARGET GRID TOTAL SOIL MOISTURE."
  soilm_tot_target_grid = ESMF_FieldCreate(target_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
@@ -4351,6 +4531,14 @@ end subroutine replace_land_sfcparams
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
 
+ print*,"- INITIALIZE TARGET grid soil moist"
+ call ESMF_FieldGet(soilm_tot_target_grid, &
+                    farrayPtr=target_ptr_3d, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ target_ptr_3d = init_val
+
  print*,"- CALL FieldCreate FOR TARGET GRID LIQUID SOIL MOISTURE."
  soilm_liq_target_grid = ESMF_FieldCreate(target_grid, &
                                    typekind=ESMF_TYPEKIND_R8, &
@@ -4359,6 +4547,14 @@ end subroutine replace_land_sfcparams
                                    ungriddedUBound=(/lsoil_target/), rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldCreate", rc)
+
+ print*,"- INITIALIZE TARGET grid soil liq"
+ call ESMF_FieldGet(soilm_liq_target_grid, &
+                    farrayPtr=target_ptr_3d, rc=rc)
+ if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__line__,file=__file__)) &
+    call error_handler("IN FieldGet", rc)
+
+ target_ptr_3d = init_val
 
  end subroutine create_surface_esmf_fields
 
