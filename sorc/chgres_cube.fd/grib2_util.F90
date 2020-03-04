@@ -62,26 +62,32 @@ subroutine read_vcoord(isnative,vcoordi,vcoordo,lev_input,levp1_input,pt,metadat
       endif
     elseif (trim(external_model) .eq. 'NAM' .and. lev_input == 60) then
       lev_type = "hybrid"
+    elseif (trim(external_model) .eq. 'UKMET' .and. lev_input == 70) then
+      lev_type = "hybrid" 
     else  
       iret = 1
+      print*, 'External Model = ', external_model
+      print*, 'Num levels = ', lev_input
       call error_handler("This code only supports rap/hrrr data w/ 50 sigma/hybrid coordinate levels &
       or NAM data with 60 hybrid coordinate levels", iret)
     endif ! end check for mname and num levels
     
-    fname_coord = trim(base_install_dir)//"/fix/fix_chgres/vertical_coordinate_"// &
-    						trim(external_model)//"-"//trim(lev_type)//".txt"
-    print*, fname_coord
-		open(14, file=trim(fname_coord), form='formatted', iostat=iret)
+    if (trim(external_model) .ne. 'UKMET') then
+			fname_coord = trim(base_install_dir)//"/fix/fix_chgres/vertical_coordinate_"// &
+									trim(external_model)//"-"//trim(lev_type)//".txt"
+			print*, fname_coord
+			open(14, file=trim(fname_coord), form='formatted', iostat=iret)
 		
-		if (iret /= 0) call error_handler("OPENING VERTICAL COORDINATE FILE", iret)
+			if (iret /= 0) call error_handler("OPENING VERTICAL COORDINATE FILE", iret)
 
 
-		read(14, *, iostat=iret) pt
-		if (iret /= 0) call error_handler("READING VERTICAL COORDINATE FILE", iret)
+			read(14, *, iostat=iret) pt
+			if (iret /= 0) call error_handler("READING VERTICAL COORDINATE FILE", iret)
 
-		do k = 1, levp1_input
-			read(14, *, iostat=iret) vcoordo(k,1), vcoordo(k,2)
-		enddo    
+			do k = 1, levp1_input
+				read(14, *, iostat=iret) vcoordo(k,1), vcoordo(k,2)
+			enddo
+		endif    
   else ! create sigma from isobaric levels
 		!vcoordo(2:levp1_input,2) = vcoordi / 100000.0
 		

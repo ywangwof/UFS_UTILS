@@ -2509,10 +2509,10 @@ module input_data
    
    do k = 1,lev_input
       !Rotate U
-   		data_one_tile_3d(:,:,k) = u_tmp_3d(:,:,k)*cosa_2d-v_tmp_3d(:,:,k)*sina_2d
+   		data_one_tile_3d(:,:,k) = u_tmp_3d(:,:,k)*cosa_2d+v_tmp_3d(:,:,k)*sina_2d
    		
    		!Rotate V
-   		data_one_tile_3d2(:,:,k) = v_tmp_3d(:,:,k)*cosa_2d+u_tmp_3d(:,:,k)*sina_2d
+   		data_one_tile_3d2(:,:,k) = v_tmp_3d(:,:,k)*cosa_2d-u_tmp_3d(:,:,k)*sina_2d
    enddo
    
    deallocate(cosa_2d)
@@ -2656,7 +2656,7 @@ module input_data
  end if
 
    !print*,"- READ VERTICAL LEVELS."
-   iret = grb2_inq(the_file,inv_file,":UGRD:"," hybrid level:")
+   iret = grb2_inq(the_file,inv_file,":UGRD:"," hybrid ")
    !if (iret < 0) call error_handler("COUNTING VERTICAL LEVELS.", iret)
   
     if (iret <= 0) then
@@ -2669,11 +2669,11 @@ module input_data
       lev_input=iret
     else
       if (localpet == 0) PRINT*, "DATA IS ON NATIVE SIGMA/HYBRID LEVELS"
-      lvl_str = "hybrid level:"
-      lvl_str_space = " hybrid level:"
-      lvl_str_space_len = 14
+      lvl_str = " level:"
+      lvl_str_space = " hybrid " 
+      lvl_str_space_len = 7
       isnative = .true.
-      iret = grb2_inq(the_file,inv_file,":UGRD:",lvl_str_space)
+      iret = grb2_inq(the_file,inv_file,":UGRD:",lvl_str_space, " level:")
       if (iret < 0) call error_handler("READING VERTICAL LEVEL TYPE.", iret)
       lev_input=iret
     endif
@@ -2690,7 +2690,8 @@ module input_data
       if (iret.ne.1) call error_handler(" IN SEQUENTIAL FILE READ.", iret)
     
       j = index(metadata,':UGRD:') + len(':UGRD:')
-      k = index(metadata,trim(lvl_str_space)) + len(trim(lvl_str_space))-1
+      print*, j,index(metadata,'level:')
+      k = index(metadata,trim(lvl_str)) + len(trim(lvl_str))-1
 
       read(metadata(j:k),*) rlevs(i)
 
@@ -2701,6 +2702,8 @@ module input_data
 	enddo
 
    allocate(vcoord(levp1_input,2))
+   
+  
    if (localpet == 0) print*,"- READ VERTICAL COORDINATE INFO."
    if (localpet == 0) print*, metadata
    call read_vcoord(isnative,rlevs,vcoord,lev_input,levp1_input,pt,metadata,iret)
@@ -2727,6 +2730,10 @@ module input_data
     if (iret <= 0) then
       iret = grb2_inq(the_file,inv_file,':ICMR:',lvl_str_space)
       if (iret >= 1) trac_names_grib(4)=':ICMR:'
+    endif
+    if (iret <= 0) then
+      iret = grb2_inq(the_file,inv_file,':SCLIWC:',lvl_str_space)
+      if (iret >= 1) trac_names_grib(4) = ':SCLIWC:'
     endif
    endif
 
@@ -2874,7 +2881,18 @@ module input_data
        vname2 = "_13_193"
      elseif (trim(vname) == ":CLWMR:") then
        vname = "var0_"
-       vname2 = "_1_22"
+       if (external_model=='UKMET') then
+         vname2 = "_1_83"
+       else
+         vname2 = "_1_22"
+       endif
+     elseif (trim(vname) == ":CLWMR:") then
+       vname = "var0_"
+       if (external_model=='UKMET') then
+         vname2 = "_1_83"
+       else
+         vname2 = "_1_22"
+       endif  
      endif
      
      do vlev = 1, lev_input
@@ -2973,7 +2991,13 @@ if (localpet == 0) then
     vname = ":HGT:"
    vlevtyp = ":surface:"
    iret = grb2_inq(the_file,inv_file,vname,vlevtyp,data2=dummy2d)
-   if (iret <= 0) call error_handler("READING TERRAIN HEIGHT RECORD.", iret)
+   
+   if (iret <= 0) then 
+     vname = ":MTERH:"
+     iret = grb2_inq(the_file,inv_file,vname,vlevtyp,data2=dummy2d)
+     
+     if (iret <= 0) call error_handler("READING TERRAIN HEIGHT RECORD.", iret)
+   endif  
    dummy2d_8 = real(dummy2d,esmf_kind_r8)
  endif
 
@@ -2989,7 +3013,7 @@ if (localpet == 0) then
                                    ungriddedLBound=(/1/), &
                                    ungriddedUBound=(/lev_input/), rc=rc)
 
- deallocate(dummy2d, dummy3d, dummy2d_8)
+ deallocate(dummy2d, dummy2d_8)
  
 !---------------------------------------------------------------------------
 ! Compute 3-d pressure.
@@ -3050,54 +3074,75 @@ if (localpet == 0) then
   deallocate(vcoord)
 
  else
-   if (localpet == 0) print*,"- COMPUTE 3-D PRESSURE."
+   if (external_model .ne. 'UKMET') then
+		 if (localpet == 0) print*,"- COMPUTE 3-D PRESSURE."
 
-   if (localpet == 0) print*,"- CALL FieldGet FOR 3-D PRESSURE."
-   nullify(presptr)
-   
-   call ESMF_FieldGet(pres_input_grid, &
-                      computationalLBound=clb, &
-                      computationalUBound=cub, &
-                      farrayPtr=presptr, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-      call error_handler("IN FieldGet", rc)
+		 if (localpet == 0) print*,"- CALL FieldGet FOR 3-D PRESSURE."
+		 nullify(presptr)
+	 
+		 call ESMF_FieldGet(pres_input_grid, &
+												computationalLBound=clb, &
+												computationalUBound=cub, &
+												farrayPtr=presptr, rc=rc)
+		 if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+				call error_handler("IN FieldGet", rc)
 
-   if (localpet == 0) print*,"- CALL FieldGet FOR SURFACE PRESSURE."
-   nullify(psptr)
-   call ESMF_FieldGet(ps_input_grid, &
-                      farrayPtr=psptr, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-      call error_handler("IN FieldGet", rc)
+		 if (localpet == 0) print*,"- CALL FieldGet FOR SURFACE PRESSURE."
+		 nullify(psptr)
+		 call ESMF_FieldGet(ps_input_grid, &
+												farrayPtr=psptr, rc=rc)
+		 if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+				call error_handler("IN FieldGet", rc)
 
-   do i = clb(1), cub(1)
-     do j = clb(2), cub(2)
-       
-       do k = 1,lev_input
-         presptr(i,j,k) = vcoord(k,2)*(psptr(i,j)-pt) + vcoord(k,1)*(p0-pt)+pt
-       enddo
-       
-     enddo
-   enddo
-
-  deallocate(vcoord)
- endif
- 
- if (localpet == 0) then
-   print*,'psfc is ',clb(1),clb(2),psptr(clb(1),clb(2))
-   if (isnative) then
-     print*,'pres is ',cub(1),cub(2),presptr(cub(1),cub(2),:) 
-     
-     print*,'pres check 1',localpet,maxval(presptr(clb(1):cub(1),clb(2):cub(2),1)), &
-              minval(presptr(clb(1):cub(1),clb(2):cub(2),1))
-     print*,'pres check lev',localpet,maxval(presptr(clb(1):cub(1),clb(2):cub(2), &
-            lev_input)),minval(presptr(clb(1):cub(1),clb(2):cub(2),lev_input))
+		 do i = clb(1), cub(1)
+			 do j = clb(2), cub(2)
+			 
+				 do k = 1,lev_input
+					 presptr(i,j,k) = vcoord(k,2)*(psptr(i,j)-pt) + vcoord(k,1)*(p0-pt)+pt
+				 enddo
+			 
+			 enddo
+		 enddo
+		 
    else
-     print*,'pres is ',cub(1),cub(2),atm(1)%var(cub(1),cub(2),:)
-     print*,'pres check 1',localpet,maxval(atm(1)%var(clb(1):cub(1),clb(2):cub(2),1)), &
-              minval(atm(1)%var(clb(1):cub(1),clb(2):cub(2),1))
-     print*,'pres check lev',localpet,maxval(atm(1)%var(clb(1):cub(1),clb(2):cub(2), &
-            lev_input)),minval(atm(1)%var(clb(1):cub(1),clb(2):cub(2),lev_input))
-   endif
+     if (localpet == 0) then
+			 print*,"- READ PRESSURE."
+			 vname = ":PRES:"
+				do vlev = 1, lev_input
+					iret = grb2_inq(the_file,inv_file,vname,slevs(vlev),data2=dummy2d)
+					if (iret<=0) then 
+						call error_handler("READING IN PRESSURE AT LEVEL "//trim(slevs(vlev)),iret)
+					endif
+					dummy3d(:,:,vlev) = real(dummy2d,esmf_kind_r8)
+					print*,'pres check after read ',vlev, dummy3d(1,1,vlev)
+				enddo
+		 endif
+		 if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT GRID TEMPERATURE."
+		 call ESMF_FieldScatter(pres_input_grid, dummy3d, rootpet=0, rc=rc)
+		 if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+					call error_handler("IN FieldScatter", rc)
+		 
+   endif 
+   
+   deallocate(dummy3d)  
+   deallocate(vcoord)
+ 
+ !if (localpet == 0) then
+ !  print*,'psfc is ',clb(1),clb(2),psptr(clb(1),clb(2))
+ !  if (isnative) then
+ !    print*,'pres is ',cub(1),cub(2),presptr(cub(1),cub(2),:) 
+ !    
+ !    print*,'pres check 1',localpet,maxval(presptr(clb(1):cub(1),clb(2):cub(2),1)), &
+ !             minval(presptr(clb(1):cub(1),clb(2):cub(2),1))
+ !    print*,'pres check lev',localpet,maxval(presptr(clb(1):cub(1),clb(2):cub(2), &
+ !           lev_input)),minval(presptr(clb(1):cub(1),clb(2):cub(2),lev_input))
+ !  else
+ !    print*,'pres is ',cub(1),cub(2),atm(1)%var(cub(1),cub(2),:)
+ !    print*,'pres check 1',localpet,maxval(atm(1)%var(clb(1):cub(1),clb(2):cub(2),1)), &
+ !             minval(atm(1)%var(clb(1):cub(1),clb(2):cub(2),1))
+ !    print*,'pres check lev',localpet,maxval(atm(1)%var(clb(1):cub(1),clb(2):cub(2), &
+ !           lev_input)),minval(atm(1)%var(clb(1):cub(1),clb(2):cub(2),lev_input))
+ ! endif
 
  
  endif
@@ -3146,13 +3191,6 @@ if (localpet == 0) then
   
  endif
  
- ! This test doesn't make any sense! file_is_converted is imported from model_grid.F90,
- ! where it is set to zero. No part of this chgres_cube code is setting this variable
- ! to something else than zero, hence the next few lines will never execute. Besides,
- ! (localpet == 0) and convert_sfc are logicals, whereas file_is_converted is an integer.
- ! This violates the Fortran standard and causes compiler errors with the GNU compiler.
- !if ( localpet == 0 .and. file_is_converted .and. .not. convert_sfc) &
- !     call system("rm "//trim(the_file))
  end subroutine read_input_atm_grib2_file
  
 !---------------------------------------------------------------------------
@@ -4794,9 +4832,12 @@ if (localpet == 0) then
    !if (rc < 0) call error_handler("OPENING FILE.", rc)
  
    lsoil_input = grb2_inq(the_file, inv_file, ':TSOIL:',' below ground:')
-   print*, "- FILE HAS ", lsoil_input, " SOIL LEVELS"
+   if (lsoil_input <= 0) then !try SOILTMP instead
+     lsoil_input = grb2_inq(the_file, inv_file, ':SOILTMP:',' below ground:')
+   endif
    if (lsoil_input <= 0) call error_handler("COUNTING SOIL LEVELS.", rc)
-
+   if (localpet==0) print*, "- FILE HAS ", lsoil_input, " SOIL LEVELS"
+   
    
    !We need to recreate the soil fields if we have something other than 4 levels
    if (lsoil_input /= 4) then
@@ -4859,6 +4900,9 @@ if (localpet == 0) then
  if (localpet == 0) then
    print*,"- READ TERRAIN."
    rc = grb2_inq(the_file, inv_file, ':HGT:',':surface:', data2=dummy2d)
+   if (rc /= 1 .and. external_model=='UKMET') then
+     rc = grb2_inq(the_file, inv_file, ':MTERH:',':surface:', data2=dummy2d)
+   endif
    if (rc /= 1) call error_handler("READING TERRAIN.", rc)
    print*,'orog ',maxval(dummy2d),minval(dummy2d)
  endif
@@ -4907,6 +4951,9 @@ if (localpet == 0) then
  if (localpet == 0) then
    print*,"- READ SEAICE SKIN TEMPERATURE."
    rc = grb2_inq(the_file, inv_file, ':TMP:',':surface:', data2=dummy2d)
+   if (rc /= 1 .and. external_model=='UKMET') then
+     rc = grb2_inq(the_file, inv_file, ':SKINT:',':surface:', data2=dummy2d)
+   endif
    if (rc /= 1) call error_handler("READING SEAICE SKIN TEMP.", rc)
    print*,'ti ',maxval(dummy2d),minval(dummy2d)
  endif
@@ -4919,7 +4966,9 @@ if (localpet == 0) then
  if (localpet == 0) then
    print*,"- READ SNOW LIQUID EQUIVALENT."
    rc = grb2_inq(the_file, inv_file, ':WEASD:',':surface:',':anl:', data2=dummy2d)
-   if (rc /= 1) then 
+   if (rc /= 1 .and. external_model == 'UKMET') then
+    rc = grb2_inq(the_file, inv_file, ':SDWE:',':surface:',':anl:', data2=dummy2d)
+   else 
      rc = grb2_inq(the_file, inv_file, ':WEASD:',':surface:','hour fcst:', data2=dummy2d)
      if (rc /= 1) call error_handler("READING SNOW LIQUID EQUIVALENT.", rc)
    endif
@@ -4939,8 +4988,13 @@ if (localpet == 0) then
  if (localpet == 0) then
    print*,"- READ SNOW DEPTH."
    rc = grb2_inq(the_file, inv_file, ':SNOD:',':surface:', data2=dummy2d)
+   if (external_model == 'UKMET') then 
+     rc = 1
+   else
+     dummy2d = dummy2d*1000.0 ! Grib2 files have snow depth in (m), fv3 expects it in mm
+   endif
+   
    if (rc /= 1) call error_handler("READING SNOW DEPTH.", rc)
-   dummy2d = dummy2d*1000.0 ! Grib2 files have snow depth in (m), fv3 expects it in mm
    where(slmsk_save == 0.0) dummy2d = 0.0_esmf_kind_r4
    print*,'snod ',maxval(dummy2d),minval(dummy2d)
  endif
@@ -4953,6 +5007,11 @@ if (localpet == 0) then
  if (localpet == 0) then
    print*,"- READ T2M."
    rc = grb2_inq(the_file, inv_file, ':TMP:',':2 m above ground:', data2=dummy2d)
+   
+   if (rc /= 1 .and. external_model == 'UKMET') then
+    rc = grb2_inq(the_file, inv_file, ':TMP:',':1 m above ground:', data2=dummy2d)
+   endif
+   
    if (rc <= 0) call error_handler("READING T2M.", rc)
 
    print*,'t2m ',maxval(dummy2d),minval(dummy2d)
@@ -4966,6 +5025,9 @@ if (localpet == 0) then
  if (localpet == 0) then
    print*,"- READ Q2M."
    rc = grb2_inq(the_file, inv_file, ':SPFH:',':2 m above ground:', data2=dummy2d)
+   if (rc /= 1 .and. external_model == 'UKMET') then
+    rc = grb2_inq(the_file, inv_file, ':SPFH:',':1 m above ground:', data2=dummy2d)
+   endif
    if (rc <=0) call error_handler("READING Q2M.", rc)
    print*,'q2m ',maxval(dummy2d),minval(dummy2d)
  endif
@@ -4978,6 +5040,9 @@ if (localpet == 0) then
 if (localpet == 0) then
    print*,"- READ SKIN TEMPERATURE."
    rc = grb2_inq(the_file, inv_file, ':TMP:',':surface:', data2=dummy2d)
+   if (rc /= 1 .and. external_model=='UKMET') then
+     rc = grb2_inq(the_file, inv_file, ':SKINT:',':surface:', data2=dummy2d)
+   endif
    if (rc <= 0 ) call error_handler("READING SKIN TEMPERATURE.", rc)
    tsk_save(:,:) = dummy2d
    dummy2d_8 = real(dummy2d,esmf_kind_r8)
@@ -5070,23 +5135,40 @@ if (localpet == 0) then
    vname="var2_2"   
    rc= grb2_inq(the_file, inv_file, vname,"_0_198:",slev,' hour fcst:', data2=dummy2d)
    if (rc <= 0) then
-  rc= grb2_inq(the_file, inv_file, vname,"_0_198:",slev,':anl:', data2=dummy2d)
+     rc= grb2_inq(the_file, inv_file, vname,"_0_198:",slev,':anl:', data2=dummy2d)
   
-      if (rc <= 0) then
-        if (.not. replace_vgtyp) then
-          call error_handler("COULD NOT FIND VEGETATION TYPE IN FILE. PLEASE SET REPLACE_VGTYP=.TRUE. . EXITING")
-        else
-          call handle_grib_error(vname, slev ,method,value,varnum,rc, var= dummy2d)
-          if (rc == 1) then ! missing_var_method == skip or no entry in varmap table
-            print*, "WARNING: "//trim(vname)//" NOT AVAILABLE IN FILE. WILL USE CLIMATOLOGY. "//&
-                       "CHANGE SETTING IN VARMAP TABLE IF THIS IS NOT DESIRABLE."
-          endif !skip or no entry
-        endif ! replace_vgtyp
-      endif !not find :anl:
-    endif !not find hour fcst:
+     if (rc <= 0) then
+       if (.not. replace_vgtyp) then
+         call error_handler("COULD NOT FIND VEGETATION TYPE IN FILE. PLEASE SET REPLACE_VGTYP=.TRUE. . EXITING")
+       else
+         call handle_grib_error(vname, slev ,method,value,varnum,rc, var= dummy2d)
+         if (rc == 1) then ! missing_var_method == skip or no entry in varmap table
+           print*, "WARNING: "//trim(vname)//" NOT AVAILABLE IN FILE. WILL USE CLIMATOLOGY. "//&
+                   "CHANGE SETTING IN VARMAP TABLE IF THIS IS NOT DESIRABLE."
+           !-----------------------------------------------------------------------
+					 ! Vegetation type is not available.  However, it is needed to identify
+					 ! permanent land ice points.  At land ice, the total soil moisture
+					 ! is a flag value of '1'.  Use this flag as a temporary solution.
+					 !-----------------------------------------------------------------------
+						  dummy2d_8(:,:) = 0.0_esmf_kind_r8
+							do j = 1, j_input
+							  do i = 1, i_input
+								  if(slmsk_save(i,j) == 1_esmf_kind_i4 .and. dummy3d(i,j,1) > 0.99) &
+									  dummy2d_8(i,j) = real(veg_type_landice_input,esmf_kind_r8)
+								enddo
+							enddo
+
+						 print*,"- CALL FieldScatter FOR INPUT VEG TYPE."
+						 call ESMF_FieldScatter(veg_type_input_grid, dummy2d_8, rootpet=0, rc=rc)
+						 if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__))&
+								call error_handler("IN FieldScatter", rc)
+         endif !skip or no entry
+       endif ! replace_vgtyp
+     endif !not find :anl:
+   endif !not find hour fcst:
    
    print*,'vtype ',maxval(dummy2d),minval(dummy2d)
- endif
+ endif !localpet
  
   print*,"- CALL FieldScatter FOR INPUT GRID VEG TYPE."
   call ESMF_FieldScatter(veg_type_input_grid,real(dummy2d,esmf_kind_r8), rootpet=0, rc=rc)
@@ -5388,6 +5470,7 @@ if (localpet == 0) then
     call error_handler("IN FieldScatter", rc)
     
  deallocate(dummy2d)
+ deallocate(dummy2d_8)
  
  if (localpet == 0) then
    print*,"- READ LIQUID SOIL MOISTURE."
@@ -5408,7 +5491,9 @@ if (localpet == 0) then
    vname = "soilw"
    !vname_file = "var2_2_1_7_0_192"  !Some files don't recognize this as soilw, so use
    vname_file = "var2_2_1_"         ! the var number instead
+   if (external_model == 'UKMET') vname_file=":CISOILM:"
    call read_grib_soil(the_file,inv_file,vname,vname_file,dummy3d,rc)
+
    print*,'soilm ',maxval(dummy3d),minval(dummy3d)
  endif
 
@@ -5421,6 +5506,7 @@ if (localpet == 0) then
    print*,"- READ SOIL TEMPERATURE."
    vname = "soilt"
    vname_file = ":TSOIL:"
+   if (external_model == 'UKMET') vname_file = ":SOILTMP:"
    call read_grib_soil(the_file,inv_file,vname,vname_file,dummy3d,rc)
    do k=1,lsoil_input
      do j = 1, j_input
@@ -5432,14 +5518,13 @@ if (localpet == 0) then
    print*,'soilt ',maxval(dummy3d),minval(dummy3d)
  endif
 
- print*,"- CALL FieldScatter FOR INPUT SOIL TEMPERATURE."
+ if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT SOIL TEMPERATURE."
  call ESMF_FieldScatter(soil_temp_input_grid, dummy3d, rootpet=0, rc=rc)
  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
     call error_handler("IN FieldScatter", rc)
 
  deallocate(dummy3d)
- deallocate(dummy2d_8)
- 
+ if (localpet==0) print*,"end read sfc grib2"
  end subroutine read_input_sfc_grib2_file
 
  subroutine read_input_sfc_wrf_file(localpet)
@@ -5869,7 +5954,7 @@ if (localpet == 0) then
    call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
                          loc=varnum)  
    rc=nf90_inq_varid(ncid, 'PRATEC', id_var)
-   call netcdf_err(rc, 'reading field id' )
+   !call netcdf_err(rc, 'reading field id' )
    if (rc < 0) then
       call handle_grib_error(vname, slev ,method,value,varnum,rc, var8= dummy2d)
       if (rc==1) then ! missing_var_method == skip or no entry in varmap table
@@ -5914,7 +5999,7 @@ if (localpet == 0) then
    call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
                          loc=varnum)  
     rc=nf90_inq_varid(ncid, 'UST', id_var)
-    call netcdf_err(rc, 'reading field id' )
+    !call netcdf_err(rc, 'reading field id' )
     if (rc < 0) then
       call handle_grib_error(vname, slev ,method,value,varnum,rc, var8= dummy2d)
       if (rc==1) then ! missing_var_method == skip or no entry in varmap table
@@ -5956,7 +6041,7 @@ if (localpet == 0) then
    call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
                          loc=varnum)  
     rc=nf90_inq_varid(ncid, 'CANWAT', id_var)
-    call netcdf_err(rc, 'reading field id' )
+    !call netcdf_err(rc, 'reading field id' )
     if (rc < 0) then
       call handle_grib_error(vname, slev ,method,value,varnum,rc, var8= dummy2d)
       if (rc==1) then ! missing_var_method == skip or no entry in varmap table
@@ -5986,7 +6071,7 @@ if (localpet == 0) then
    call get_var_cond(vname,this_miss_var_method=method, this_miss_var_value=value, &
                          loc=varnum)  
      rc=nf90_inq_varid(ncid, 'ZNT', id_var)
-    call netcdf_err(rc, 'reading field id' )
+    !call netcdf_err(rc, 'reading field id' )
     if (rc < 0) then
       call handle_grib_error(vname, slev ,method,value,varnum,rc, var8= dummy2d)
       if (rc==1) then ! missing_var_method == skip or no entry in varmap table
@@ -6809,8 +6894,13 @@ if (localpet == 0) then
       endif
     
       if (trim(input_grid_type) == "latlon") then
-        u(:,:,vlev) = u_tmp
-        v(:,:,vlev) = v_tmp
+        if (external_model == 'UKMET') then
+          u(:,:,vlev) = u_tmp
+          v(:,:,vlev) = (v_tmp(:,2:jp1_input) + v_tmp(:,1:j_input))/2
+        else
+          u(:,:,vlev) = u_tmp
+          v(:,:,vlev) = v_tmp
+        endif
       else if (trim(input_grid_type) == "rotated_latlon") then
         ws = sqrt(u_tmp**2 + v_tmp**2) 
         wd = atan2(-u_tmp,-v_tmp) / d2r ! calculate grid-relative wind direction
@@ -7060,13 +7150,20 @@ subroutine read_grib_soil(the_file,inv_file,vname,vname_file,dummy3d,rc)
   
   real(esmf_kind_r4), allocatable         :: dummy2d(:,:)
   real(esmf_kind_r4)                      :: value
+  real(esmf_kind_r4)											:: lev_depth(4)
   integer                                 :: varnum,i
   character(len=50)                       :: slevs(lsoil_input)
   character(len=50)                       :: method
   
   if(lsoil_input == 4) then
-    slevs = (/character(24)::':0-0.1 m below ground:', ':0.1-0.4 m below ground:', &
+    if (external_model=='UKMET') then
+      slevs = (/character(24)::':0-0.1 m below ground:', ':0.1-0.35 m below ground:', &
+                             ':0.35-1 m below ground:', ':1-3 m below ground:'/)
+      lev_depth = (/0.1,0.25,0.65,2.0/)
+    else
+      slevs = (/character(24)::':0-0.1 m below ground:', ':0.1-0.4 m below ground:', &
                              ':0.4-1 m below ground:', ':1-2 m below ground:'/)
+    endif
   elseif(lsoil_input == 9) then
     slevs = (/character(26)::':0-0 m below ground',':0.01-0.01 m below ground:',':0.04-0.04 m below ground:', &
         ':0.1-0.1 m below ground:',':0.3-0.3 m below ground:',':0.6-0.6 m below ground:', &
@@ -7095,7 +7192,13 @@ subroutine read_grib_soil(the_file,inv_file,vname,vname_file,dummy3d,rc)
         exit
       endif
     endif
-    dummy3d(:,:,i) = real(dummy2d,esmf_kind_r8)
+    
+    if (external_model=='UKMET' .and. vname_file == ':CISOILM:') then
+      print*, "Scaling soil moisture"
+      dummy3d(:,:,i) = real(dummy2d / lev_depth(i) / 1000.0,esmf_kind_r8)
+    else
+      dummy3d(:,:,i) = real(dummy2d,esmf_kind_r8)
+    endif
   end do    
   
  end subroutine read_grib_soil

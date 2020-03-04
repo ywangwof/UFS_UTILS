@@ -816,8 +816,19 @@
       deltalon = abs(longitude_one_tile(2,1)-longitude_one_tile(1,1))
        do j = clb(2), cub(2)
          do i = clb(1), cub(1)
-           lon_src_ptr(i,j) = longitude_one_tile(i,1) - (0.5_esmf_kind_r8*deltalon)
-           lat_src_ptr(i,j) = 0.5_esmf_kind_r8 * (latitude_one_tile(i,j-1)+ latitude_one_tile(i,j))
+         
+           if (i == ip1_input) then
+             lon_src_ptr(i,j) = longitude_one_tile(i_input,1) +  (0.5_esmf_kind_r8*deltalon)
+           else
+             lon_src_ptr(i,j) = longitude_one_tile(i,1) - (0.5_esmf_kind_r8*deltalon)
+           endif
+           
+           if (j == jp1_input) then
+             lat_src_ptr(i,j) = latitude_one_tile(1,j_input) + (0.5_esmf_kind_r8*deltalon)
+           else
+             lat_src_ptr(i,j) = latitude_one_tile(1,j) - (0.5_esmf_kind_r8*deltalon)
+           endif
+           
          enddo
        enddo
      else
