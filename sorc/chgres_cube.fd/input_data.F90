@@ -2585,8 +2585,8 @@ module input_data
 
  use wgrib2api
  
- use grib2_util, only                   : read_vcoord, iso2sig, rh2spfh, convert_omega, &
-                                           countDigit
+ use grib2_util, only                   :  rh2spfh, convert_omega, &
+                                           countDigit !read_vcoord, iso2sig,
  use model_grid, only                   : file_is_converted
 
 
@@ -2615,19 +2615,19 @@ module input_data
                                            isnative=.false., &
                                            hasspfh=.true.
 
- real(esmf_kind_r8), allocatable       :: vcoord(:,:)
+ !real(esmf_kind_r8), allocatable       :: vcoord(:,:)
  real(esmf_kind_r8), allocatable       :: rlevs(:)
  real(esmf_kind_r4), allocatable       :: dummy2d(:,:)
  real(esmf_kind_r8), allocatable       :: dummy3d(:,:,:), dummy2d_8(:,:),&
                                           u_tmp_3d(:,:,:), v_tmp_3d(:,:,:)
  real(esmf_kind_r8), pointer           :: presptr(:,:,:), psptr(:,:),tptr(:,:,:), &
-                                          qptr(:,:,:), wptr(:,:,:)
+                                          qptr(:,:,:), wptr(:,:,:), uptr(:,:,:),vptr(:,:,:)
 
  real(esmf_kind_r4)                     :: value
  real(esmf_kind_r8)                    :: pt
  real(esmf_kind_r8), parameter         :: p0 = 100000.0
  
- type(atmdata), allocatable   :: atm(:)
+ !type(atmdata), allocatable   :: atm(:)
  
  tracers(:) = "NULL"
  trac_names_grib = (/character(8)::":SPFH:",":CLWMR:", "O3MR",":CICE:", ":RWMR:",":SNMR:",":GRLE:", &
@@ -2701,13 +2701,13 @@ module input_data
       if (localpet==0) print*, "LEVEL = ", slevs(i)
 	enddo
 
-   allocate(vcoord(levp1_input,2))
+   !allocate(vcoord(levp1_input,2))
    
   
-   if (localpet == 0) print*,"- READ VERTICAL COORDINATE INFO."
-   if (localpet == 0) print*, metadata
-   call read_vcoord(isnative,rlevs,vcoord,lev_input,levp1_input,pt,metadata,iret)
-   if (iret /= 0) call error_handler("READING VERTICAL COORDINATE INFO.", iret)
+   !if (localpet == 0) print*,"- READ VERTICAL COORDINATE INFO."
+   !if (localpet == 0) print*, metadata
+   !call read_vcoord(isnative,rlevs,vcoord,lev_input,levp1_input,pt,metadata,iret)
+   !if (iret /= 0) call error_handler("READING VERTICAL COORDINATE INFO.", iret)
    
    !if (localpet==0) print*, "VCOORD(:,1) = ", vcoord(:,1)
  
@@ -2756,7 +2756,7 @@ module input_data
 
  num_tracers_input = num_tracers
 
- allocate(atm(num_tracers+5))
+ !allocate(atm(num_tracers+5))
  if (localpet==0) print*, "NUMBER OF TRACERS IN FILE = ", num_tracers
 
  if (localpet == 0) print*,"- CALL FieldCreate FOR INPUT GRID SURFACE PRESSURE."
@@ -3018,114 +3018,115 @@ if (localpet == 0) then
 !---------------------------------------------------------------------------
 ! Compute 3-d pressure.
 !---------------------------------------------------------------------------
- if (localpet == 0) print*,"-CONVERT DATA TO SIGMA LEVELS AND COMPUTE 3D PRESSURE"
- if (.not. isnative) then
+if (localpet == 0) print*,"-CONVERT DATA TO SIGMA LEVELS AND COMPUTE 3D PRESSURE"
+if (.not. isnative) then
     
-   if (localpet == 0) print*,"- CALL FieldGet FOR SURFACE PRESSURE."
-   nullify(psptr)
-   call ESMF_FieldGet(ps_input_grid, &
-                      farrayPtr=psptr, rc=rc)
-   if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-      call error_handler("IN FieldGet", rc)
-      
-  if (localpet == 0) print*,"- CALL FieldGet FOR 3-D PRESSURE."
-  call ESMF_FieldGet(pres_input_grid, &
-                    farrayPtr=atm(1)%var, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-    call error_handler("IN FieldGet", rc)
+	!---------------------------------------------------------------------------
+	! Flip 'z' indices to all 3-d variables.  Data is read in from model
+	! top to surface.  This program expects surface to model top.
+	!---------------------------------------------------------------------------
 
-  if (localpet == 0) print*,"- CALL FieldGet TEMPERATURE."  
-  call ESMF_FieldGet(temp_input_grid, &
-                    computationalLBound=clb, &
-                    computationalUBound=cub, &
-                    farrayPtr=atm(2)%var, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-    call error_handler("IN FieldGet", rc) 
-  
-  if (localpet == 0) print*,"- CALL FieldGet FOR U"
-  call ESMF_FieldGet(u_input_grid, &
-                    farrayPtr=atm(3)%var, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-    call error_handler("IN FieldGet", rc)
-    
-  if (localpet == 0) print*,"- CALL FieldGet FOR V"
-  call ESMF_FieldGet(v_input_grid, &
-                    farrayPtr=atm(4)%var, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-    call error_handler("IN FieldGet", rc)
-  
-   if (localpet == 0) print*,"- CALL FieldGet FOR W"
-  call ESMF_FieldGet(dzdt_input_grid, &
-                    farrayPtr=atm(5)%var, rc=rc)
-  if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-    call error_handler("IN FieldGet", rc)
- 
-  if (localpet == 0) print*,"- CALL FieldGet FOR TRACERS."
-  do i=1,num_tracers
-    call ESMF_FieldGet(tracers_input_grid(i), &
-                    farrayPtr=atm(i+5)%var, rc=rc)
-    if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-      call error_handler("IN FieldGet", rc)
-    if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-    call error_handler("IN FieldGet", rc) 
-  end do
-  
-  call iso2sig(rlevs,vcoord,lev_input,levp1_input,psptr,atm,clb,cub,5+num_tracers, iret)
-  deallocate(vcoord)
-
- else
-   if (external_model .ne. 'UKMET') then
-		 if (localpet == 0) print*,"- COMPUTE 3-D PRESSURE."
-
-		 if (localpet == 0) print*,"- CALL FieldGet FOR 3-D PRESSURE."
-		 nullify(presptr)
-	 
-		 call ESMF_FieldGet(pres_input_grid, &
-												computationalLBound=clb, &
-												computationalUBound=cub, &
-												farrayPtr=presptr, rc=rc)
-		 if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-				call error_handler("IN FieldGet", rc)
-
-		 if (localpet == 0) print*,"- CALL FieldGet FOR SURFACE PRESSURE."
-		 nullify(psptr)
-		 call ESMF_FieldGet(ps_input_grid, &
+	if (localpet == 0) print*,"- CALL FieldGet FOR SURFACE PRESSURE."
+	nullify(psptr)
+	call ESMF_FieldGet(ps_input_grid, &
 												farrayPtr=psptr, rc=rc)
-		 if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+	if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
 				call error_handler("IN FieldGet", rc)
 
-		 do i = clb(1), cub(1)
-			 do j = clb(2), cub(2)
-			 
-				 do k = 1,lev_input
-					 presptr(i,j,k) = vcoord(k,2)*(psptr(i,j)-pt) + vcoord(k,1)*(p0-pt)+pt
-				 enddo
-			 
-			 enddo
-		 enddo
-		 
-   else
-     if (localpet == 0) then
-			 print*,"- READ PRESSURE."
-			 vname = ":PRES:"
-				do vlev = 1, lev_input
-					iret = grb2_inq(the_file,inv_file,vname,slevs(vlev),data2=dummy2d)
-					if (iret<=0) then 
-						call error_handler("READING IN PRESSURE AT LEVEL "//trim(slevs(vlev)),iret)
-					endif
-					dummy3d(:,:,vlev) = real(dummy2d,esmf_kind_r8)
-					print*,'pres check after read ',vlev, dummy3d(1,1,vlev)
-				enddo
-		 endif
-		 if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT GRID TEMPERATURE."
-		 call ESMF_FieldScatter(pres_input_grid, dummy3d, rootpet=0, rc=rc)
-		 if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
-					call error_handler("IN FieldScatter", rc)
-		 
-   endif 
+	nullify(presptr)
+	if (localpet == 0) print*,"- CALL FieldGet FOR 3-D PRESSURE."
+	call ESMF_FieldGet(pres_input_grid, &
+											computationalLBound=clb, &
+											computationalUBound=cub, &
+											farrayPtr=presptr, rc=rc)
+	if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+			call error_handler("IN FieldGet", rc)
+
+	nullify(tptr)
+	if (localpet == 0) print*,"- CALL FieldGet TEMPERATURE."
+	call ESMF_FieldGet(temp_input_grid, &
+											farrayPtr=tptr, rc=rc)
+	if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+		call error_handler("IN FieldGet", rc)
+
+	nullify(uptr)
+	if (localpet == 0) print*,"- CALL FieldGet FOR U"
+	call ESMF_FieldGet(u_input_grid, &
+											farrayPtr=uptr, rc=rc)
+	if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+			call error_handler("IN FieldGet", rc)
+
+	nullify(vptr)
+	if (localpet == 0) print*,"- CALL FieldGet FOR V"
+	call ESMF_FieldGet(v_input_grid, &
+											farrayPtr=vptr, rc=rc)
+	if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+			call error_handler("IN FieldGet", rc)
+
+	nullify(wptr)
+	if (localpet == 0) print*,"- CALL FieldGet FOR W"
+	call ESMF_FieldGet(dzdt_input_grid, &
+											farrayPtr=wptr, rc=rc)
+	if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+			call error_handler("IN FieldGet", rc)
+
+	if (localpet == 0) print*,"- CALL FieldGet FOR TRACERS."
+	do n=1,num_tracers
+		nullify(qptr)
+		call ESMF_FieldGet(tracers_input_grid(n), &
+										farrayPtr=qptr, rc=rc)
+		if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+			call error_handler("IN FieldGet", rc)
+		do i = clb(1),cub(1)
+			do j = clb(2),cub(2)
+				qptr(i,j,:) = qptr(i,j,lev_input:1:-1)
+			end do
+		end do
+	end do
+		
+	do i = clb(1),cub(1)
+		do j = clb(2),cub(2)
+			presptr(i,j,:) = rlevs(lev_input:1:-1)
+			tptr(i,j,:) = tptr(i,j,lev_input:1:-1)
+			uptr(i,j,:) = uptr(i,j,lev_input:1:-1)
+			vptr(i,j,:) = vptr(i,j,lev_input:1:-1)
+			wptr(i,j,:) = wptr(i,j,lev_input:1:-1)
+		end do
+	end do
+
+	if (localpet == 0) then
+		print*,'psfc is ',clb(1),clb(2),psptr(clb(1),clb(2))
+		print*,'pres is ',cub(1),cub(2),presptr(cub(1),cub(2),:)
+
+		print*,'pres check 1',localpet,maxval(presptr(clb(1):cub(1),clb(2):cub(2),1)), &
+							minval(presptr(clb(1):cub(1),clb(2):cub(2),1))
+		print*,'pres check lev',localpet,maxval(presptr(clb(1):cub(1),clb(2):cub(2), &
+						lev_input)),minval(presptr(clb(1):cub(1),clb(2):cub(2),lev_input))
+	endif
+
+else
+	if (localpet == 0) then
+		print*,"- READ PRESSURE."
+		vname = ":PRES:"
+		do vlev = 1, lev_input
+			iret = grb2_inq(the_file,inv_file,vname,slevs(vlev),data2=dummy2d)
+			if (iret<=0) then 
+				call error_handler("READING IN PRESSURE AT LEVEL "//trim(slevs(vlev)),iret)
+			endif
+			dummy3d(:,:,vlev) = real(dummy2d,esmf_kind_r8)
+			print*,'pres check after read ',vlev, dummy3d(1,1,vlev)
+		enddo
+	endif
+
+	if (localpet == 0) print*,"- CALL FieldScatter FOR INPUT GRID PRESSURE."
+	call ESMF_FieldScatter(pres_input_grid, dummy3d, rootpet=0, rc=rc)
+	if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
+		call error_handler("IN FieldScatter", rc)
+ 
+endif 
    
    deallocate(dummy3d)  
-   deallocate(vcoord)
+   !deallocate(vcoord)
  
  !if (localpet == 0) then
  !  print*,'psfc is ',clb(1),clb(2),psptr(clb(1),clb(2))
@@ -3144,8 +3145,6 @@ if (localpet == 0) then
  !           lev_input)),minval(atm(1)%var(clb(1):cub(1),clb(2):cub(2),lev_input))
  ! endif
 
- 
- endif
  
 !---------------------------------------------------------------------------
 ! Convert from 2-d to 3-d component winds.
@@ -4800,6 +4799,7 @@ if (localpet == 0) then
  character(len=50)                      :: method
 
  integer                               :: rc,ncid2d, varid, varnum, iret, i, j, k
+ integer, parameter                    :: icet_default = 265.0
 
  logical                               :: exist
 
@@ -4987,10 +4987,11 @@ if (localpet == 0) then
 
  if (localpet == 0) then
    print*,"- READ SNOW DEPTH."
-   rc = grb2_inq(the_file, inv_file, ':SNOD:',':surface:', data2=dummy2d)
    if (external_model == 'UKMET') then 
      rc = 1
+     dummy2d = dummy2d/200.0*1000.0  !UKMET data does not have snow depth, so use 200 kg/m^3 conversion as in WPS
    else
+     rc = grb2_inq(the_file, inv_file, ':SNOD:',':surface:', data2=dummy2d)
      dummy2d = dummy2d*1000.0 ! Grib2 files have snow depth in (m), fv3 expects it in mm
    endif
    
@@ -5511,7 +5512,8 @@ if (localpet == 0) then
    do k=1,lsoil_input
      do j = 1, j_input
        do i = 1, i_input
-         if (slmsk_save(i,j) < 0.5 ) dummy3d(i,j,k) = tsk_save(i,j)
+         if (slmsk_save(i,j) == 0_esmf_kind_i4 ) dummy3d(i,j,k) = tsk_save(i,j)
+         if (slmsk_save(i,j) == 2_esmf_kind_i4 ) dummy3d(i,j,k) = icet_default
        enddo
      enddo
    enddo
