@@ -53,7 +53,7 @@ module input_data
                                     longitude_input_grid, inv_file, &
                                     lsoil_target
 
- use atmdata_type
+ !use atmdata_type
 
  implicit none
 
@@ -2585,8 +2585,8 @@ module input_data
 
  use wgrib2api
  
- use grib2_util, only                   :  rh2spfh, convert_omega, &
-                                           countDigit !read_vcoord, iso2sig,
+ use grib2_util, only                   : rh2spfh, convert_omega, &
+                                           countDigit !read_vcoord, iso2sig, 
  use model_grid, only                   : file_is_converted
 
 
@@ -2621,13 +2621,13 @@ module input_data
  real(esmf_kind_r8), allocatable       :: dummy3d(:,:,:), dummy2d_8(:,:),&
                                           u_tmp_3d(:,:,:), v_tmp_3d(:,:,:)
  real(esmf_kind_r8), pointer           :: presptr(:,:,:), psptr(:,:),tptr(:,:,:), &
-                                          qptr(:,:,:), wptr(:,:,:), uptr(:,:,:),vptr(:,:,:)
+                                          qptr(:,:,:), wptr(:,:,:), uptr(:,:,:), vptr(:,:,:)
 
  real(esmf_kind_r4)                     :: value
  real(esmf_kind_r8)                    :: pt
  real(esmf_kind_r8), parameter         :: p0 = 100000.0
  
- !type(atmdata), allocatable   :: atm(:)
+!type(atmdata), allocatable   :: atm(:)
  
  tracers(:) = "NULL"
  trac_names_grib = (/character(8)::":SPFH:",":CLWMR:", "O3MR",":CICE:", ":RWMR:",":SNMR:",":GRLE:", &
@@ -2701,13 +2701,11 @@ module input_data
       if (localpet==0) print*, "LEVEL = ", slevs(i)
 	enddo
 
-   !allocate(vcoord(levp1_input,2))
-   
-  
-   !if (localpet == 0) print*,"- READ VERTICAL COORDINATE INFO."
-   !if (localpet == 0) print*, metadata
-   !call read_vcoord(isnative,rlevs,vcoord,lev_input,levp1_input,pt,metadata,iret)
-   !if (iret /= 0) call error_handler("READING VERTICAL COORDINATE INFO.", iret)
+  ! allocate(vcoord(levp1_input,2))
+  ! if (localpet == 0) print*,"- READ VERTICAL COORDINATE INFO."
+  ! if (localpet == 0) print*, metadata
+  ! call read_vcoord(isnative,rlevs,vcoord,lev_input,levp1_input,pt,metadata,iret)
+  ! if (iret /= 0) call error_handler("READING VERTICAL COORDINATE INFO.", iret)
    
    !if (localpet==0) print*, "VCOORD(:,1) = ", vcoord(:,1)
  
@@ -3018,10 +3016,10 @@ if (localpet == 0) then
 !---------------------------------------------------------------------------
 ! Compute 3-d pressure.
 !---------------------------------------------------------------------------
-if (localpet == 0) print*,"-CONVERT DATA TO SIGMA LEVELS AND COMPUTE 3D PRESSURE"
-if (.not. isnative) then
-    
-	!---------------------------------------------------------------------------
+ if (localpet == 0) print*,"-CONVERT DATA TO SIGMA LEVELS AND COMPUTE 3D PRESSURE"
+ if (.not. isnative) then
+  
+  !---------------------------------------------------------------------------
 	! Flip 'z' indices to all 3-d variables.  Data is read in from model
 	! top to surface.  This program expects surface to model top.
 	!---------------------------------------------------------------------------
@@ -3104,8 +3102,9 @@ if (.not. isnative) then
 						lev_input)),minval(presptr(clb(1):cub(1),clb(2):cub(2),lev_input))
 	endif
 
-else
-	if (localpet == 0) then
+ else
+   ! For native files, read in pressure field directly from file
+   if (localpet == 0) then
 		print*,"- READ PRESSURE."
 		vname = ":PRES:"
 		do vlev = 1, lev_input
@@ -3122,30 +3121,8 @@ else
 	call ESMF_FieldScatter(pres_input_grid, dummy3d, rootpet=0, rc=rc)
 	if(ESMF_logFoundError(rcToCheck=rc,msg=ESMF_LOGERR_PASSTHRU,line=__LINE__,file=__FILE__)) &
 		call error_handler("IN FieldScatter", rc)
- 
-endif 
-   
-   deallocate(dummy3d)  
-   !deallocate(vcoord)
- 
- !if (localpet == 0) then
- !  print*,'psfc is ',clb(1),clb(2),psptr(clb(1),clb(2))
- !  if (isnative) then
- !    print*,'pres is ',cub(1),cub(2),presptr(cub(1),cub(2),:) 
- !    
- !    print*,'pres check 1',localpet,maxval(presptr(clb(1):cub(1),clb(2):cub(2),1)), &
- !             minval(presptr(clb(1):cub(1),clb(2):cub(2),1))
- !    print*,'pres check lev',localpet,maxval(presptr(clb(1):cub(1),clb(2):cub(2), &
- !           lev_input)),minval(presptr(clb(1):cub(1),clb(2):cub(2),lev_input))
- !  else
- !    print*,'pres is ',cub(1),cub(2),atm(1)%var(cub(1),cub(2),:)
- !    print*,'pres check 1',localpet,maxval(atm(1)%var(clb(1):cub(1),clb(2):cub(2),1)), &
- !             minval(atm(1)%var(clb(1):cub(1),clb(2):cub(2),1))
- !    print*,'pres check lev',localpet,maxval(atm(1)%var(clb(1):cub(1),clb(2):cub(2), &
- !           lev_input)),minval(atm(1)%var(clb(1):cub(1),clb(2):cub(2),lev_input))
- ! endif
-
- 
+ endif
+ deallocate(dummy3d)
 !---------------------------------------------------------------------------
 ! Convert from 2-d to 3-d component winds.
 !---------------------------------------------------------------------------
