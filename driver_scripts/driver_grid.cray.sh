@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #BSUB -L /bin/sh
-#BSUB -P GFS-DEV
+#BSUB -P FV3GFS-T2O
 #BSUB -oo log.grid.%J
 #BSUB -eo log.grid.%J
 #BSUB -J grid_fv3
