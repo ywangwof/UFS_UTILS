@@ -62,6 +62,7 @@ export APRUN=mpirun
 #-----------------------------------------------------------------------------
 
 export OMP_NUM_THREADS=1
+export INPUT_DATA=${HOMEreg}/input_data/fv3.restart
 bsub -e $LOG_FILE -o $LOG_FILE -q $QUEUE -P $PROJECT_CODE -J c96.fv3.restart -W 0:15 -x -n 6 \
         -R "span[ptile=6]" -R "affinity[core(${OMP_NUM_THREADS}):distribute=balance]" "$PWD/c96.fv3.restart.sh"
 
@@ -70,6 +71,7 @@ bsub -e $LOG_FILE -o $LOG_FILE -q $QUEUE -P $PROJECT_CODE -J c96.fv3.restart -W 
 #-----------------------------------------------------------------------------
 
 export OMP_NUM_THREADS=1
+export INPUT_DATA=${HOMEreg}/input_data/fv3.history
 bsub -e $LOG_FILE -o $LOG_FILE -q $QUEUE -P $PROJECT_CODE -J c192.fv3.history -W 0:15 -x -n 6 -w 'ended(c96.fv3.restart)' \
         -R "span[ptile=6]" -R "affinity[core(${OMP_NUM_THREADS}):distribute=balance]" "$PWD/c192.fv3.history.sh"
 
@@ -78,6 +80,7 @@ bsub -e $LOG_FILE -o $LOG_FILE -q $QUEUE -P $PROJECT_CODE -J c192.fv3.history -W
 #-----------------------------------------------------------------------------
 
 export OMP_NUM_THREADS=1
+export INPUT_DATA=${HOMEreg}/input_data/fv3.nemsio
 bsub -e $LOG_FILE -o $LOG_FILE -q $QUEUE -P $PROJECT_CODE -J c96.fv3.nemsio -W 0:15 -x -n 6 -w 'ended(c192.fv3.history)' \
         -R "span[ptile=6]" -R "affinity[core(${OMP_NUM_THREADS}):distribute=balance]" "$PWD/c96.fv3.nemsio.sh"
 
@@ -86,6 +89,7 @@ bsub -e $LOG_FILE -o $LOG_FILE -q $QUEUE -P $PROJECT_CODE -J c96.fv3.nemsio -W 0
 #-----------------------------------------------------------------------------
 
 export OMP_NUM_THREADS=4
+export INPUT_DATA=${HOMEreg}/input_data/gfs.sigio
 bsub -e $LOG_FILE -o $LOG_FILE -q $QUEUE -P $PROJECT_CODE -J c96.gfs.sigio -W  0:15 -x -n 6 -w 'ended(c96.fv3.nemsio)' \
         -R "span[ptile=6]" -R "affinity[core(${OMP_NUM_THREADS}):distribute=balance]" "$PWD/c96.gfs.sigio.sh"
 
@@ -94,6 +98,7 @@ bsub -e $LOG_FILE -o $LOG_FILE -q $QUEUE -P $PROJECT_CODE -J c96.gfs.sigio -W  0
 #-----------------------------------------------------------------------------
 
 export OMP_NUM_THREADS=1
+export INPUT_DATA=${HOMEreg}/input_data/gfs.nemsio
 bsub -e $LOG_FILE -o $LOG_FILE -q $QUEUE -P $PROJECT_CODE -J c96.gfs.nemsio -W  0:15 -x -n 6 -w 'ended(c96.gfs.sigio)' \
         -R "span[ptile=6]" -R "affinity[core(${OMP_NUM_THREADS}):distribute=balance]" "$PWD/c96.gfs.nemsio.sh"
 
@@ -102,22 +107,15 @@ bsub -e $LOG_FILE -o $LOG_FILE -q $QUEUE -P $PROJECT_CODE -J c96.gfs.nemsio -W  
 #-----------------------------------------------------------------------------
 
 export OMP_NUM_THREADS=1
+export INPUT_DATA=${HOMEreg}/input_data/fv3.nemsio
 bsub -e $LOG_FILE -o $LOG_FILE -q $QUEUE -P $PROJECT_CODE -J c96.regional -W  0:15 -x -n 6 -w 'ended(c96.gfs.nemsio)' \
         -R "span[ptile=6]" -R "affinity[core(${OMP_NUM_THREADS}):distribute=balance]" "$PWD/c96.regional.sh"
-
-#-----------------------------------------------------------------------------
-# Initialize global C192 using GFS GRIB2 file.
-#-----------------------------------------------------------------------------
-
-export OMP_NUM_THREADS=1
-bsub -e $LOG_FILE -o $LOG_FILE -q $QUEUE -P $PROJECT_CODE -J c192.gfs.grib2 -W 0:05 -x -n 6 -w 'ended(c96.regional)' \
-        -R "span[ptile=6]" -R "affinity[core(${OMP_NUM_THREADS}):distribute=balance]" "$PWD/c192.gfs.grib2.sh"
 
 #-----------------------------------------------------------------------------
 # Create summary log.
 #-----------------------------------------------------------------------------
 
 bsub -o $LOG_FILE -q $QUEUE -P $PROJECT_CODE -J summary -R "affinity[core(1)]" -R "rusage[mem=100]" -W 0:01 \
-     -w 'ended(c192.gfs.grib2)' "grep -a '<<<' $LOG_FILE >> $SUM_FILE"
+     -w 'ended(c96.regional)' "grep -a '<<<' $LOG_FILE >> $SUM_FILE"
 
 exit

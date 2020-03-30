@@ -1,14 +1,7 @@
 #! /usr/bin/env bash
 set -eux
 
-target=${target:-"NULL"}
-
-if [[ $target == "linux.gnu" || $target == "linux.intel" ]]; then
- unset -f module
-else
- source ./machine-setup.sh > /dev/null 2>&1
-fi
-
+source ./machine-setup.sh > /dev/null 2>&1
 cwd=`pwd`
 
 USE_PREINST_LIBS=${USE_PREINST_LIBS:-"true"}
