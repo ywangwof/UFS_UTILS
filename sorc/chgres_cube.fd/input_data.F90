@@ -4647,8 +4647,6 @@ if (localpet == 0) then
        endif
        print*, "CLOSE GEOGRID FILE "
        iret = nf90_close(ncid2d)
-     else
-     call error_handler("COULD NOT FIND GEOGRID FILE. PLEASE CHECK PATH. EXITING.")
      endif
    endif
    
