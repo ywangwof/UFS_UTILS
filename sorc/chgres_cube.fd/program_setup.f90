@@ -228,6 +228,11 @@
 
  is = index(mosaic_file_target_grid, "/", back=.true.)
  ie = index(mosaic_file_target_grid, "_mosaic", back=.true.)
+! Allow any character (not just underscore, but for example a period) to
+! be the separator between $CRES and "mosaic".
+! ie = index(mosaic_file_target_grid, "_mosaic", back=.true.)
+ ie = index(mosaic_file_target_grid, "mosaic", back=.true.)
+ ie = ie - 1
 
  if (is == 0 .or. ie == 0) then
    call error_handler("CANT DETERMINE CRES FROM MOSAIC FILE.", 1)
