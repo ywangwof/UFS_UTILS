@@ -709,7 +709,17 @@ contains
           dx(i,j,t) = great_circle_dist( g2, g1, radius )
        enddo ; enddo
     enddo
-    if( stretch_fac /= 1 ) then
+! GSK 4/17/2020:
+! A regional grid may not have the same number of cells in the x and y
+! directions and is not necessarily symmetric in its shape about its 
+! centerlines (i.e. the grid lines along i=nx/2 and j=ny/2).  Thus, for
+! such a grid, dy cannot necessarily be calculated by transposing dx (as
+! is done in the "else" clause of the if-statement below); it must be 
+! calculated from scratch.  Otherwise, the indices may go out of the 
+! bounds of the dx and/or dy arrays (and that error may go undetected), 
+! and/or dy may be set incorrectly.  Thus, if we're dealing with a regional 
+! grid, we always execute the "if" clause of the if-statement below.
+    if((stretch_fac /= 1) .or. regional) then
        do t = 1, ntiles
           do j = js, je
              do i = is, ie+1
