@@ -4716,7 +4716,7 @@ if (localpet == 0) then
                loc=varnum)                 
      !! Changing these for GSD internal runs using new HRRR files
      vname=":VEG:"
-     rc= grb2_inq(the_file, inv_file, vname,slev,'n=1101:', data2=dummy2d)
+     rc= grb2_inq(the_file, inv_file, vname,slev,'n=1105:', data2=dummy2d)
    
      if (rc <= 0) call error_handler("COULD NOT FIND VEGETATION FRACTION IN FILE.  &
         PLEASE SET REPLACE_VGFRC=.TRUE. . EXITING", rc)
@@ -4742,7 +4742,7 @@ if (localpet == 0) then
                loc=varnum)
      !! Changing these for GSD internal runs using new HRRR files
      vname=":VEG:"
-     rc= grb2_inq(the_file, inv_file, vname,slev,'n=1102:',data2=dummy2d)
+     rc= grb2_inq(the_file, inv_file, vname,slev,'n=1106:',data2=dummy2d)
 
      if (rc <= 0) call error_handler("COULD NOT FIND MIN VEGETATION FRACTION IN FILE. &
         PLEASE SET REPLACE_VGFRC=.TRUE. . EXITING",rc)
@@ -4765,7 +4765,7 @@ if (localpet == 0) then
                loc=varnum)
      !! Changing these for GSD internal runs using new HRRR files
      vname=":VEG:"
-     rc= grb2_inq(the_file, inv_file, vname,slev,'n=1103:',data2=dummy2d)
+     rc= grb2_inq(the_file, inv_file, vname,slev,'n=1107:',data2=dummy2d)
 
      if (rc <= 0) call error_handler("COULD NOT FIND MAX VEGETATION FRACTION IN FILE. &
         PLEASE SET REPLACE_VGFRC=.TRUE. . EXITING",rc)
@@ -4787,7 +4787,7 @@ if (localpet == 0) then
                loc=varnum)
      !! Changing these for GSD internal runs using new HRRR files
      vname=":var0_7_198:"
-     rc= grb2_inq(the_file, inv_file, vname,slev,':n=1104:',data2=dummy2d)
+     rc= grb2_inq(the_file, inv_file, vname,slev,':n=1108:',data2=dummy2d)
 
      if (rc <= 0) call error_handler("COULD NOT FIND LAI IN FILE. &
         PLEASE SET REPLACE_VGFRC=.TRUE. . EXITING",rc)
