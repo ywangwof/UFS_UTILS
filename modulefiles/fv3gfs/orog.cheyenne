@@ -11,3 +11,6 @@ module load netcdf/4.6.3
 # Loding nceplibs modules
 module use -a /glade/p/ral/jntp/GMTB/tools/modulefiles/intel-19.0.2/impi-2019.2.187
 module load NCEPlibs/9.9.9
+
+# Point to libip_d.a until Dom can include this in module load
+setenv IP_LIBd /glade/p/ral/jntp/GMTB/tools/NCEPlibs/20190703/intel-19.0.2/impi-2019.2.187/lib/libip_d.a
