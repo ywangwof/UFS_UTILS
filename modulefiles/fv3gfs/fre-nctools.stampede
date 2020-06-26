@@ -1,0 +1,12 @@
+#%Module#####################################################
+## Module file for fre-nctools
+#############################################################
+#
+module purge
+module load intel/18.0.2
+module load impi/18.0.2
+module load netcdf/4.6.2
+module load hdf5/1.10.4
+
+#setenv  NETCDF ${TACC_NETCDF_DIR}
+#setenv  HDF5 /opt/apps/intel18/hdf5/1.10.4/x86_64

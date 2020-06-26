@@ -52,6 +52,11 @@ elif [ $system_site = "cheyenne" ]; then
   NETCDF_DIR=$NETCDF
   HDF5_DIR=$NETCDF        #HDF5 resides with NETCDF on Cheyenne
   export HDF5=$NETCDF     #HDF5 used in Makefile_cheyenne
+elif [ $system_site = "stampede" ]; then
+  NETCDF_DIR=$TACC_NETCDF_DIR
+  NETCDF=${TACC_NETCDF_DIR}
+  HDF5_DIR=$TACC_HDF5_DIR
+  export HDF5=$TACC_HDF5_DIR
 fi
 
 #
