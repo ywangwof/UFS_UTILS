@@ -9,7 +9,7 @@ $(info ESMFMKFILE = "$(ESMFMKFILE)")
 $(info )
 include $(ESMFMKFILE)
 #
-# Print out variables defined in the file ESMFMKFILE (included above) 
+# Print out variables defined in the file ESMFMKFILE (included above)
 # and used in the link step below.
 #
 $(info )
@@ -23,7 +23,7 @@ $(info WGRIB2_LIB = "$(WGRIB2_LIB)")
 $(info WGRIB2API_LIB = "$(WGRIB2API_LIB)")
 $(info )
 #
-# Full paths to static library files. 
+# Full paths to static library files.
 #
 LIBS = $(NEMSIO_LIB) \
        $(W3NCO_LIBd) \
@@ -32,8 +32,8 @@ LIBS = $(NEMSIO_LIB) \
        $(SIGIO_LIB4) \
        $(SFCIO_LIB4)
 
-# If we can build wgrib2 on theia so that its static library does not 
-# include NetCDF, then we can include WGRIB2_LIB and WGRIB2API_LIB as 
+# If we can build wgrib2 on theia so that its static library does not
+# include NetCDF, then we can include WGRIB2_LIB and WGRIB2API_LIB as
 # part of the LIBS variable.  Otherwise, they will have to be added se-
 # parately at the end of the build command below (as is currently done).
 #        $(WGRIB2API_LIB) \
@@ -46,7 +46,7 @@ LIBS = $(NEMSIO_LIB) \
 INCS = -I$(NEMSIO_INC) \
        -I$(WGRIB2API_INC) \
        -I$(SFCIO_INC4) \
-       -I$(SIGIO_INC4) 
+       -I$(SIGIO_INC4)
 
 CMD = chgres_cube.exe
 
@@ -65,8 +65,8 @@ OBJS = chgres.o \
 #
 # Fortran compiler and compilation flags.
 #
-FCOMP = mpiifort
-FFLAGS = -O0 -g -traceback -r8 -i4 -qopenmp -convert big_endian \
+FCOMP  ?= mpiifort
+FFLAGS ?= -O0 -g -traceback -r8 -i4 -qopenmp -convert big_endian \
          -check bounds -warn unused -assume byterecl
 #ESMF_F90ESMFLINKLIBS = -lesmf -cxxlib -lrt -ldl -lnetcdff -lnetcdf
 #ESMF_F90ESMFLINKLIBS = -lesmf -cxxlib -lrt -ldl -lnetcdff
@@ -82,7 +82,7 @@ $(CMD):	$(OBJS)
 	  $(ESMF_F90ESMFLINKRPATHS) \
 	  $(ESMF_F90ESMFLINKLIBS) \
 	  $(WGRIB2_LIB) \
-	  $(WGRIB2API_LIB) 
+	  $(WGRIB2API_LIB)
 
 # We may be able to remove the above two lines involving WGRIB2_LIB and
 # WGRIB2API_LIB if these can be made part of the definition of the vari-

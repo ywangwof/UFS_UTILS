@@ -2,6 +2,8 @@
 ## chgres build module for Odin
 #############################################################
 
+module load craype/2.6.2
+module load craype-ivybridge
 module load PrgEnv-intel
 module swap intel/19.0.5.281
 module load cray-mpich/7.7.10
