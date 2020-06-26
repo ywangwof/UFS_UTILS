@@ -109,6 +109,10 @@ elif [[ -d /lustre && -d /ncrc ]] ; then
     fi
     target=gaea
     module purge
+elif [[ -d /scratch/wof ]] ; then
+    target=odin
+elif [[ -d /work/00315/ ]] ; then
+    target=stampede
 elif [[ -d /Applications ]] ; then
     # We are on a MacOSX system, nothing to do
     echo "Platform: MacOSX"
