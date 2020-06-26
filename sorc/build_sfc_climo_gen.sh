@@ -10,6 +10,7 @@ if [ ! -d "../exec" ]; then
 fi
 
 module purge
+
 USE_PREINST_LIBS=${USE_PREINST_LIBS:-"true"}
 if [ $USE_PREINST_LIBS = true ]; then
   export MOD_PATH
